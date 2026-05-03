@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js).
+
+## Show Pitch Machine — MY Entertainment
+
+TV pitch intelligence platform for MYE development. Scrapes trade publications, tracks buyer mandates and greenlits, manages a pitch pipeline with email-to-kanban automation, and generates buyer-facing pitch portals.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## UI Architecture
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+All pages live under `app/` using Next.js 15 App Router. Server components fetch data directly; client components handle interactivity (search, drag-drop, modals).
 
-## Learn More
+### Pages
 
-To learn more about Next.js, take a look at the following resources:
+| Route | File | Description |
+|---|---|---|
+| `/` | `app/page.tsx` | Dashboard — bento grid: buyers, greenlits, pipeline, genre pulse |
+| `/intelligence` | `app/intelligence/page.tsx` | Scraper status + today's greenlit feed + exec moves |
+| `/buyers` | `app/buyers/page.tsx` | Searchable buyer directory table |
+| `/buyers/[id]` | `app/buyers/[id]/page.tsx` | Buyer profile with 4-tab panel |
+| `/pipeline` | `app/pipeline/page.tsx` | Kanban board with dnd-kit drag-drop + SWR polling |
+| `/build` | `app/build/page.tsx` | 5-step package builder |
+| `/build/[id]` | `app/build/[id]/page.tsx` | Existing package view/edit |
+| `/shows` | `app/shows/page.tsx` | Show database with filters |
+| `/shows/[id]` | `app/shows/[id]/page.tsx` | Show detail with linked buyer |
+| `/pitch/[slug]` | `app/pitch/[slug]/page.tsx` | Buyer-facing pitch portal (light mode) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### UI Components
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+All in `components/ui/`:
 
-## Deploy on Vercel
+- `Nav.tsx` — left sidebar with active route detection
+- `Card.tsx` — surface card, optional hoverable lift
+- `Badge.tsx` — status/genre pill with 8 variants
+- `StatusDot.tsx` — colored dot for buyer activity status
+- `Skeleton.tsx` + `SkeletonCard` — shimmer loading states
+- `Button.tsx` — primary / ghost / danger, renders as `<a>` with `href`
+- `Input.tsx` — styled text input
+- `Modal.tsx` — overlay with Escape + click-outside close
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Design System
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Colors, fonts, and motion all via CSS variables defined in `app/globals.css`. Tailwind v4 arbitrary values (`bg-[var(--bg-surface)]`) used throughout. No hardcoded hex values in components.
+
+- Display: Barlow Condensed 800
+- UI: Inter
+- Data/IDs: JetBrains Mono
+
+### Key Data Flow
+
+```
+API Routes (/api/*)
+  Server components fetch directly (no useEffect)
+    Client islands handle search/filter/dnd
+      SWR for polling data (pipeline: 5s, intelligence: 60s)
+```
+
+### Pipeline Kanban
+
+`dnd-kit` drag-drop with optimistic UI updates. `PUT /api/pipeline/[id]/stage` on drop. SWR polls every 5s to catch Grok email auto-moves. Toast shows on error with exact message.
+
+### Pitch Portal
+
+`/pitch/[slug]` is buyer-facing — `data-theme="light"` switches to the light CSS variable overrides. Six scroll sections with a fixed bottom action bar. Font sizes go up to 96px for the hero title.

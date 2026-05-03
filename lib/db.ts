@@ -1,0 +1,73 @@
+// Database singleton using Node 24's built-in node:sqlite — no native addon required.
+// node:sqlite is synchronous-only; all calls block. This is intentional — Next.js API
+// routes and scripts are already async-wrapped, and sync SQLite avoids callback hell
+// on a single-user local tool.
+
+import { DatabaseSync } from 'node:sqlite';
+import fs from 'node:fs';
+import path from 'node:path';
+
+// Resolve DB path from env so CI / tests can point at :memory: without editing code
+const DATABASE_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'db.sqlite');
+
+let _db: DatabaseSync | null = null;
+
+// Lazy singleton — first caller pays the file-open cost; subsequent calls are free
+export function getDb(): DatabaseSync {
+  if (_db) return _db;
+
+  // Ensure the data directory exists before SQLite tries to create the file
+  const dir = path.dirname(DATABASE_PATH);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  _db = new DatabaseSync(DATABASE_PATH);
+
+  // WAL mode dramatically improves concurrent read performance for dashboard queries
+  _db.exec('PRAGMA journal_mode = WAL;');
+  // Foreign key enforcement is off by default in SQLite — turn it on for referential safety
+  _db.exec('PRAGMA foreign_keys = ON;');
+
+  return _db;
+}
+
+// Run all *.sql files in /migrations in alphabetical order (001, 002, ...).
+// Using IF NOT EXISTS / INSERT OR IGNORE throughout so re-running is always safe.
+export function initDb(): void {
+  const db = getDb();
+  const migrationsDir = path.join(process.cwd(), 'migrations');
+  const files = fs.readdirSync(migrationsDir)
+    .filter(f => f.endsWith('.sql'))
+    .sort();
+  for (const file of files) {
+    const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
+    db.exec(sql);
+  }
+}
+
+// Convenience wrapper: run a SELECT and return typed rows without manual casting
+export function query<T>(sql: string, params: unknown[] = []): T[] {
+  const db = getDb();
+  const stmt = db.prepare(sql);
+  // node:sqlite uses positional binding with array; stmt.all() returns plain objects
+  return stmt.all(...params) as T[];
+}
+
+// Single-row variant — returns undefined instead of throwing when no match found
+export function queryOne<T>(sql: string, params: unknown[] = []): T | undefined {
+  const db = getDb();
+  const stmt = db.prepare(sql);
+  return stmt.get(...params) as T | undefined;
+}
+
+// DML wrapper — returns changes/lastInsertRowid in a consistent shape
+export function run(
+  sql: string,
+  params: unknown[] = []
+): { changes: number; lastInsertRowid: number | bigint } {
+  const db = getDb();
+  const stmt = db.prepare(sql);
+  const result = stmt.run(...params);
+  return { changes: result.changes, lastInsertRowid: result.lastInsertRowid };
+}

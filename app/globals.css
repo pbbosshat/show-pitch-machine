@@ -1,26 +1,97 @@
+﻿@import 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap';
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg-app:          var(--bg-app);
+  --color-bg-surface:      var(--bg-surface);
+  --color-bg-surface-alt:  var(--bg-surface-alt);
+  --color-bg-elevated:     var(--bg-elevated);
+  --color-border-subtle:   var(--border-subtle);
+  --color-border-strong:   var(--border-strong);
+  --color-text-primary:    var(--text-primary);
+  --color-text-secondary:  var(--text-secondary);
+  --color-text-muted:      var(--text-muted);
+  --color-accent:          var(--accent);
+  --color-accent-hover:    var(--accent-hover);
+  --color-status-greenlit: var(--status-greenlit);
+  --color-status-inreview: var(--status-inreview);
+  --color-status-pass:     var(--status-pass);
+  --color-status-deal:     var(--status-deal);
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-ui:      'Inter', sans-serif;
+  --font-data:    'JetBrains Mono', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* â”€â”€ SPM Design System â€” Light Mode (primary app surface) â”€â”€ */
+:root {
+  --bg-app:          #F7F8FC;
+  --bg-surface:      #FFFFFF;
+  --bg-surface-alt:  #F1F5F9;
+  --bg-elevated:     #E8EEF7;
+  --border-subtle:   #E2E8F0;
+  --border-strong:   #CBD5E1;
+  --text-primary:    #0F172A;
+  --text-secondary:  #475569;
+  --text-muted:      #94A3B8;
+  --accent:          #CC1212;
+  --accent-hover:    #B80F0F;
+  --accent-dim:      #FEF2F2;
+  --status-greenlit: #16A34A;
+  --status-inreview: #CA8A04;
+  --status-pass:     #DC2626;
+  --status-deal:     #D97706;
+
+  /* motion */
+  --motion-fast:   100ms;
+  --motion-base:   150ms;
+  --motion-slow:   250ms;
+  --ease:          cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* â”€â”€ Dark mode â€” apply [data-theme="dark"] to <html> to activate â”€â”€ */
+[data-theme="dark"] {
+  --bg-app:          #080D18;
+  --bg-surface:      #0F1729;
+  --bg-surface-alt:  #161F35;
+  --bg-elevated:     #1A2540;
+  --border-subtle:   #1E2D4A;
+  --border-strong:   #2A3D60;
+  --text-primary:    #FFFFFF;
+  --text-secondary:  #8A9DC0;
+  --text-muted:      #4A5D80;
+  --accent:          #CC1212;
+  --accent-hover:    #E01414;
+  --accent-dim:      #3D0000;
+  --status-greenlit: #22C55E;
+  --status-inreview: #EAB308;
+  --status-pass:     #EF4444;
+  --status-deal:     #F5A623;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* â”€â”€ Skeleton shimmer â€” never spinners â”€â”€ */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface-alt) 25%,
+    var(--bg-elevated) 50%,
+    var(--bg-surface-alt) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
 }
