@@ -2,18 +2,19 @@
 
 ## Deployed Project
 
-**Railway project:** show-pitch-machine  
-**Account:** pb@gototeam.com  
-**Project ID:** `94debf51-8a7f-4b85-b18b-51e69ad60540`  
-**Production environment ID:** `98e05f84-4bd0-4b81-969f-ed277f8383e9`
+**Railway account:** `1@gototeam.com` (pbbosshat's Projects, Hobby plan — GitHub connected)  
+**Project:** show-pitch-machine  
+**Project ID:** `17ea66a7-750c-4c8a-8d55-51ff0f72b56c`  
+**Production environment ID:** `b85ab596-2a60-4dcf-bd44-2e00acc89b9d`  
+**Workspace ID:** `27c3f0f9-b199-4fea-ba45-47eef989876d`
 
 ### Services
 
 | Service | ID | URL |
 |---------|-----|-----|
-| **app** (Next.js) | `a27e2e23-cfd4-445a-a2ec-c5d3c691b971` | `https://app-production-22fa.up.railway.app` |
-| **mcp-server** | `d9937ae3-1230-4eb8-bab0-12e7d06127fd` | `https://mcp-server-production-22c9.up.railway.app` |
-| **Postgres** | `7a196923-96c6-4be7-9abb-100bef62bb3d` | (internal) |
+| **app** (Next.js) | `3e796e7b-29c9-4012-96f9-9a2e1cf7f718` | `https://app-production-1ac7.up.railway.app` |
+| **mcp-server** | `5043177d-0bdd-408a-8291-33719ccb964a` | `https://mcp-server-production-f138.up.railway.app` |
+| **Postgres** | `82504330-...` | (internal) |
 
 **GitHub repo:** `pbbosshat/show-pitch-machine` (public)
 
@@ -28,7 +29,7 @@ Sean adds this to `~/.claude/settings.json` on his Mac:
   "mcpServers": {
     "show-pitch-machine": {
       "type": "http",
-      "url": "https://mcp-server-production-22c9.up.railway.app/mcp",
+      "url": "https://mcp-server-production-f138.up.railway.app/mcp",
       "headers": {
         "Authorization": "Bearer mcp_ca8f896dac0194b0d29260861da06c8c4fc6a07f4afafc93a89046e4d52e7ed6"
       }
@@ -39,7 +40,7 @@ Sean adds this to `~/.claude/settings.json` on his Mac:
 
 Verify it's working:
 ```bash
-curl https://mcp-server-production-22c9.up.railway.app/health
+curl https://mcp-server-production-f138.up.railway.app/health
 # → {"status":"ok","db":"connected","tools":12}
 ```
 
@@ -59,28 +60,24 @@ curl https://mcp-server-production-22c9.up.railway.app/health
 After scraper runs complete, Bang POSTs data to the MCP server:
 
 ```bash
-MCP_HOST="https://mcp-server-production-22c9.up.railway.app"
+MCP_HOST="https://mcp-server-production-f138.up.railway.app"
 INGEST_KEY="ingest_dd8210af261f2c8053f6d38e5ca6217cd215340e73b7746e767123d6f43ae796"
 
-# Articles (run after each scraper batch)
 curl -X POST $MCP_HOST/ingest/articles \
   -H "Authorization: Bearer $INGEST_KEY" \
   -H "Content-Type: application/json" \
   -d @scraped_articles.json
 
-# Market orders
 curl -X POST $MCP_HOST/ingest/orders \
   -H "Authorization: Bearer $INGEST_KEY" \
   -H "Content-Type: application/json" \
   -d @market_orders.json
 
-# Shows
 curl -X POST $MCP_HOST/ingest/shows \
   -H "Authorization: Bearer $INGEST_KEY" \
   -H "Content-Type: application/json" \
   -d @shows.json
 
-# Buyers (updated mandate statements)
 curl -X POST $MCP_HOST/ingest/buyers \
   -H "Authorization: Bearer $INGEST_KEY" \
   -H "Content-Type: application/json" \
@@ -113,10 +110,10 @@ curl -X POST $MCP_HOST/ingest/buyers \
 ### mcp-server service (already set in Railway)
 ```
 NODE_ENV=production
-DATABASE_URL=${{Postgres.DATABASE_URL}}   ← Railway injects automatically
+DATABASE_URL=${{Postgres.DATABASE_URL}}   ← Railway reference, auto-resolved
 MCP_API_KEY=mcp_ca8f896dac...             ← set
 INGEST_API_KEY=ingest_dd8210af...         ← set
-PORT=3001                                 ← Railway overrides anyway
+PORT=3001
 ```
 
 ### app service (partially set — fill in secrets)
@@ -141,30 +138,22 @@ SCRAPER_CRON=0 6 * * *
 ## Architecture
 
 ```
-GitHub (pbbosshat/show-pitch-machine)
-  ├─ /                → Railway "app" service (Next.js)
-  └─ /mcp-server/     → Railway "mcp-server" service
+GitHub (pbbosshat/show-pitch-machine) — auto-deploys on push to master
+  ├─ /              → Railway "app" service (Next.js)
+  └─ /mcp-server/   → Railway "mcp-server" service
 
-Railway Postgres ← shared by both services via DATABASE_URL
+Railway Postgres ← shared by both services via ${{Postgres.DATABASE_URL}}
 
-MCP server:
-  POST/GET /mcp       ← Sean's Claude Code (MCP_API_KEY)
-  POST /ingest/*      ← Bang scraper machine (INGEST_API_KEY)
-  GET /health         ← Railway healthcheck
-  
+MCP server endpoints:
+  POST/GET /mcp     ← Sean's Claude Code (MCP_API_KEY)
+  POST /ingest/*    ← Bang scraper machine (INGEST_API_KEY)
+  GET /health       ← Railway healthcheck
+
 Migrations run automatically on startup (mcp-server/migrations/*.sql)
 ```
 
 ---
 
-## Cost Estimate
+## Cost
 
-| Service | Monthly Cost |
-|---------|-------------|
-| Railway Hobby Plan | $5/seat |
-| App service (Next.js) | ~$5–15 (usage-based) |
-| MCP service (Node) | ~$2–5 (low traffic) |
-| Postgres (1GB) | ~$5 |
-| **Total** | **~$17–30/month** |
-
-Note: Account currently on trial ($5 credit). Add a credit card in Railway account settings to continue after trial.
+Railway Hobby plan — $5/month + usage. Account: `1@gototeam.com`.
