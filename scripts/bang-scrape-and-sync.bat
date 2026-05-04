@@ -29,6 +29,8 @@
 set PROJECT=C:\Users\bang\show-pitch-machine
 set LOG=%PROJECT%\data\scrape.log
 set PUPPETEER_CACHE_DIR=C:\Users\BubbaBang_old\.cache\puppeteer
+set RAILWAY_MCP_URL=https://mcp-server-production-f138.up.railway.app
+set RAILWAY_INGEST_KEY=ingest_dd8210af261f2c8053f6d38e5ca6217cd215340e73b7746e767123d6f43ae796
 
 echo [%DATE% %TIME%] ===== Daily run starting ===== >> %LOG%
 
@@ -119,3 +121,13 @@ echo [%DATE% %TIME%] ===== Daily run complete ===== >> %LOG%
 echo [%DATE% %TIME%] Step 11: Sending run report >> %LOG%
 CALL python scripts\send-run-report.py >> %LOG% 2>&1
 echo [%DATE% %TIME%] Report sent >> %LOG%
+
+:: ── 12. Sync to Railway MCP server ───────────────────────────────────────────
+:: Pushes articles, shows, orders, buyers, and pipeline data from local SQLite
+:: to the Railway-hosted MCP server so Sean's Claude Code stays current.
+:: Safe to re-run — all ingest endpoints use ON CONFLICT DO UPDATE (upsert).
+echo [%DATE% %TIME%] Step 12: Syncing to Railway MCP server >> %LOG%
+CALL npx tsx --env-file=.env scripts\sync-to-railway.ts >> %LOG% 2>&1
+echo [%DATE% %TIME%] Railway sync complete >> %LOG%
+
+echo [%DATE% %TIME%] ===== All steps complete ===== >> %LOG%
