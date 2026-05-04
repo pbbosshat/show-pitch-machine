@@ -101,16 +101,29 @@ function markRunFailed(source: string, runId: string, errMsg: string) {
   );
 }
 
-// Execute a single scraper and return articles — catches all errors gracefully
+// Execute a single scraper and return articles — catches all errors gracefully.
+// Uses a literal-string switch so webpack can statically trace all possible import
+// paths; a variable import like `import(SCRAPER_MAP[source])` breaks in Next.js.
 async function runScraper(source: string): Promise<{ articles: ScrapedArticle[]; error?: string }> {
-  const importPath = SCRAPER_MAP[source];
-  if (!importPath) return { articles: [], error: `Unknown source: ${source}` };
+  if (!SCRAPER_MAP[source]) return { articles: [], error: `Unknown source: ${source}` };
 
   try {
-    // Dynamic import keeps puppeteer out of the Next.js build graph at startup
-    const mod = await import(importPath);
-    const scrape = mod.default as () => Promise<ScrapedArticle[]>;
-    const articles = await scrape();
+    let mod: { default: () => Promise<ScrapedArticle[]> };
+    switch (source) {
+      case 'deadline':          mod = await import('@/scrapers/deadline'); break;
+      case 'variety':           mod = await import('@/scrapers/variety'); break;
+      case 'thr':               mod = await import('@/scrapers/thr'); break;
+      case 'c21':               mod = await import('@/scrapers/c21'); break;
+      case 'realscreen':        mod = await import('@/scrapers/realscreen'); break;
+      case 'cynopsis':          mod = await import('@/scrapers/cynopsis'); break;
+      case 'tvline':            mod = await import('@/scrapers/tvline'); break;
+      case 'indiewire':         mod = await import('@/scrapers/indiewire'); break;
+      case 'bc':                mod = await import('@/scrapers/bc'); break;
+      case 'production-weekly': mod = await import('@/scrapers/production-weekly'); break;
+      case 'gmail-newsletters': mod = await import('@/scrapers/gmail-newsletters'); break;
+      default: return { articles: [], error: `No import registered for: ${source}` };
+    }
+    const articles = await mod.default();
     return { articles };
   } catch (err) {
     return { articles: [], error: (err as Error).message };

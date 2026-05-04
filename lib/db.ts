@@ -33,16 +33,32 @@ export function getDb(): DatabaseSync {
 }
 
 // Run all *.sql files in /migrations in alphabetical order (001, 002, ...).
-// Using IF NOT EXISTS / INSERT OR IGNORE throughout so re-running is always safe.
+// Tracks applied migrations in schema_migrations so ALTER TABLE statements
+// in later migrations don't fail when initDb() is called multiple times.
 export function initDb(): void {
   const db = getDb();
+
+  // Bootstrap the tracking table on first ever run
+  db.exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
+    filename TEXT PRIMARY KEY,
+    applied_at TEXT DEFAULT (datetime('now'))
+  );`);
+
+  const applied = new Set(
+    (db.prepare('SELECT filename FROM schema_migrations').all() as { filename: string }[])
+      .map(r => r.filename)
+  );
+
   const migrationsDir = path.join(process.cwd(), 'migrations');
   const files = fs.readdirSync(migrationsDir)
     .filter(f => f.endsWith('.sql'))
     .sort();
+
   for (const file of files) {
+    if (applied.has(file)) continue; // already applied — skip
     const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
     db.exec(sql);
+    db.prepare('INSERT INTO schema_migrations (filename) VALUES (?)').run(file);
   }
 }
 

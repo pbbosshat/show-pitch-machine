@@ -83,7 +83,8 @@ export default async function scrape(): Promise<ScrapedArticle[]> {
           url,
           headline,
           body: body || headline,
-          item_type: extractItemType(headline),
+          // Force greenlit — this scraper targets /tag/greenlights/ specifically
+          item_type: 'greenlit',
           network: extractNetwork(fullText),
           genre: extractGenre(fullText),
           episode_count: extractEpisodeCount(fullText),

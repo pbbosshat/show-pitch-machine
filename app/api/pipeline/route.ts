@@ -2,11 +2,16 @@
  * GET /api/pipeline
  * Called by: Kanban pipeline board page, pipeline summary widget
  * Auth: none
- * Response: { data: Array<Package & { ip_title, buyer_name, company_name, days_in_stage }> }
+ * Response: { data: Array<Package & { ip_title, buyer_name, company_name, days_in_stage,
+ *             buyer_orders_90d, buyer_mandate, buyer_last_contact }> }
  * Sorted by stage_entered_at ASC (longest-waiting packages surface first within each stage).
  *
  * days_in_stage is computed fresh on each request from stage_entered_at so it
  * doesn't require a background job to keep it current.
+ *
+ * buyer_orders_90d, buyer_mandate, buyer_last_contact are enrichment fields from
+ * migration 017 — all three are optional/nullable so the board degrades gracefully
+ * when enrichment hasn't run yet on a given contact.
  */
 
 import { NextResponse } from 'next/server';
@@ -29,6 +34,10 @@ interface PipelineRow {
   ip_title: string | null;
   buyer_name: string | null;
   company_name: string | null;
+  // Enrichment fields added by migration 017 — all optional, may be null
+  buyer_orders_90d: number | null;
+  buyer_mandate: string | null;
+  buyer_last_contact: number | null;
 }
 
 export async function GET() {
@@ -48,12 +57,15 @@ export async function GET() {
         pkg.ask_episode_count,
         pkg.created_at,
         pkg.updated_at,
-        ip.title  AS ip_title,
-        bc.name   AS buyer_name,
-        co.name   AS company_name
+        ip.title                       AS ip_title,
+        bc.name                        AS buyer_name,
+        co.name                        AS company_name,
+        bc.orders_last_90_days         AS buyer_orders_90d,
+        bc.mandate_statement           AS buyer_mandate,
+        bc.last_mye_contact_date       AS buyer_last_contact
        FROM packages pkg
-       LEFT JOIN ip_catalog ip    ON ip.id  = pkg.ip_id
-       LEFT JOIN buyer_contacts bc ON bc.id = pkg.target_contact_id
+       LEFT JOIN ip_catalog ip     ON ip.id  = pkg.ip_id
+       LEFT JOIN buyer_contacts bc ON bc.id  = pkg.target_contact_id
        LEFT JOIN buyer_companies co ON co.id = pkg.target_company_id
        WHERE pkg.status != 'archived'
        ORDER BY pkg.stage_entered_at ASC NULLS LAST`

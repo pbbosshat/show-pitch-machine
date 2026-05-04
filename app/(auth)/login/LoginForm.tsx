@@ -63,14 +63,12 @@ export default function LoginForm({ defaultRedirect }: { defaultRedirect: string
       className="w-full max-w-sm rounded-xl p-8"
       style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}
     >
-      {/* MY Entertainment wordmark */}
-      <div className="flex items-baseline gap-1.5 mb-8">
-        <span className="text-2xl font-bold leading-none" style={{ fontFamily: 'Inter, sans-serif', color: 'var(--accent)' }}>MY</span>
-        <span className="text-[11px] font-semibold tracking-[0.15em] leading-none uppercase" style={{ fontFamily: 'Inter, sans-serif', color: 'var(--text-primary)' }}>Entertainment</span>
+      {/* MY Entertainment logo */}
+      <div className="flex justify-center mb-6">
+        <img src="/logo-cropped.png" alt="My Entertainment Show Pitch Machine" style={{ width: '180px', height: 'auto' }} />
       </div>
 
-      <h1 className="text-lg font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>Sign in</h1>
-      <p className="text-xs mb-6" style={{ color: 'var(--text-muted)' }}>Show Pitch Machine</p>
+      <h1 className="text-lg font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>Sign in</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {/* Email */}

@@ -21,7 +21,7 @@
   --font-data:    'JetBrains Mono', monospace;
 }
 
-/* â”€â”€ SPM Design System â€” Light Mode (primary app surface) â”€â”€ */
+/* ── SPM Design System — Light Mode (primary app surface) ── */
 :root {
   --bg-app:          #F7F8FC;
   --bg-surface:      #FFFFFF;
@@ -47,8 +47,8 @@
   --ease:          cubic-bezier(0.2, 0, 0, 1);
 }
 
-/* â”€â”€ Dark mode â€” apply [data-theme="dark"] to <html> to activate â”€â”€ */
-[data-theme="dark"] {
+/* ── Dark mode — apply [data-theme=”dark”] to <html> to activate ── */
+[data-theme=”dark”] {
   --bg-app:          #080D18;
   --bg-surface:      #0F1729;
   --bg-surface-alt:  #161F35;
@@ -74,7 +74,8 @@
 body {
   background: var(--bg-app);
   color: var(--text-primary);
-  font-family: 'Inter', sans-serif;
+  /* Internal app uses Inter; public site overrides with Roboto via SiteLayout inline style */
+  font-family: 'Inter', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

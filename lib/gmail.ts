@@ -11,8 +11,10 @@ import type { GmailMessage } from '../types';
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
-// Service account auth — used for newsletter scraper that reads a shared mailbox
-function getServiceAccountAuth(scopes: string[]) {
+// Service account auth — used for newsletter scraper and outbound invite emails.
+// subject defaults to GMAIL_NEWSLETTER_USER but can be overridden to impersonate
+// any gototeam.com / assignmentdesk.com mailbox via domain-wide delegation.
+function getServiceAccountAuth(scopes: string[], subject?: string) {
   const keyPath =
     process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH ||
     'C:/Users/pb/.claude/google/service_account.json';
@@ -22,8 +24,7 @@ function getServiceAccountAuth(scopes: string[]) {
     email: key.client_email,
     key: key.private_key,
     scopes,
-    // Impersonate the shared newsletter inbox via domain-wide delegation
-    subject: process.env.GMAIL_NEWSLETTER_USER,
+    subject: subject ?? process.env.GMAIL_NEWSLETTER_USER,
   });
 
   return auth;
@@ -101,16 +102,53 @@ function getIngestedThreadIds(): Set<string> {
   return new Set(rows.map((r) => r.source_id));
 }
 
+// ── Outbound email ────────────────────────────────────────────────────────────
+
+const INVITE_FROM = 'cc@assignmentdesk.com';
+
+// Send an HTML email from cc@assignmentdesk.com using the service account with
+// domain-wide delegation — no separate OAuth flow needed.
+export async function sendEmail(to: string, subject: string, htmlBody: string): Promise<void> {
+  const auth = getServiceAccountAuth(
+    ['https://www.googleapis.com/auth/gmail.send'],
+    INVITE_FROM
+  );
+  const gmail = google.gmail({ version: 'v1', auth });
+
+  const raw = Buffer.from(
+    `From: MY Entertainment <${INVITE_FROM}>\r\n` +
+    `To: ${to}\r\n` +
+    `Subject: ${subject}\r\n` +
+    `MIME-Version: 1.0\r\n` +
+    `Content-Type: text/html; charset=utf-8\r\n` +
+    `\r\n` +
+    htmlBody
+  ).toString('base64url');
+
+  await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
-// Fetch trade newsletter emails from Label_378 (MYE's newsletter label).
-// Uses service account so it works even if the user isn't authenticated.
+// Known trade newsletter sender domains for sm@gototeam.com.
+// Label_378 ("industry newsletters") exists but emails arrive unlabeled —
+// we search by sender domain instead, which is more robust.
+const NEWSLETTER_SENDER_QUERY = [
+  'deadline.com', 'variety.com', 'hollywoodreporter.com', 'thr.com',
+  'tvline.com', 'cynopsis.com', 'realscreen.com', 'c21media.net',
+  'broadcastingcable.com', 'nexttv.com', 'productionweekly.com',
+  'worldscreen.com', 'senalnews.com', 'broadbandtvnews.com', 'indiewire.com',
+].map((d) => `from:${d}`).join(' OR ');
+
+// Fetch trade newsletter emails from sm@gototeam.com.
+// Uses service account with domain-wide delegation (client ID 101663092871827294753
+// authorized on gototeam.com workspace with gmail.readonly scope).
 export async function getNewsletterMessages(sinceDate?: Date): Promise<GmailMessage[]> {
   const auth = getServiceAccountAuth(['https://www.googleapis.com/auth/gmail.readonly']);
   const gmail = google.gmail({ version: 'v1', auth });
 
   const after = sinceDate ? Math.floor(sinceDate.getTime() / 1000) : undefined;
-  const q = ['label:Label_378', after ? `after:${after}` : ''].filter(Boolean).join(' ');
+  const q = [`(${NEWSLETTER_SENDER_QUERY})`, after ? `after:${after}` : ''].filter(Boolean).join(' ');
 
   const listRes = await gmail.users.messages.list({
     userId: 'me',

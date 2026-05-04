@@ -405,8 +405,8 @@ for (const rawTitle of uniqueShowNames) {
   const id = uuidv4();
   const result = run(
     `INSERT OR IGNORE INTO ip_catalog
-       (id, title, genre, status, created_at, updated_at)
-     VALUES (?, ?, ?, 'active', ?, ?)`,
+       (id, title, genre, status, origin_source, created_at, updated_at)
+     VALUES (?, ?, ?, 'active', 'csv', ?, ?)`,
     [id, cleanTitle, genre, now, now]
   );
 
@@ -519,8 +519,8 @@ for (const ip of ipCatalog) {
   const id = uuidv4();
   const result = run(
     `INSERT OR IGNORE INTO ip_catalog
-       (id, title, logline, format, genre, status, is_library, seasons_count, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, title, logline, format, genre, status, is_library, seasons_count, origin_source, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'manual', ?, ?)`,
     [
       id, ip.title, ip.logline ?? null, ip.format ?? null, ip.genre, ip.status,
       ip.is_library, (ip as { seasons_count?: number }).seasons_count ?? null, now, now,
@@ -653,8 +653,8 @@ for (const s of mockShows) {
     `INSERT OR IGNORE INTO shows
        (id, title, title_normalized, network, network_id, production_company,
         format, genre, episode_count, season_number, status, greenlit_date,
-        location_type, is_unscripted, source, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'seed', ?, ?)`,
+        location_type, is_unscripted, source, data_source, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'seed', 'manual', ?, ?)`,
     [
       uuidv4(), s.title, titleNorm, s.network, networkId, s.production_company,
       s.format, s.genre,
@@ -667,12 +667,13 @@ for (const s of mockShows) {
   );
   if (result.changes > 0) {
     seededShows++;
-    // Keep FTS5 table in sync with the main shows table
-    run(
-      `INSERT INTO shows_fts (title, genre, production_company, network, host, showrunner, location_notes)
-       VALUES (?, ?, ?, ?, '', '', '')`,
-      [s.title, s.genre, s.production_company, s.network]
-    );
+    try {
+      run(
+        `INSERT INTO shows_fts (title, genre, production_company, network, host, showrunner, location_notes)
+         VALUES (?, ?, ?, ?, '', '', '')`,
+        [s.title, s.genre, s.production_company, s.network]
+      );
+    } catch { /* shows_fts may not exist yet — created by a separate migration */ }
   }
 }
 console.log(`Shows (comp database): ${seededShows} inserted`);

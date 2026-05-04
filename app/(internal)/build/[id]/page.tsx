@@ -109,6 +109,13 @@ export default async function BuildDetailPage({ params }: { params: Promise<{ id
           Edit Package
         </Link>
         <Link
+          href={`/pitches/${pkg.id}`}
+          className="px-4 py-2 rounded text-sm font-medium"
+          style={{ background: 'rgba(204,18,18,0.15)', color: 'var(--accent)' }}
+        >
+          Full Pitch Hub
+        </Link>
+        <Link
           href="/build"
           className="px-4 py-2 rounded text-sm font-medium"
           style={{ background: 'var(--bg-surface-alt)', color: 'var(--text-secondary)' }}

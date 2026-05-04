@@ -8,6 +8,7 @@ import { queryOne, run, getDb } from '@/lib/db';
 export const SESSION_COOKIE = 'spm_session';
 const SESSION_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;   // 7 days
 const RESET_EXPIRY_MS   = 6 * 60 * 60 * 1000;         // 6 hours
+const INVITE_EXPIRY_MS  = 72 * 60 * 60 * 1000;        // 72 hours
 
 // ── Schema bootstrap ──────────────────────────────────────────────────────────
 // Creates auth-specific tables/columns on first call; safe to call repeatedly.
@@ -31,6 +32,8 @@ export function ensureAuthSchema(): void {
     'updated_at INTEGER',
     'password_reset_token TEXT',
     'password_reset_expires INTEGER',
+    'invite_token TEXT',
+    'invite_expires INTEGER',
   ]) {
     try { db.exec(`ALTER TABLE team_users ADD COLUMN ${col}`); } catch { /* exists */ }
   }
@@ -115,6 +118,34 @@ export function validateResetToken(token: string): SessionUser | null {
 export function clearResetToken(userId: string): void {
   run(
     'UPDATE team_users SET password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?',
+    [userId]
+  );
+}
+
+// ── Invite-token helpers ──────────────────────────────────────────────────────
+export function createInviteToken(userId: string): string {
+  ensureAuthSchema();
+  const token = randomBytes(24).toString('hex');
+  run(
+    'UPDATE team_users SET invite_token = ?, invite_expires = ? WHERE id = ?',
+    [token, Date.now() + INVITE_EXPIRY_MS, userId]
+  );
+  return token;
+}
+
+export function validateInviteToken(token: string): SessionUser | null {
+  ensureAuthSchema();
+  const user = queryOne<SessionUser & { invite_expires: number }>(
+    'SELECT id, name, email, role, invite_expires FROM team_users WHERE invite_token = ?',
+    [token]
+  );
+  if (!user || user.invite_expires < Date.now()) return null;
+  return { id: user.id, name: user.name, email: user.email, role: user.role };
+}
+
+export function clearInviteToken(userId: string): void {
+  run(
+    'UPDATE team_users SET invite_token = NULL, invite_expires = NULL WHERE id = ?',
     [userId]
   );
 }

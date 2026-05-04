@@ -3,7 +3,7 @@
 // contact_id URL param pre-populates Step 2 (Buyer selection) when arriving from a buyer profile.
 // All state is held in a single BuildState object passed between steps.
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 import Card from '@/components/ui/Card';
@@ -51,6 +51,10 @@ const EMPTY_STATE: BuildState = {
 };
 
 export default function BuildPage() {
+  return <Suspense fallback={null}><BuildPageInner /></Suspense>;
+}
+
+function BuildPageInner() {
   const searchParams = useSearchParams();
   const contactId = searchParams.get('contact_id');
 

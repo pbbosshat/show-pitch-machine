@@ -1,7 +1,11 @@
 /**
  * C21 Media Commissions Scraper
- * Target: https://www.c21media.net/news/commissions/
+ * Source: https://www.c21media.net/feed/
  * Returns up to 20 recent commission news articles.
+ *
+ * Previously targeted the /news/commissions/ category page which returned 404.
+ * Now parses the site-wide RSS feed and filters by commission-related keywords
+ * before fetching article bodies — avoids fetching irrelevant content.
  *
  * C21 is a UK-based trade covering international TV commissions.
  * Articles focus on non-scripted and factual programming globally.
@@ -11,7 +15,6 @@
 import * as cheerio from 'cheerio';
 import {
   type ScrapedArticle,
-  fetchPage,
   extractEpisodeCount,
   extractNetwork,
   extractGenre,
@@ -23,14 +26,67 @@ import {
 import { newPage } from '@/lib/browser';
 
 const SOURCE = 'c21';
-const INDEX_URL = 'https://www.c21media.net/news/commissions/';
+// Site-wide RSS feed — filtered by keyword below to commission/greenlight articles
+const RSS_URL = 'https://www.c21media.net/feed/';
 const MAX_ARTICLES = 20;
 
+/**
+ * Keywords that indicate an article is about a commission, greenlight, or order.
+ * Checked against the concatenated title + description from the RSS item.
+ */
+const COMMISSION_KEYWORDS = [
+  'commission', 'commissioned', 'greenlit', 'greenlight',
+  'order', 'ordered', 'picked up', 'pickup',
+  'co-produce', 'factual', 'unscripted', 'documentary', 'series',
+];
+
+/**
+ * Returns true if the title or description suggests a commission/greenlight article.
+ * Checked before fetching the article body to avoid unnecessary Puppeteer calls.
+ */
+function isCommissionArticle(title: string, desc: string): boolean {
+  const text = `${title} ${desc}`.toLowerCase();
+  return COMMISSION_KEYWORDS.some(k => text.includes(k));
+}
+
+/**
+ * Fetch and parse an RSS feed, returning title/link/description for each item.
+ * Uses Node fetch + cheerio in xmlMode — no Puppeteer, no rate-limit needed.
+ */
+async function fetchRSS(url: string): Promise<Array<{ title: string; link: string; description: string }>> {
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    },
+  });
+  const xml = await res.text();
+  const $ = cheerio.load(xml, { xmlMode: true });
+
+  const items: Array<{ title: string; link: string; description: string }> = [];
+  $('item').each((_, el) => {
+    const title = $(el).find('title').text().trim();
+    // <link> in RSS is a text node, not an attribute
+    const link = $(el).find('link').text().trim();
+    // Strip inline HTML from description snippet
+    const description = $(el).find('description').text()
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (title && link) items.push({ title, link, description });
+  });
+  return items;
+}
+
+/**
+ * Fetch the full article body from a C21 article URL via Puppeteer.
+ * networkidle2 (vs domcontentloaded) gives JS-rendered content time to settle.
+ */
 async function fetchArticleBody(url: string): Promise<string> {
   await rateLimit('c21media.net');
   const page = await newPage();
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    // networkidle2 + 30s timeout — handles JS-rendered article bodies
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
     const html = await page.content();
     const $ = cheerio.load(html);
     $('script, style, nav, header, footer, aside, .ad, .members-only').remove();
@@ -48,29 +104,27 @@ export default async function scrape(): Promise<ScrapedArticle[]> {
   const articles: ScrapedArticle[] = [];
 
   try {
-    const html = await withRetry(() => fetchPage(INDEX_URL));
-    const $ = cheerio.load(html);
+    // Fetch the site-wide RSS feed instead of the defunct /news/commissions/ page
+    const rssItems = await withRetry(() => fetchRSS(RSS_URL));
 
-    const links: Array<{ url: string; headline: string }> = [];
-    const seen = new Set<string>();
+    // Filter to commission/greenlight articles before fetching bodies —
+    // avoids wasting Puppeteer calls on unrelated C21 content
+    const toProcess = rssItems
+      .filter(item => isCommissionArticle(item.title, item.description))
+      .slice(0, MAX_ARTICLES);
 
-    $('h2 a, h3 a, .entry-title a, .post-title a').each((_, el) => {
-      const href = $(el).attr('href') || '';
-      const headline = $(el).text().trim();
-      if (!href || !headline || seen.has(href)) return;
-      seen.add(href);
-
-      let url: string;
-      try { url = new URL(href, 'https://www.c21media.net').toString(); } catch { return; }
-
-      links.push({ url, headline });
-    });
-
-    const toProcess = links.slice(0, MAX_ARTICLES);
-
-    for (const { url, headline } of toProcess) {
+    for (const { title: headline, link: url, description } of toProcess) {
       try {
-        const body = await withRetry(() => fetchArticleBody(url), 2);
+        const item_type = extractItemType(headline);
+
+        // Only Puppeteer-fetch the full body for greenlit/cancelled articles —
+        // articles that passed the keyword filter but have non-greenlit headlines
+        // (e.g. "factual" or "documentary" context pieces) use the RSS excerpt.
+        let body = description;
+        if (item_type === 'greenlit' || item_type === 'cancelled') {
+          body = await withRetry(() => fetchArticleBody(url), 2) || description;
+        }
+
         const fullText = `${headline} ${body}`;
         const locationHints = extractLocationHints(fullText);
 
@@ -78,8 +132,8 @@ export default async function scrape(): Promise<ScrapedArticle[]> {
           source: SOURCE,
           url,
           headline,
-          body: body || headline,
-          item_type: extractItemType(headline),
+          body,
+          item_type,
           network: extractNetwork(fullText),
           genre: extractGenre(fullText),
           episode_count: extractEpisodeCount(fullText),
@@ -87,7 +141,7 @@ export default async function scrape(): Promise<ScrapedArticle[]> {
           scraped_at: Date.now(),
         });
       } catch {
-        // Skip individual article failures
+        // Skip individual article failures — one bad article shouldn't abort the run
       }
     }
   } catch (err) {

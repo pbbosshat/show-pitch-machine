@@ -12,7 +12,8 @@ type BadgeVariant =
   | 'muted';
 
 interface BadgeProps {
-  label: string;
+  children?: React.ReactNode;
+  label?: string;
   variant: BadgeVariant;
 }
 
@@ -28,14 +29,14 @@ const variantStyles: Record<BadgeVariant, { bg: string; color: string }> = {
   muted:     { bg: 'rgba(74, 93, 128, 0.15)',   color: 'var(--text-secondary)' },
 };
 
-export default function Badge({ label, variant }: BadgeProps) {
+export default function Badge({ children, label, variant }: BadgeProps) {
   const { bg, color } = variantStyles[variant];
   return (
     <span
       className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide uppercase"
       style={{ background: bg, color }}
     >
-      {label}
+      {children ?? label}
     </span>
   );
 }

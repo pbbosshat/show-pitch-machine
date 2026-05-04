@@ -43,3 +43,11 @@ next-env.d.ts
 # runtime data — database, vectors, generated PDFs, logs
 /data/
 /logs/
+*.sqlite
+*.db
+show-pitch.db
+
+# mcp-server build artifacts
+/mcp-server/node_modules/
+/mcp-server/dist/
+/mcp-server/.env

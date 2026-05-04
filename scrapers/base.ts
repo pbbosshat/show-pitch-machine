@@ -25,6 +25,10 @@ export interface ScrapedArticle {
   episode_count?: number;
   location_type?: string;
   greenlit_date?: number;
+  // Relevance classification — set by classify() at scrape time
+  format_type?: string;
+  relevance_tier?: string;
+  tier_reason?: string;
   scraped_at: number;
 }
 

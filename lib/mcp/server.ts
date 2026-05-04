@@ -8,10 +8,12 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { z } from 'zod';
 
 import { getActiveBuyers, getBuyerProfile, getBuyerIntelligence } from './tools/buyers';
+import { queryViqi } from '../vitrina/client';
 import { searchShows, getMarketOrders } from './tools/shows';
 import { searchArticlesTool } from './tools/articles';
 import { getPipeline, getPitchHistory } from './tools/pipeline';
 import { getIpDetail } from './tools/catalog';
+import { getDevelopmentPipeline, getProjectTimeline, getSizzleInventory } from './tools/dev-pipeline';
 
 const MCP_PORT = parseInt(process.env.MCP_PORT || '3001', 10);
 
@@ -139,6 +141,70 @@ function buildMcpServer(): McpServer {
     async ({ ip_id }) => {
       const detail = getIpDetail(ip_id);
       return { content: [{ type: 'text', text: JSON.stringify(detail, null, 2) }] };
+    }
+  );
+
+  // Tool 10: Development pipeline — all sheet-imported projects grouped by source tab
+  mcp.tool(
+    'get_development_pipeline',
+    'Returns all MYE projects imported from the Google Sheet, grouped by sheet tab (priorities, bc-mye, full-dev, backburner, archived, passes, brainstorms). Each project shows point person, target networks, pitched-to networks, email thread count, and last email activity. Use this as the daily development dashboard to see what\'s active, what needs attention, and who owns what.',
+    {
+      sheet_source: z.string().optional().describe(
+        'Filter to a single sheet tab: priorities | bc-mye | full-dev | backburner | archived | passes | brainstorms'
+      ),
+      status: z.string().optional().describe(
+        'Filter by ip_catalog.status value (e.g. "active", "archived")'
+      ),
+    },
+    async ({ sheet_source, status }) => {
+      const text = getDevelopmentPipeline({ sheet_source, status });
+      return { content: [{ type: 'text', text }] };
+    }
+  );
+
+  // Tool 11: Full project timeline — detail view + email history + sizzle assets + story scout links
+  mcp.tool(
+    'get_project_timeline',
+    'Returns a full detail view for a single MYE project: spreadsheet metadata (status, point person, targets, next steps), complete Gmail thread timeline sorted newest-first, sizzle reel assets, and any linked Story Scout entries. Accepts a partial project name — use this to deep-dive on any project after spotting it in get_development_pipeline().',
+    {
+      project_name: z.string().describe(
+        'Full or partial project title to look up (case-insensitive LIKE search). Example: "Pros vs Joes" or just "Pros".'
+      ),
+    },
+    async ({ project_name }) => {
+      const text = getProjectTimeline(project_name);
+      return { content: [{ type: 'text', text }] };
+    }
+  );
+
+  // Tool 12: Sizzle reel inventory — what assets exist and their status
+  mcp.tool(
+    'get_sizzle_inventory',
+    'Returns complete sizzle reel inventory: all recorded sizzles grouped by status (with video link vs. confirmed exists but no link yet). Shows Vimeo URLs, passwords, and latest email activity for each reel. Use this to track sizzle production progress and identify what needs video upload next.',
+    {},
+    async () => {
+      const text = getSizzleInventory();
+      return { content: [{ type: 'text', text }] };
+    }
+  );
+
+  // Tool 13: Vitrina VIQI — external market intelligence
+  // Use for: who's buying unscripted, deal trends, exec contacts at buyers,
+  // acquisition counts, what's selling in a genre/market.
+  // Complements search_articles (internal MYE knowledge) with Vitrina's
+  // 3M+ exec profiles, licensing history, and real-time market data.
+  mcp.tool(
+    'query_vitrina',
+    'Query Vitrina\'s entertainment industry database via VIQI AI. Use for external market intelligence: which buyers are acquiring unscripted content, acquisition counts by network, specific exec profiles (who commissions at Netflix/Peacock/Tubi/etc.), deal history, licensing trends, and what\'s selling in a genre. Complement this with search_articles for MYE\'s internal knowledge.',
+    { query: z.string().describe('Natural language question about buyers, deals, execs, or market trends') },
+    async ({ query }) => {
+      try {
+        const result = await queryViqi(query);
+        return { content: [{ type: 'text', text: result }] };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { content: [{ type: 'text', text: `[vitrina error] ${msg}` }] };
+      }
     }
   );
 

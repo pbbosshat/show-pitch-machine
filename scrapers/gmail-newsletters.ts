@@ -27,6 +27,32 @@ import type { GmailMessage } from '@/types';
 
 const SOURCE = 'gmail-newsletters';
 
+// Maps sender domain → the source key used in trade_articles.
+// Allows newsletter articles to appear under their publication's filter pill.
+const SENDER_SOURCE_MAP: Record<string, string> = {
+  'deadline.com':         'deadline',
+  'variety.com':          'variety',
+  'thr.com':              'thr',
+  'hollywoodreporter.com':'thr',
+  'tvline.com':           'tvline',
+  'cynopsis.com':         'cynopsis',
+  'realscreen.com':       'realscreen',
+  'c21media.net':         'c21',
+  'broadcastingcable.com':'bc',
+  'nexttv.com':           'nexttv.com',
+  'productionweekly.com': 'production-weekly',
+  'worldscreen.com':      'worldscreen.com',
+  'senalnews.com':        'senalnews.com',
+  'broadbandtvnews.com':  'broadbandtvnews.com',
+  'indiewire.com':        'indiewire',
+};
+
+// Resolve source key from sender address — falls back to 'gmail-newsletters'
+function resolveSource(sender: string): string {
+  const domain = sender.match(/@([\w.-]+)/)?.[1]?.toLowerCase() ?? '';
+  return SENDER_SOURCE_MAP[domain] ?? SOURCE;
+}
+
 // Minimum story length to avoid treating ad-copy or footers as articles
 const MIN_STORY_LENGTH = 80;
 
@@ -37,7 +63,12 @@ function splitIntoStories(body: string): string[] {
   const segments = body
     .split(/\n{2,}/)
     .map((s) => s.trim())
-    .filter((s) => s.length >= MIN_STORY_LENGTH);
+    .filter((s) => s.length >= MIN_STORY_LENGTH)
+    // Drop segments where every non-empty line is a URL/image tag — pure ad/image blocks
+    .filter((s) => {
+      const lines = s.split('\n').map((l) => l.trim()).filter(Boolean);
+      return lines.some((l) => !/^\[?https?:\/\//i.test(l));
+    });
 
   // If that yields nothing useful, fall back to returning the whole body as one story
   if (segments.length === 0 && body.trim().length >= MIN_STORY_LENGTH) {
@@ -47,18 +78,31 @@ function splitIntoStories(body: string): string[] {
   return segments;
 }
 
-// Extract a headline from a story segment — first non-empty line is usually the headline
-function extractHeadline(story: string): string {
-  const lines = story.split('\n').map((l) => l.trim()).filter(Boolean);
-  // Prefer shorter lines as headlines; very long first lines are likely paragraphs
-  const firstLine = lines[0] || '';
-  return firstLine.length <= 200 ? firstLine : firstLine.slice(0, 150) + '…';
+// Returns true for lines that are purely a URL or bracket-wrapped image/ad tag.
+// These come from HTML-to-text conversion of <img> and <a> tags in newsletter emails.
+function isUrlLine(line: string): boolean {
+  return /^\[?https?:\/\//i.test(line.trim());
 }
 
-// Extract a source URL from a story segment — look for http(s) links
+// Extract a headline from a story segment.
+// Skips leading URL/image lines (e.g. "[https://cdnstoryimages...]") that are
+// HTML image tags converted to plain text — the real headline follows them.
+function extractHeadline(story: string): string {
+  const lines = story.split('\n').map((l) => l.trim()).filter(Boolean);
+  const headlineLine = lines.find((l) => !isUrlLine(l) && l.length >= 8) ?? lines[0] ?? '';
+  return headlineLine.length <= 200 ? headlineLine : headlineLine.slice(0, 150) + '…';
+}
+
+// Extract a source URL from a story segment.
+// Prefers article-path URLs over CDN image/ad URLs from newsletter templates.
 function extractUrl(story: string): string | undefined {
-  const match = story.match(/https?:\/\/[^\s\)\"\']+/);
-  return match ? match[0].replace(/[.,;]+$/, '') : undefined;
+  const allUrls = [...story.matchAll(/https?:\/\/[^\s\)\"\'>\]]+/g)]
+    .map((m) => m[0].replace(/[.,;]+$/, ''));
+  const articleUrl = allUrls.find(
+    (u) => !/\.(jpg|jpeg|png|gif|webp|svg|mp4|css|js)(\?|$)/i.test(u) &&
+           !/\b(newsletterads|cdnstoryimages|aimediaserver|marketoemail|tracker)\b/i.test(u)
+  );
+  return articleUrl ?? allUrls[0];
 }
 
 // Derive a synthetic URL from sender domain + subject when no real URL is found
@@ -72,14 +116,15 @@ export default async function scrape(): Promise<ScrapedArticle[]> {
   const articles: ScrapedArticle[] = [];
 
   try {
-    // Fetch newsletters since yesterday to get fresh content without processing old messages
+    // Look back 3 days — newsletters often arrive on Friday and aren't scraped until Monday
     const since = new Date();
-    since.setDate(since.getDate() - 1);
+    since.setDate(since.getDate() - 3);
 
     const messages = await getNewsletterMessages(since);
 
     for (const msg of messages) {
       const stories = splitIntoStories(msg.body);
+      const msgSource = resolveSource(msg.sender);
 
       stories.forEach((story, idx) => {
         const headline = extractHeadline(story);
@@ -90,7 +135,7 @@ export default async function scrape(): Promise<ScrapedArticle[]> {
         const locationHints = extractLocationHints(fullText);
 
         articles.push({
-          source: SOURCE,
+          source: msgSource,
           url,
           headline,
           body: story,

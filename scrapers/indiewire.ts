@@ -1,7 +1,11 @@
 /**
  * IndieWire TV Scraper
- * Target: https://www.indiewire.com/t/tv/
+ * Source: https://www.indiewire.com/t/tv/feed/
  * Returns up to 20 recent TV articles.
+ *
+ * Previously targeted the /t/tv/ tag index page, which loads article links via
+ * JS after domcontentloaded — causing empty result sets. Now parses the RSS
+ * feed directly, then fetches individual article bodies via Puppeteer.
  *
  * IndieWire covers independent and prestige TV, documentaries, and limited series.
  * Useful for documentary and docuseries greenlight intelligence.
@@ -10,7 +14,6 @@
 import * as cheerio from 'cheerio';
 import {
   type ScrapedArticle,
-  fetchPage,
   extractEpisodeCount,
   extractNetwork,
   extractGenre,
@@ -22,14 +25,48 @@ import {
 import { newPage } from '@/lib/browser';
 
 const SOURCE = 'indiewire';
-const INDEX_URL = 'https://www.indiewire.com/t/tv/';
+// RSS feed replaces the JS-rendered /t/tv/ index page
+const RSS_URL = 'https://www.indiewire.com/t/tv/feed/';
 const MAX_ARTICLES = 20;
 
+/**
+ * Fetch and parse an RSS feed, returning title/link/description for each item.
+ * Uses Node fetch + cheerio in xmlMode — no Puppeteer, no rate-limit needed.
+ */
+async function fetchRSS(url: string): Promise<Array<{ title: string; link: string; description: string }>> {
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    },
+  });
+  const xml = await res.text();
+  const $ = cheerio.load(xml, { xmlMode: true });
+
+  const items: Array<{ title: string; link: string; description: string }> = [];
+  $('item').each((_, el) => {
+    const title = $(el).find('title').text().trim();
+    // <link> in RSS is a text node, not an attribute
+    const link = $(el).find('link').text().trim();
+    // Strip inline HTML from description snippet
+    const description = $(el).find('description').text()
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (title && link) items.push({ title, link, description });
+  });
+  return items;
+}
+
+/**
+ * Fetch the full article body from an IndieWire article URL via Puppeteer.
+ * networkidle2 (vs domcontentloaded) gives JS-rendered content time to settle.
+ */
 async function fetchArticleBody(url: string): Promise<string> {
   await rateLimit('indiewire.com');
   const page = await newPage();
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    // networkidle2 + 30s timeout — handles JS-rendered article bodies
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
     const html = await page.content();
     const $ = cheerio.load(html);
     $('script, style, nav, header, footer, aside, .ad, .newsletter-subscribe').remove();
@@ -47,29 +84,21 @@ export default async function scrape(): Promise<ScrapedArticle[]> {
   const articles: ScrapedArticle[] = [];
 
   try {
-    const html = await withRetry(() => fetchPage(INDEX_URL));
-    const $ = cheerio.load(html);
+    // Fetch the RSS feed instead of scraping the JS-rendered index page
+    const rssItems = await withRetry(() => fetchRSS(RSS_URL));
+    const toProcess = rssItems.slice(0, MAX_ARTICLES);
 
-    const links: Array<{ url: string; headline: string }> = [];
-    const seen = new Set<string>();
-
-    $('h2 a, h3 a, .title a, .entry-title a, .c-title a').each((_, el) => {
-      const href = $(el).attr('href') || '';
-      const headline = $(el).text().trim();
-      if (!href || !headline || seen.has(href)) return;
-      seen.add(href);
-
-      let url: string;
-      try { url = new URL(href, 'https://www.indiewire.com').toString(); } catch { return; }
-
-      links.push({ url, headline });
-    });
-
-    const toProcess = links.slice(0, MAX_ARTICLES);
-
-    for (const { url, headline } of toProcess) {
+    for (const { title: headline, link: url, description } of toProcess) {
       try {
-        const body = await withRetry(() => fetchArticleBody(url), 2);
+        const item_type = extractItemType(headline);
+
+        // Only open the full article via Puppeteer for greenlit/cancelled items —
+        // reviews, commentary, craft pieces etc. use the RSS excerpt as body.
+        let body = description;
+        if (item_type === 'greenlit' || item_type === 'cancelled') {
+          body = await withRetry(() => fetchArticleBody(url), 2) || description;
+        }
+
         const fullText = `${headline} ${body}`;
         const locationHints = extractLocationHints(fullText);
 
@@ -77,8 +106,8 @@ export default async function scrape(): Promise<ScrapedArticle[]> {
           source: SOURCE,
           url,
           headline,
-          body: body || headline,
-          item_type: extractItemType(headline),
+          body,
+          item_type,
           network: extractNetwork(fullText),
           genre: extractGenre(fullText),
           episode_count: extractEpisodeCount(fullText),
@@ -86,7 +115,7 @@ export default async function scrape(): Promise<ScrapedArticle[]> {
           scraped_at: Date.now(),
         });
       } catch {
-        // Skip individual article failures
+        // Skip individual article failures — one bad article shouldn't abort the run
       }
     }
   } catch (err) {

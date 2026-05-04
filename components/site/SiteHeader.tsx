@@ -1,68 +1,198 @@
+/**
+ * SiteHeader — Fixed navbar matching myentertainment.tv exactly.
+ * Black background, Roboto Condensed uppercase nav links, MYE logo image from Webflow CDN.
+ * "WORK WITH MYE" is a bordered right-aligned CTA link, not a filled button.
+ *
+ * Webflow CSS equivalents:
+ *   .navbar { background-color: #000; position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
+ *   .nav-link { color: #fff; letter-spacing: 2px; text-transform: uppercase;
+ *               padding: 20px 13px 20px 10px; font-size: 11px; font-family: 'Roboto Condensed'; }
+ *   .nav-link.w--current { color: #e51d26; }
+ *   .work-with-mye { border: 1px solid #5f6266; border-radius: 2px;
+ *                    margin-top: 15px; margin-bottom: 16px;
+ *                    padding: 4px 0 4px 20px; float: right; }
+ */
 'use client';
-// Public site header — dark cinematic nav matching myentertainment.tv.
-
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
+// All public nav links — hrefs use clean URLs (no /site prefix, rewrites handle routing)
 const NAV_LINKS = [
-  { href: '/site/shows',         label: 'Shows' },
-  { href: '/site/genres',        label: 'Genres' },
-  { href: '/site/reel',          label: 'Reel' },
-  { href: '/site/about',         label: 'About' },
-  { href: '/site/available',     label: 'Available' },
-  { href: '/site/international', label: 'International' },
-  { href: '/site/press-releases', label: 'Press' },
-  { href: '/site/faq',           label: 'FAQ' },
+  { href: '/shows',         label: 'SHOWS' },
+  { href: '/genres',        label: 'GENRES' },
+  { href: '/reel',          label: 'REEL' },
+  { href: '/about',         label: 'ABOUT' },
+  { href: '/available',     label: 'AVAILABLE' },
+  { href: '/international', label: 'INTERNATIONAL' },
+  { href: '/press-releases', label: 'PRESS' },
+  { href: '/faq',           label: 'FAQ' },
+  { href: '/login',         label: 'LOGIN' },
 ];
 
+// Shared nav link style — Webflow: .nav-link
+const navLinkStyle: React.CSSProperties = {
+  color: '#fff',
+  textDecoration: 'none',
+  fontFamily: "'Roboto Condensed', sans-serif",
+  fontSize: 11,
+  fontWeight: 400,
+  textTransform: 'uppercase',
+  letterSpacing: '2px',
+  // Webflow padding: 20px 13px 20px 10px (top right bottom left)
+  padding: '20px 13px 20px 10px',
+  whiteSpace: 'nowrap',
+};
+
+// "WORK WITH MYE" bordered CTA — Webflow: .nav-link.right (floated, bordered)
+const workWithMYEStyle: React.CSSProperties = {
+  color: '#fff',
+  textDecoration: 'none',
+  fontFamily: "'Roboto Condensed', sans-serif",
+  fontSize: 11,
+  fontWeight: 400,
+  textTransform: 'uppercase',
+  letterSpacing: '2px',
+  border: '1px solid #5f6266',
+  borderRadius: 2,
+  // Webflow: margin-top 15px, margin-bottom 16px, padding-top 4px, padding-bottom 4px, padding-left 20px
+  marginTop: 15,
+  marginBottom: 16,
+  paddingTop: 4,
+  paddingBottom: 4,
+  paddingLeft: 20,
+  paddingRight: 13,
+  whiteSpace: 'nowrap',
+};
+
 export default function SiteHeader() {
-  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header style={{ background: '#0A0A0F', borderBottom: '1px solid #1A1A2E', position: 'sticky', top: 0, zIndex: 50 }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
-        {/* Wordmark */}
-        <Link href="/site" style={{ textDecoration: 'none', display: 'flex', alignItems: 'baseline', gap: 6 }}>
-          <span style={{ fontSize: 22, fontWeight: 800, color: '#CC1212', fontFamily: 'Inter, sans-serif', lineHeight: 1 }}>MY</span>
-          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', color: '#F0F0F0', fontFamily: 'Inter, sans-serif' }}>ENTERTAINMENT</span>
+    // Webflow: .navbar — fixed full-width black bar at top
+    <header style={{
+      background: '#000',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 100,
+    }}>
+      {/* Inner container — max-width 1180px centered, Webflow container width */}
+      <div style={{
+        maxWidth: 1180,
+        margin: '0 auto',
+        padding: '0 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        {/* MYE Logo — links to homepage, image from Webflow CDN */}
+        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+          <img
+            src="https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8ebea7bb58375c4d58c7_My%20Entertainment%20Square%20(Dark%20Background%20-%20Gradient).png"
+            alt="MyEntertainment logo"
+            style={{ height: 75, width: 'auto' }}
+          />
         </Link>
 
-        {/* Desktop nav */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="hidden md:flex">
-          {NAV_LINKS.map(({ href, label }) => {
-            const active = pathname === href || pathname.startsWith(href + '/');
-            return (
-              <Link key={href} href={href} style={{ textDecoration: 'none', padding: '6px 12px', borderRadius: 6, fontSize: 13, fontWeight: 500, color: active ? '#CC1212' : '#8A9DC0', transition: 'color 150ms' }}>
-                {label}
-              </Link>
-            );
-          })}
-          <Link href="/site/contact" style={{ marginLeft: 8, padding: '8px 16px', borderRadius: 6, background: '#CC1212', color: '#fff', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
-            Work With MYE
-          </Link>
-        </nav>
-
-        {/* Mobile hamburger */}
-        <button onClick={() => setMenuOpen(!menuOpen)} style={{ display: 'none', background: 'none', border: 'none', color: '#F0F0F0', cursor: 'pointer' }} className="block md:hidden">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-        </button>
-      </div>
-
-      {/* Mobile menu */}
-      {menuOpen && (
-        <div style={{ background: '#0F1729', borderTop: '1px solid #1A1A2E', padding: '12px 24px 20px' }}>
+        {/* Desktop nav — horizontal flex row of links, hidden below 768px */}
+        <nav
+          style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap' }}
+          className="mye-desktop-nav"
+        >
           {NAV_LINKS.map(({ href, label }) => (
-            <Link key={href} href={href} onClick={() => setMenuOpen(false)} style={{ display: 'block', padding: '10px 0', fontSize: 15, color: '#8A9DC0', textDecoration: 'none', borderBottom: '1px solid #1A1A2E' }}>
+            <Link key={href} href={href} style={navLinkStyle}>
               {label}
             </Link>
           ))}
-          <Link href="/site/contact" onClick={() => setMenuOpen(false)} style={{ display: 'block', marginTop: 12, padding: '10px 16px', background: '#CC1212', color: '#fff', borderRadius: 6, fontSize: 14, fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>
-            Work With MYE
+          {/* "WORK WITH MYE" — bordered button floated right, Webflow: .nav-link.right */}
+          <Link href="/contact" style={workWithMYEStyle} target="_blank">
+            WORK WITH MYE
+          </Link>
+        </nav>
+
+        {/* Mobile hamburger — only visible below 768px */}
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle navigation menu"
+          style={{
+            display: 'none', // shown via media query class below
+            background: 'none',
+            border: 'none',
+            color: '#fff',
+            cursor: 'pointer',
+            fontSize: 22,
+            lineHeight: 1,
+            padding: '10px 0',
+          }}
+          className="mye-mobile-hamburger"
+        >
+          {menuOpen ? '✕' : '☰'}
+        </button>
+      </div>
+
+      {/* Mobile dropdown menu — stacked links, shown when menuOpen */}
+      {menuOpen && (
+        <div style={{
+          background: '#000',
+          borderTop: '1px solid #2a2a2a',
+          padding: '8px 20px 16px',
+        }}>
+          {NAV_LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setMenuOpen(false)}
+              style={{
+                display: 'block',
+                color: '#fff',
+                textDecoration: 'none',
+                fontFamily: "'Roboto Condensed', sans-serif",
+                fontSize: 13,
+                fontWeight: 400,
+                textTransform: 'uppercase',
+                letterSpacing: '2px',
+                padding: '12px 0',
+                borderBottom: '1px solid #1a1a1a',
+              }}
+            >
+              {label}
+            </Link>
+          ))}
+          {/* Mobile "WORK WITH MYE" — bordered same as desktop */}
+          <Link
+            href="/contact"
+            onClick={() => setMenuOpen(false)}
+            style={{
+              display: 'inline-block',
+              marginTop: 12,
+              color: '#fff',
+              textDecoration: 'none',
+              fontFamily: "'Roboto Condensed', sans-serif",
+              fontSize: 13,
+              fontWeight: 400,
+              textTransform: 'uppercase',
+              letterSpacing: '2px',
+              border: '1px solid #5f6266',
+              borderRadius: 2,
+              padding: '6px 20px',
+            }}
+          >
+            WORK WITH MYE
           </Link>
         </div>
       )}
+
+      {/*
+        Responsive styles: hide desktop nav and show hamburger below 768px.
+        Using a style tag here avoids adding Tailwind classes to a public site component.
+      */}
+      <style>{`
+        @media (max-width: 767px) {
+          .mye-desktop-nav { display: none !important; }
+          .mye-mobile-hamburger { display: block !important; }
+        }
+      `}</style>
     </header>
   );
 }

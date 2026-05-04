@@ -1,0 +1,56 @@
+# MY Entertainment
+
+MY Entertainment (myentertainment.tv) is a New York-based unscripted television production company that develops, produces, and distributes non-fiction content for broadcasters and streaming services worldwide.
+
+## Company Overview
+
+MY Entertainment is an independent production company founded in 2000 and headquartered in Manhattan, New York (235 E 45th St, Floor 14 West, NY 10017). In 2022, MY Entertainment was acquired by Media Content Services. The company has additional offices in Toronto, Canada and London, United Kingdom.
+
+MY Entertainment has produced thousands of hours of content across more than two decades, partnering with over 40 producers in 15 countries. The company specializes in unscripted formats spanning paranormal, sports and competition, home and lifestyle, crime, comedy, and food and travel genres.
+
+## Known Shows
+
+- **Ghost Adventures** — Long-running paranormal investigation series starring Zak Bagans, Aaron Goodwin, Billy Tolley, and Jay Wasley. Now in its 28th season on Discovery/Travel Channel. Spin-offs include Ghost Adventures: Screaming Room, Ghost Adventures: Live, Ghost Adventures: Serial Killer Spirits, Ghost Adventures: Haunted Museum Live, Ghost Adventures: Graveyard of the Pacific, and Ghost Adventures: Aftershocks.
+- **Destination Fear** — Paranormal investigation series; a Ghost Adventures spin-off featuring Dakota Laden, his sister Chelsea, and friend Tanner. They spend the night in America's most haunted locations.
+- **Paranormal Challenge** — Paranormal competition series produced for Travel Channel.
+- **Pros vs Joes** — Sports reality competition series where amateur athletes compete against professional athletes. Aired on Spike TV.
+- **Uninterrupted: The Real Stories of Basketball** — Sports documentary series co-produced with LeBron James and Maverick Carter's SpringHill Company. Aired on VICE.
+- **Legacy List with Matt Paxton** — Emmy-nominated home and lifestyle series about families downsizing and discovering heirlooms. Aired on PBS.
+- **Sin City Justice** — Crime reality series set in Las Vegas. Aired on Investigation Discovery.
+- **Billy Buys Brooklyn** — Home and lifestyle series following Billy Leroy, a dealer and collector of rare and unique items.
+- **Breaking Borders** — Food and travel series exploring cuisine in conflict zones and border regions.
+- **Baggage Battles** — Competition series about bidding on unclaimed airline baggage. Aired on Travel Channel.
+- **Manson's Bloodline** — True crime documentary about Charles Manson's family legacy.
+- **Help! My House Is Haunted** — UK paranormal investigation series produced for REALLY channel.
+- **Deadly Possessions** — Paranormal series about cursed and haunted objects hosted by Zak Bagans.
+
+## Content Genres
+
+MY Entertainment produces content in six primary genres:
+
+1. **Paranormal / Supernatural** — Ghost investigation, haunted locations, paranormal phenomena
+2. **Sports + Competition** — Reality competition featuring professional and amateur athletes
+3. **Home + Lifestyle** — Real estate, downsizing, home renovation, and family stories
+4. **Crime** — True crime, criminal investigations, law enforcement reality
+5. **Comedy** — Unscripted comedy formats and hidden camera series
+6. **Food + Travel** — Culinary exploration, travel adventure, food culture
+
+## Networks and Distribution Partners
+
+MY Entertainment has distributed content to 28+ networks and platforms including: Discovery, Max, Discovery+, PBS, A&E, VICE, National Geographic, BBC, Lifetime, MTV, Comedy Central, Travel Channel, Investigation Discovery, Oxygen, Nickelodeon, Food Network, Animal Planet, TruTV, Reelz, CMT, Spike, IFC, TruTV, and international partners.
+
+## Notable Partnerships
+
+MY Entertainment has partnered with LeBron James and Maverick Carter's SpringHill Company, Al Roker's ARE Media, Michael Sugar's Sugar23, and Mark Wahlberg's Unrealistic Ideas on co-productions. The company is active in the international format business, co-producing with producers across Europe, North America, and beyond.
+
+## Contact and Location
+
+- **Website:** https://myentertainment.tv
+- **Email:** info@myentertainment.tv
+- **Headquarters:** 235 E 45th St, Floor 14 West, New York, NY 10017, USA
+- **Additional offices:** Toronto, Canada; London, United Kingdom
+- **Parent company:** Media Content Services (acquired 2022)
+
+## About myentertainment.tv
+
+The myentertainment.tv website is the official public-facing site for MY Entertainment. It features the company's show catalog with descriptions and clips, genre browsing, international co-production information, available titles for licensing, a press releases section, and contact information. The site is built on Next.js and served at https://myentertainment.tv.

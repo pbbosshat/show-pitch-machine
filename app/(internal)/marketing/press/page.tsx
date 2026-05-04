@@ -1,20 +1,19 @@
 // Marketing Press — manage press releases shown on /site/press-releases.
+export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { query } from '@/lib/db';
 
 interface PressRelease { id: string; headline: string; source: string; published_at: number; is_featured: number; }
 
-async function getPress(): Promise<PressRelease[]> {
+function getPress(): PressRelease[] {
   try {
-    const res = await fetch('http://localhost:3000/api/marketing/press', { cache: 'no-store' });
-    if (!res.ok) return [];
-    const { data } = await res.json();
-    return data ?? [];
+    return query<PressRelease>('SELECT * FROM press_releases ORDER BY published_at DESC, created_at DESC');
   } catch { return []; }
 }
 
-export default async function MarketingPress() {
-  const releases = await getPress();
+export default function MarketingPress() {
+  const releases = getPress();
   return (
     <div className="p-8 max-w-4xl">
       <div className="flex items-center justify-between mb-6">

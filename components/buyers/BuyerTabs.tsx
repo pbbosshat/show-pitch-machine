@@ -1,22 +1,51 @@
 'use client';
-// BuyerTabs — client component for the four-tab profile section on the buyer detail page.
+// BuyerTabs — client component for the five-tab profile section on the buyer detail page.
 // Also owns the "Copy Claude Code Prompt" button since clipboard API requires a client context.
 
 import { useState } from 'react';
 import { formatDistanceToNow, format } from 'date-fns';
+import Link from 'next/link';
+import useSWR from 'swr';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import type { MandateUpdate, MarketOrder, Pitch } from '@/types';
+import type { MandateUpdate, MarketOrder, Pitch, TriangulationRow, ProdcoStrategicTag } from '@/types';
 
-type TabId = 'mandate' | 'greenlits' | 'mye' | 'career';
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+type TabId = 'mandate' | 'greenlits' | 'mye' | 'career' | 'prodcos' | 'email';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'mandate',   label: 'Mandate History' },
   { id: 'greenlits', label: 'Their Greenlits' },
   { id: 'mye',       label: 'MYE History' },
   { id: 'career',    label: 'Career' },
+  { id: 'prodcos',   label: 'Prod Cos' },
+  { id: 'email',     label: 'Email' },
 ];
+
+interface EmployerHistoryEntry {
+  id: string;
+  company_name: string;
+  company_type: string | null;
+  title: string | null;
+  is_buyer_seat: number;
+  start_date: number | null;
+  end_date: number | null;
+}
+
+// Gmail thread summary — returned by GET /api/buyers/[id] since Phase 2B
+interface EmailThreadSummary {
+  id: string;
+  thread_id: string;
+  subject: string | null;
+  participants: string;
+  first_message_date: string | null;
+  last_message_date: string | null;
+  message_count: number;
+  snippet: string | null;
+  direction: string | null;
+}
 
 interface BuyerTabsProps {
   buyerId: string;
@@ -25,6 +54,20 @@ interface BuyerTabsProps {
   greenlits: MarketOrder[];
   myeHistory: Pitch[];
   companyHistory: string | null;
+  // Structured employer history from buyer_employer_history table (migration 006+)
+  employerHistory: EmployerHistoryEntry[];
+  prodcoCount: number;
+  // Gmail thread summaries — already fetched by the server component via GET /api/buyers/[id]
+  emailThreads?: EmailThreadSummary[];
+}
+
+// Maps strategic tag to badge variant — same as ProdcosClient for visual consistency
+function strategicTagVariant(tag: string | null): 'greenlit' | 'inreview' | 'pass' | 'muted' {
+  if (!tag) return 'muted';
+  if (tag === 'co_pro_partner')     return 'greenlit';
+  if (tag === 'acquisition_target') return 'inreview';
+  if (tag === 'competitor')         return 'pass';
+  return 'muted';
 }
 
 // Map pitch outcome strings to badge variants
@@ -38,11 +81,15 @@ function outcomeVariant(outcome: string | null): 'greenlit' | 'pass' | 'inreview
 }
 
 export default function BuyerTabs({
+  buyerId,
   buyerName,
   mandateHistory,
   greenlits,
   myeHistory,
   companyHistory,
+  employerHistory,
+  prodcoCount,
+  emailThreads = [],
 }: BuyerTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('mandate');
   const [copied, setCopied] = useState(false);
@@ -59,6 +106,14 @@ export default function BuyerTabs({
       console.error('Clipboard write failed:', err);
     }
   };
+
+  // Always call — hooks must be unconditional, but we only render the result in the prodcos tab
+  const { data: prodcosData } = useSWR(
+    `/api/intelligence/triangulation?buyer_id=${buyerId}`,
+    fetcher
+  );
+  const prodcoRows: (TriangulationRow & { strategic_tag?: ProdcoStrategicTag })[] =
+    prodcosData?.data ?? prodcosData ?? [];
 
   // Parse company_history JSON — stored as a JSON string in the DB
   let careerTimeline: { company: string; title: string; from?: string; to?: string }[] = [];
@@ -238,24 +293,47 @@ export default function BuyerTabs({
         </div>
       )}
 
-      {/* ── Career — company history JSON rendered as timeline ── */}
+      {/* ── Career — prefers structured employer_history; falls back to legacy JSON ── */}
       {activeTab === 'career' && (
         <div className="space-y-2">
-          {careerTimeline.length === 0 ? (
-            companyHistory ? (
-              // Unparseable JSON — show raw text so the user can still read it
-              <Card>
-                <pre
-                  className="text-xs whitespace-pre-wrap"
-                  style={{ color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace" }}
-                >
-                  {companyHistory}
-                </pre>
-              </Card>
-            ) : (
-              <EmptyState message="No career history on record" />
-            )
-          ) : (
+          {employerHistory.length > 0 ? (
+            // Structured data from buyer_employer_history table — includes is_buyer_seat flag
+            <div className="relative pl-4 border-l-2 border-[var(--border-subtle)] space-y-5 ml-2">
+              {employerHistory.map((role) => (
+                <div key={role.id} className="relative">
+                  <span
+                    className="absolute -left-[17px] top-1 w-3 h-3 rounded-full border-2 border-[var(--bg-surface)]"
+                    style={{ background: 'var(--accent)' }}
+                  />
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      {role.title ?? 'Unknown Title'}
+                    </p>
+                    {/* Buyer badge only on roles that were actual buying seats */}
+                    {role.is_buyer_seat === 1 && (
+                      <Badge label="Buyer" variant="greenlit" />
+                    )}
+                  </div>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    {role.company_name}
+                    {role.company_type && (
+                      <span className="text-xs ml-1" style={{ color: 'var(--text-muted)' }}>
+                        ({role.company_type})
+                      </span>
+                    )}
+                  </p>
+                  {(role.start_date || role.end_date) && (
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                      {role.start_date ? format(new Date(role.start_date), 'yyyy') : '?'}
+                      {' — '}
+                      {role.end_date ? format(new Date(role.end_date), 'yyyy') : 'Present'}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : careerTimeline.length > 0 ? (
+            // Legacy JSON fallback — same visual style as structured data
             <div className="relative pl-4 border-l-2 border-[var(--border-subtle)] space-y-5 ml-2">
               {careerTimeline.map((role, i) => (
                 <div key={i} className="relative">
@@ -277,6 +355,146 @@ export default function BuyerTabs({
                 </div>
               ))}
             </div>
+          ) : companyHistory ? (
+            // Unparseable legacy JSON — show raw so the user can still read it
+            <Card>
+              <pre
+                className="text-xs whitespace-pre-wrap"
+                style={{ color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace" }}
+              >
+                {companyHistory}
+              </pre>
+            </Card>
+          ) : (
+            <EmptyState message="No career history on record" />
+          )}
+        </div>
+      )}
+
+      {/* ── Email Communication — Gmail threads linked to this buyer contact ── */}
+      {activeTab === 'email' && (
+        <div className="space-y-0">
+          <h2
+            className="text-base mb-4"
+            style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, color: 'var(--text-primary)' }}
+          >
+            Email Communication
+          </h2>
+          {emailThreads.length === 0 ? (
+            <EmptyState message="No Gmail threads found for this contact." />
+          ) : (
+            <div className="space-y-0">
+              {emailThreads.map((thread, idx) => (
+                <div key={thread.id}>
+                  <div className="py-4">
+                    {/* Subject + direction badge on the same row */}
+                    <div className="flex items-center gap-3 mb-1 flex-wrap">
+                      <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        {thread.subject ?? '(No subject)'}
+                      </p>
+                      {/* Direction badge — inline styled, not the Badge component, per spec */}
+                      {thread.direction === 'inbound' ? (
+                        <span
+                          className="px-2 py-0.5 text-xs rounded font-semibold"
+                          style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)' }}
+                        >
+                          Received
+                        </span>
+                      ) : thread.direction === 'outbound' ? (
+                        <span
+                          className="px-2 py-0.5 text-xs rounded font-semibold"
+                          style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.25)' }}
+                        >
+                          Sent
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {/* Message count + date range */}
+                    <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
+                      {thread.message_count} message{thread.message_count !== 1 ? 's' : ''}
+                      {(thread.first_message_date || thread.last_message_date) && (
+                        <>
+                          {' · '}
+                          {thread.first_message_date ? thread.first_message_date.substring(0, 10) : '?'}
+                          {thread.first_message_date !== thread.last_message_date && thread.last_message_date && (
+                            <> → {thread.last_message_date.substring(0, 10)}</>
+                          )}
+                        </>
+                      )}
+                    </p>
+
+                    {/* Snippet — muted text, hard-capped at 120 chars */}
+                    {thread.snippet && (
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                        {thread.snippet.length > 120
+                          ? thread.snippet.substring(0, 120) + '…'
+                          : thread.snippet}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Divider between threads, but not after the last one */}
+                  {idx < emailThreads.length - 1 && (
+                    <div style={{ height: 1, background: 'var(--border-subtle)' }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Prod Cos — production companies this buyer has worked with via deals ── */}
+      {activeTab === 'prodcos' && (
+        <div className="space-y-2">
+          {prodcoRows.length === 0 ? (
+            <EmptyState message="No deal data on record for this buyer" />
+          ) : (
+            prodcoRows.map((row) => (
+              <Link
+                key={`${row.buyer_id}-${row.prodco_id}`}
+                href={`/market/prodcos/${row.prodco_id}`}
+                style={{ textDecoration: 'none' }}
+              >
+                <Card className="hover:bg-[var(--bg-surface-alt)] transition-colors cursor-pointer">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {row.prodco_name}
+                        </p>
+                        {row.strategic_tag && (
+                          <Badge
+                            label={row.strategic_tag.replace(/_/g, ' ')}
+                            variant={strategicTagVariant(row.strategic_tag)}
+                          />
+                        )}
+                      </div>
+                      {/* Genres joined with middle dot */}
+                      {row.genres?.length > 0 && (
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                          {row.genres.join(' · ')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span
+                        className="text-sm font-bold"
+                        style={{ color: 'var(--accent)', fontFamily: "'JetBrains Mono', monospace" }}
+                      >
+                        {row.deal_count} deal{row.deal_count !== 1 ? 's' : ''}
+                      </span>
+                      {row.last_deal_date && (
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                          Last: {format(new Date(row.last_deal_date), 'MMM yyyy')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              </Link>
+            ))
           )}
         </div>
       )}

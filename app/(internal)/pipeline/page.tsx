@@ -4,6 +4,7 @@
 // SWR polls every 5 seconds to catch Grok-triggered auto-moves from inbound email.
 
 import { useState, useCallback } from 'react';
+import Link from 'next/link';
 import useSWR from 'swr';
 import {
   DndContext,
@@ -40,13 +41,19 @@ const COLUMNS: { id: PipelineStage; label: string }[] = [
   { id: 'pass',        label: 'Pass' },
 ];
 
-// Extended package shape that includes denormalized buyer/company info from the API
+// Extended package shape that includes denormalized buyer/company info from the API.
+// Enrichment fields (buyer_orders_90d, buyer_mandate, buyer_last_contact) are optional —
+// they're populated by migration 017's enrichment pipeline and may be absent.
 interface PipelinePackage extends Package {
   ip_title?: string;
   buyer_name?: string;
   company_name?: string;
   last_email_date?: number | null;
   grok_signal?: string | null;
+  // Enrichment fields from migration 017
+  buyer_orders_90d?: number | null;
+  buyer_mandate?: string | null;
+  buyer_last_contact?: number | null;
 }
 
 // Map pipeline stage to a header accent color
@@ -193,7 +200,7 @@ export default function PipelinePage() {
         title={selectedCard?.name ?? 'Package Details'}
         wide
       >
-        {selectedCard && <PackageDetail pkg={selectedCard} />}
+        {selectedCard && <PackageDetail pkg={selectedCard} onSaved={() => setSelectedCard(null)} mutate={mutate} />}
       </Modal>
 
       {/* Toast notification — auto-dismisses */}
@@ -324,13 +331,29 @@ function SortableCard({ pkg, onClick }: SortableCardProps) {
         </p>
       )}
 
-      {/* Buyer + company */}
+      {/* Buyer + company line with optional orders/90d badge */}
       <div className="flex items-center gap-1.5 mt-1.5">
         <StatusDot status="active" />
         <p className="text-[11px] truncate" style={{ color: 'var(--text-secondary)' }}>
           {pkg.buyer_name ?? '—'} · {pkg.company_name ?? '—'}
         </p>
+        {/* Amber orders/90d badge — only shown when buyer has recent orders */}
+        {pkg.buyer_orders_90d != null && pkg.buyer_orders_90d > 0 && (
+          <span
+            className="shrink-0 text-[10px] px-1.5 py-0.5 rounded font-medium"
+            style={{ background: 'rgba(234,179,8,0.15)', color: 'rgb(234,179,8)' }}
+          >
+            {pkg.buyer_orders_90d} orders/90d
+          </span>
+        )}
       </div>
+
+      {/* Mandate excerpt — first 80 chars, only shown when not null */}
+      {pkg.buyer_mandate && (
+        <p className="text-[10px] mt-1 leading-tight" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
+          {pkg.buyer_mandate.slice(0, 80)}{pkg.buyer_mandate.length > 80 ? '…' : ''}
+        </p>
+      )}
 
       {/* Days in stage — amber when stuck */}
       <div className="flex items-center justify-between mt-2">
@@ -359,45 +382,223 @@ function SortableCard({ pkg, onClick }: SortableCardProps) {
         )}
       </div>
 
-      {/* Last email date */}
+      {/* Last email date (from package_emails) */}
       {pkg.last_email_date && (
         <p className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
           Email {formatDistanceToNow(new Date(pkg.last_email_date), { addSuffix: true })}
         </p>
+      )}
+
+      {/* buyer_last_contact from enrichment — shown when it's more recent than last_email_date
+          or when last_email_date is absent. Provides the last MYE-wide touch date. */}
+      {pkg.buyer_last_contact != null && (
+        (!pkg.last_email_date || pkg.buyer_last_contact > pkg.last_email_date) && (
+          <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+            Last: {formatDistanceToNow(new Date(pkg.buyer_last_contact), { addSuffix: true })}
+          </p>
+        )
       )}
     </div>
   );
 }
 
 // ── Package Detail (inside modal) ─────────────────────────────────────────────
+// Supports two modes: read-only view and inline edit form.
+// onSaved: called after a successful save to close the modal.
+// mutate: SWR revalidation trigger so the kanban board reflects the updated values.
 
-function PackageDetail({ pkg }: { pkg: PipelinePackage }) {
+function PackageDetail({ pkg, onSaved, mutate }: { pkg: PipelinePackage; onSaved: () => void; mutate: () => unknown }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [formValues, setFormValues] = useState({
+    ask_format: pkg.ask_format ?? '',
+    ask_episode_count: pkg.ask_episode_count?.toString() ?? '',
+    ask_deal_structure: pkg.ask_deal_structure ?? '',
+    status: pkg.status ?? '',
+    narrative: pkg.narrative ?? '',
+  });
+
+  // PUT editable fields to the API; on success revalidate the board and close modal
+  async function handleSave() {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetch(`/api/packages/${pkg.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ask_format: formValues.ask_format || null,
+          ask_episode_count: formValues.ask_episode_count ? Number(formValues.ask_episode_count) : null,
+          ask_deal_structure: formValues.ask_deal_structure || null,
+          status: formValues.status || null,
+          narrative: formValues.narrative || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? res.statusText);
+      mutate();
+      onSaved();
+    } catch (err) {
+      setSaveError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div className="space-y-2">
-          <DetailRow label="Stage"        value={pkg.pipeline_stage} />
-          <DetailRow label="IP"           value={pkg.ip_title ?? pkg.ip_id} />
-          <DetailRow label="Buyer"        value={pkg.buyer_name} />
-          <DetailRow label="Company"      value={pkg.company_name} />
-          <DetailRow label="Format"       value={pkg.ask_format} />
-          <DetailRow label="Episodes"     value={pkg.ask_episode_count?.toString()} />
-          <DetailRow label="Deal"         value={pkg.ask_deal_structure} />
-          <DetailRow label="Days in stage" value={`${pkg.days_in_stage} days`} />
+      {isEditing ? (
+        /* ── Edit form ── */
+        <div className="space-y-3">
+          {/* Ask Format */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Format
+            </label>
+            <input
+              value={formValues.ask_format}
+              onChange={(e) => setFormValues((v) => ({ ...v, ask_format: e.target.value }))}
+              style={{ width: '100%', padding: '6px 10px', borderRadius: 6, background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+
+          {/* Ask Episode Count */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Episode Count
+            </label>
+            <input
+              type="number"
+              value={formValues.ask_episode_count}
+              onChange={(e) => setFormValues((v) => ({ ...v, ask_episode_count: e.target.value }))}
+              style={{ width: '100%', padding: '6px 10px', borderRadius: 6, background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+
+          {/* Ask Deal Structure */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Deal Structure
+            </label>
+            <input
+              value={formValues.ask_deal_structure}
+              onChange={(e) => setFormValues((v) => ({ ...v, ask_deal_structure: e.target.value }))}
+              style={{ width: '100%', padding: '6px 10px', borderRadius: 6, background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+
+          {/* Status */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Status
+            </label>
+            <input
+              value={formValues.status}
+              onChange={(e) => setFormValues((v) => ({ ...v, status: e.target.value }))}
+              style={{ width: '100%', padding: '6px 10px', borderRadius: 6, background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+
+          {/* Narrative */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Narrative
+            </label>
+            <textarea
+              rows={4}
+              value={formValues.narrative}
+              onChange={(e) => setFormValues((v) => ({ ...v, narrative: e.target.value }))}
+              style={{ width: '100%', padding: '6px 10px', borderRadius: 6, background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', fontSize: 13, outline: 'none', boxSizing: 'border-box', resize: 'vertical' }}
+            />
+          </div>
+
+          {/* Error display — exact message per design system rules */}
+          {saveError && <p style={{ color: 'var(--status-pass)', fontSize: 12 }}>{saveError}</p>}
+
+          {/* Form actions */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
+            <button
+              onClick={() => setIsEditing(false)}
+              style={{ fontSize: 12, padding: '4px 10px', borderRadius: 4, border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{ fontSize: 12, padding: '4px 10px', borderRadius: 4, border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer' }}
+            >
+              {saving ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
         </div>
-        <div className="space-y-2">
-          {pkg.narrative && (
-            <div>
-              <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
-                Narrative
-              </p>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                {pkg.narrative.slice(0, 400)}{pkg.narrative.length > 400 ? '…' : ''}
-              </p>
+      ) : (
+        /* ── Read-only view ── */
+        <>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="space-y-2">
+              <DetailRow label="Stage"         value={pkg.pipeline_stage} />
+              <DetailRow label="IP"            value={pkg.ip_title ?? pkg.ip_id} />
+              <DetailRow label="Buyer"         value={pkg.buyer_name} />
+              <DetailRow label="Company"       value={pkg.company_name} />
+              <DetailRow label="Format"        value={pkg.ask_format} />
+              <DetailRow label="Episodes"      value={pkg.ask_episode_count?.toString()} />
+              <DetailRow label="Deal"          value={pkg.ask_deal_structure} />
+              <DetailRow label="Days in stage" value={`${pkg.days_in_stage} days`} />
+              {/* Enrichment fields — shown only when present (migration 017) */}
+              {pkg.buyer_orders_90d != null && pkg.buyer_orders_90d > 0 && (
+                <DetailRow label="Orders/90d" value={`${pkg.buyer_orders_90d}`} />
+              )}
+              {pkg.buyer_last_contact != null && (
+                <DetailRow
+                  label="Buyer last contact"
+                  value={formatDistanceToNow(new Date(pkg.buyer_last_contact), { addSuffix: true })}
+                />
+              )}
             </div>
-          )}
-        </div>
-      </div>
+            <div className="space-y-2">
+              {pkg.narrative && (
+                <div>
+                  <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Narrative
+                  </p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                    {pkg.narrative.slice(0, 400)}{pkg.narrative.length > 400 ? '…' : ''}
+                  </p>
+                </div>
+              )}
+              {/* Buyer mandate excerpt — shown in detail view when available */}
+              {pkg.buyer_mandate && (
+                <div>
+                  <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Buyer Mandate
+                  </p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                    {pkg.buyer_mandate.slice(0, 200)}{pkg.buyer_mandate.length > 200 ? '…' : ''}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between">
+            {/* Edit button — opens the inline edit form */}
+            <button
+              onClick={() => setIsEditing(true)}
+              style={{ fontSize: 12, padding: '4px 10px', borderRadius: 4, border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
+            >
+              Edit
+            </button>
+            <Link
+              href={`/pitches/${pkg.id}`}
+              className="text-sm font-medium"
+              style={{ color: 'var(--accent)' }}
+            >
+              Open Full Pitch Hub →
+            </Link>
+          </div>
+        </>
+      )}
     </div>
   );
 }

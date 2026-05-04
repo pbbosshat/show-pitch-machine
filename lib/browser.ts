@@ -1,7 +1,11 @@
 // Puppeteer browser routing — connects to an existing Chrome DevTools endpoint rather
 // than launching a new browser. This preserves the user's logged-in sessions (Gmail,
 // trade sites, etc.) without storing credentials in the app.
-// BROWSER_MODE='bang-tunnel' routes through the SSH tunnel opened by lib/tunnel.ts.
+//
+// BROWSER_MODE values:
+//   bang-local  — Bang machine running its own scrapers: port 9223 → headless fallback
+//   bang-tunnel — PB's local machine via SSH tunnel: port 19223 → headless fallback
+//   local       — PB's local DevProfile Chrome: port 9222 → headless fallback
 
 import puppeteer, { type Browser, type Page } from 'puppeteer';
 
@@ -12,33 +16,45 @@ const BLOCKED_TYPES = new Set(['image', 'font', 'media', 'stylesheet']);
 
 let _browser: Browser | null = null;
 
+async function launchHeadless(): Promise<Browser> {
+  return puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  });
+}
+
+async function tryConnect(port: number): Promise<Browser> {
+  return puppeteer.connect({ browserURL: `http://localhost:${port}`, defaultViewport: null });
+}
+
 // Return a connected Browser, creating one if needed.
-// For bang-tunnel mode the tunnel must already be open (lib/tunnel.ts openTunnel()).
 export async function getBrowser(): Promise<Browser> {
   // Reuse the existing browser if it's still connected
   if (_browser && _browser.connected) return _browser;
 
-  if (BROWSER_MODE === 'bang-tunnel') {
-    // Bang machine Chrome is exposed via SSH tunnel on localhost:19223
-    _browser = await puppeteer.connect({
-      browserURL: 'http://localhost:19223',
-      // Don't close the remote Chrome when we disconnect
-      defaultViewport: null,
-    });
-  } else {
-    // Local DevProfile Chrome on port 9222 — fall back to launching headless if not running
+  if (BROWSER_MODE === 'bang-local') {
+    // Running ON Bang — use Bang's own Chrome at 9223, fall back to headless
     try {
-      _browser = await puppeteer.connect({
-        browserURL: 'http://localhost:9222',
-        defaultViewport: null,
-      });
+      _browser = await tryConnect(9223);
     } catch {
-      // Chrome isn't running locally; launch a headless instance for scripted runs
-      console.warn('[browser] Local Chrome unavailable, launching headless Chromium');
-      _browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+      console.warn('[browser] Bang local Chrome (9223) unavailable, launching headless Chromium');
+      _browser = await launchHeadless();
+    }
+  } else if (BROWSER_MODE === 'bang-tunnel') {
+    // PB's local machine — SSH tunnel to Bang's Chrome on port 19223, fall back to headless
+    try {
+      _browser = await tryConnect(19223);
+    } catch {
+      console.warn('[browser] SSH tunnel (19223) unavailable, launching headless Chromium');
+      _browser = await launchHeadless();
+    }
+  } else {
+    // Local DevProfile Chrome on port 9222 — fall back to headless
+    try {
+      _browser = await tryConnect(9222);
+    } catch {
+      console.warn('[browser] Local Chrome (9222) unavailable, launching headless Chromium');
+      _browser = await launchHeadless();
     }
   }
 

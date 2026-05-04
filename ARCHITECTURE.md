@@ -54,6 +54,7 @@ All routes require the `(internal)` layout which renders `Nav` with Shows/Market
 | `/pipeline` | `(internal)/pipeline/page.tsx` | Kanban board (dnd-kit) |
 | `/build` | `(internal)/build/page.tsx` | 5-step package builder |
 | `/build/[id]` | `(internal)/build/[id]/page.tsx` | View/edit package |
+| `/sizzles` | `(internal)/sizzles/page.tsx` | Sizzle Asset Catalog — all produced reels, split by has-URL / confirmed-exists |
 | `/shows` | `(internal)/shows/page.tsx` | Internal show DB |
 | `/shows/[id]` | `(internal)/shows/[id]/page.tsx` | Show detail |
 | `/pitch/[slug]` | `(internal)/pitch/[slug]/page.tsx` | Buyer-facing portal (light mode) |
@@ -90,6 +91,7 @@ All existing internal API routes unchanged. New marketing API:
 | `/api/marketing/available` | GET, POST | Available titles |
 | `/api/marketing/genres` | GET | Genre list |
 | `/api/marketing/content` | GET, PATCH | Key-value site copy |
+| `/api/sizzles` | GET | Sizzle reel inventory — JOIN ip_catalog + project_email_threads. Params: `q`, `has_url`. Sorted: URLs first, then alpha. |
 
 ---
 
@@ -132,6 +134,14 @@ All existing internal API routes unchanged. New marketing API:
 ### Internal Pitch Machine Tables (001_schema.sql)
 `team_users`, `buyer_companies`, `buyer_contacts`, `mandate_updates`, `ip_catalog`, `talent`, `ip_talent`, `content_partners`, `ip_content_partners`, `pitches`, `packages`, `package_talent`, `package_content_partners`, `package_emails`, `pitch_portals`, `shows`, `shows_fts` (FTS5), `trade_articles`, `market_orders`, `scraper_runs`, `scraper_source_status`, `ingestion_log`
 
+### Email Threading Tables (003_email_threads.sql)
+`project_email_threads` — links Gmail thread IDs to `ip_catalog` entries. Columns: `ip_catalog_id`, `thread_id`, `subject`, `participants`, `first_message_date`, `last_message_date`, `message_count`, `direction`, `snippet`, `match_confidence`.
+
+### Sizzle Reels Table (004_sizzle_reels.sql)
+`sizzle_reels` — catalog of produced sizzle reels parsed from Google Sheets. Columns: `id`, `ip_catalog_id` (FK → ip_catalog), `title`, `vimeo_url` (nullable), `vimeo_password` (nullable), `platform` (`vimeo`/`youtube`/`other`), `raw_value` (original cell text), `sheet_source`, `notes`, `created_at`.
+
+**Sizzle design principle:** Sizzle reels are first-class brand assets. `has_sizzle` and `sizzle_count` are returned by `/api/projects` via LEFT JOIN. `ProjectCard` renders a solid crimson `▶ SIZZLE` badge (above the title) for any project with `sizzle_count > 0`.
+
 ### Marketing CMS Tables (002_marketing.sql)
 `site_shows`, `site_genres`, `site_show_genres`, `site_networks`, `press_releases`, `available_titles`, `site_content`
 
@@ -151,7 +161,7 @@ All existing internal API routes unchanged. New marketing API:
 
 `components/ui/Nav.tsx` — client component with `localStorage` persistence.
 
-**Shows mode** (default): Dashboard, Intelligence, Buyers, Pipeline, Build, Show DB
+**Shows mode** (default): Dashboard, Intelligence, Buyers, Pipeline, **Sizzles**, Pitch Board, Build, Show DB
 **Marketing mode**: Site Overview, Shows, Press, Available, Genres, Content, ↗ Preview Site
 
 Auto-switches to Marketing when `pathname.startsWith('/marketing')`.
@@ -190,6 +200,43 @@ All DDL uses `IF NOT EXISTS`; all inserts use `OR IGNORE`. **Safe to re-run.**
 |------|-------------|
 | `001_schema.sql` | Internal pitch machine schema (22 tables) |
 | `002_marketing.sql` | Marketing CMS schema (7 tables + seed data) |
+| `003_email_threads.sql` | project_email_threads — Gmail thread → ip_catalog linking |
+| `004_sizzle_reels.sql` | sizzle_reels — produced reel inventory from Google Sheets parse |
+| `011_show_db.sql` | Adds `air_status`, `is_our_show`, `total_seasons`, `schedule`, `off_air_date`, `tvmaze_id`, `notes` to shows table |
+
+---
+
+## Show DB Enrichment (scripts/enrich-tvmaze.ts)
+
+Standalone enrichment script that populates the Show DB with market intelligence data.
+
+**Run:**
+```
+npx tsx scripts/enrich-tvmaze.ts [flags]
+```
+
+**Flags:**
+| Flag | Behavior |
+|------|----------|
+| `--dry-run` | Log all actions but make zero DB writes |
+| `--all` | Re-enrich all shows in TVMaze step (not just those missing tvmaze_id) |
+| `--pw-only` | Skip Steps 1 and 2, run Production Weekly integration only |
+| `--our-shows-only` | Run Step 1 only (mark MYE shows) |
+| `--skip-pw` | Run Steps 1 and 2 but skip Production Weekly |
+
+**Steps:**
+1. **Mark our shows** — Matches `site_shows` titles (MYE-produced catalog) against the `shows` comp table. Sets `is_our_show = 1`. Tries exact match, then contains match for spinoffs.
+2. **TVMaze enrichment** — For each show missing `tvmaze_id`, calls `https://api.tvmaze.com/search/shows?q=<title>` (score ≥ 0.7 threshold), then `https://api.tvmaze.com/shows/<id>?embed=seasons`. Populates `tvmaze_id`, `schedule`, `total_seasons`, `air_status`, `off_air_date`. Rate-limited to 100ms between shows. No API key required.
+3. **Production Weekly** — Calls the PW scraper which fetches issue pages and calls `parsePWTitles()` + `upsertPWShows()` on each page's HTML. New titles get `source='production_weekly'`, `data_source='trade'`, `air_status='on_air'`. Newly inserted shows get immediate TVMaze enrichment.
+
+**Key files:**
+- `scripts/enrich-tvmaze.ts` — main script + exported functions `markOurShows`, `enrichTVMaze`, `parsePWTitles`, `upsertPWShows`
+- `scrapers/production-weekly.ts` — imports `parsePWTitles` + `upsertPWShows` from enrich script; calls them after each page fetch during live scrape runs
+
+**air_status mapping:**
+- TVMaze `Running` → `on_air`
+- TVMaze `In Development` → `available`
+- TVMaze `Ended` / `Canceled` / anything else → `off_air`
 
 ---
 
