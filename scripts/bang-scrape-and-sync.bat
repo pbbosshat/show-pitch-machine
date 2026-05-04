@@ -36,7 +36,7 @@ cd /d %PROJECT%
 
 :: ── 1. Trade scrapers ────────────────────────────────────────────────────────
 echo [%DATE% %TIME%] Step 1: Trade scrapers >> %LOG%
-CALL npx tsx scripts\scrape-all.ts >> %LOG% 2>&1
+CALL npx tsx --env-file=.env scripts\scrape-all.ts >> %LOG% 2>&1
 echo [%DATE% %TIME%] Scrapers complete >> %LOG%
 
 :: ── 2. Reclassify articles with latest rules ─────────────────────────────────

@@ -16,7 +16,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { queryOne } from '@/lib/db';
+import { queryOne, run } from '@/lib/db';
 import type { NetworkDetail } from '@/types';
 
 // Raw DB row — JSON subquery results arrive as strings that need parsing
@@ -24,6 +24,53 @@ interface NetworkRow extends Omit<NetworkDetail, 'contacts' | 'recent_deals' | '
   contacts_json: string | null;
   recent_deals_json: string | null;
   market_orders_json: string | null;
+}
+
+/**
+ * PATCH /api/networks/[id]
+ * Called by: NetworksClient department management actions
+ * Body: { parent_id: string | null }
+ *   null  → detach from parent (become standalone)
+ *   uuid  → assign as department of target company
+ * Rules:
+ *   - A company with children cannot be assigned as a department (no nesting).
+ *   - Target parent must not itself have a parent (1 level max).
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json() as { parent_id: string | null };
+    const { parent_id } = body;
+
+    // Verify the company exists
+    const company = queryOne<{ id: string; name: string }>(
+      'SELECT id, name FROM buyer_companies WHERE id = ?', [id]
+    );
+    if (!company) return NextResponse.json({ error: 'Network not found' }, { status: 404 });
+
+    if (parent_id !== null) {
+      // Verify target parent exists and is not itself a department
+      const target = queryOne<{ id: string; parent_id: string | null }>(
+        'SELECT id, parent_id FROM buyer_companies WHERE id = ?', [parent_id]
+      );
+      if (!target) return NextResponse.json({ error: 'Target company not found' }, { status: 404 });
+      if (target.parent_id) return NextResponse.json({ error: 'Cannot nest departments — target is already a department' }, { status: 422 });
+
+      // Verify source has no children (can't make a parent into a department)
+      const childCount = queryOne<{ n: number }>(
+        'SELECT COUNT(*) as n FROM buyer_companies WHERE parent_id = ?', [id]
+      );
+      if ((childCount?.n ?? 0) > 0) return NextResponse.json({ error: 'Cannot assign a company that has departments — detach its departments first' }, { status: 422 });
+    }
+
+    run('UPDATE buyer_companies SET parent_id = ? WHERE id = ?', [parent_id, id]);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  }
 }
 
 export async function GET(

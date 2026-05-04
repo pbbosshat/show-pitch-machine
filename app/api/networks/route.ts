@@ -5,31 +5,31 @@
  * Query params:
  *   q — LIKE match on buyer_companies.name (optional)
  * Response: { data: NetworkListItem[] }
- *   Sorted by tier ASC NULLS LAST, name ASC.
+ *   Flat list sorted by tier ASC NULLS LAST, name ASC.
+ *   parent_id + child_count enable the UI to build an expand/collapse hierarchy.
+ *   Parent rows aggregate counts from all children (done client-side).
  *
  * NetworkListItem shape:
- *   id, name, type, tier, hq_city, notes,
+ *   id, name, type, tier, hq_city, notes, parent_id, child_count,
  *   contact_count  — buyer_contacts rows with this company_id
  *   deal_count     — distinct deals rows with this network_id
  *   order_count    — market_orders rows with this buyer_company_id
  *   last_touch_date — most recent buyer_contact_touches timestamp for any contact at this network
  *   active_pitches  — packages targeting this network not in pass/archived stage
- *
- * NOTE: market_orders links to buyer_companies via buyer_company_id (not network_id).
- * deals links to buyer_companies via network_id.
- * last_touch_date and active_pitches may be null/0 when enrichment hasn't run yet.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 
-interface NetworkListItem {
+export interface NetworkListItem {
   id: string;
   name: string;
   type: string | null;
   tier: string | null;
   hq_city: string | null;
   notes: string | null;
+  parent_id: string | null;
+  child_count: number;
   contact_count: number;
   deal_count: number;
   order_count: number;
@@ -43,7 +43,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get('q') || '';
 
-    // Only add the WHERE clause when a search term is provided
     const whereClause = q ? `WHERE bc.name LIKE ?` : '';
     const params: unknown[] = q ? [`%${q}%`] : [];
 
@@ -55,6 +54,10 @@ export async function GET(request: NextRequest) {
         bc.tier,
         bc.hq_city,
         bc.notes,
+        bc.parent_id,
+        (SELECT COUNT(*)
+         FROM buyer_companies child
+         WHERE child.parent_id = bc.id)                           AS child_count,
         (SELECT COUNT(*)
          FROM buyer_contacts bcon
          WHERE bcon.company_id = bc.id)                          AS contact_count,
@@ -64,12 +67,10 @@ export async function GET(request: NextRequest) {
         (SELECT COUNT(*)
          FROM market_orders mo
          WHERE mo.buyer_company_id = bc.id)                      AS order_count,
-        -- Most recent MYE touch to any buyer at this network (from enrichment pipeline)
         (SELECT MAX(bct.touch_date)
          FROM buyer_contact_touches bct
          JOIN buyer_contacts bc2 ON bc2.id = bct.contact_id
          WHERE bc2.company_id = bc.id)                           AS last_touch_date,
-        -- Active packages targeting this network (excludes pass and archived)
         (SELECT COUNT(*)
          FROM packages p
          WHERE p.target_company_id = bc.id

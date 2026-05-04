@@ -12,4 +12,7 @@ export async function register() {
 
   const { startMcpServer } = await import('./lib/mcp');
   await startMcpServer();
+
+  const { initScheduler } = await import('./lib/scheduler');
+  initScheduler();
 }

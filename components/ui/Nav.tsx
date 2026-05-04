@@ -11,6 +11,7 @@ import UniversalSearch from '@/components/ui/UniversalSearch';
 type SidebarMode = 'shows' | 'marketing';
 
 interface NavItem { href: string; label: string; icon: React.ReactNode; }
+interface NavGroup { items: NavItem[]; indent?: boolean; }
 
 function IconDashboard() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>;
@@ -113,19 +114,29 @@ function IconNetwork() {
   );
 }
 
-const showsNavItems: NavItem[] = [
-  { href: '/buyers',                     label: 'Buyers',        icon: <IconBuyers /> },
-  { href: '/market/prodcos',             label: 'Prod Cos',      icon: <IconBuilding /> },
-  { href: '/market/networks',            label: 'Networks',      icon: <IconNetwork /> },
-  { href: '/network-intel',              label: 'Net Intel',     icon: <IconNetIntel /> },
-  { href: '/pipeline',                   label: 'Pipeline',      icon: <IconPipeline /> },
-  // Sizzles immediately follows Pipeline — produced reels are the most important brand asset
-  { href: '/sizzles',                    label: 'Sizzles',       icon: <IconSizzle /> },
-  { href: '/projects',                   label: 'Pitch Board',   icon: <IconBuild /> },
-  { href: '/build',                      label: 'Build',         icon: <IconBuild /> },
-  // Decks — pitch deck microsite manager, sits between Build and Show DB
-  { href: '/decks',                      label: 'Decks',         icon: <IconDecks /> },
-  { href: '/show-db',                    label: 'Show DB',       icon: <IconShows /> },
+const showsNavGroups: NavGroup[] = [
+  {
+    items: [
+      { href: '/network-intel', label: 'Net Intel', icon: <IconNetIntel /> },
+    ],
+  },
+  {
+    indent: true,
+    items: [
+      { href: '/buyers',          label: 'Buyers',   icon: <IconBuyers /> },
+      { href: '/market/networks', label: 'Networks', icon: <IconNetwork /> },
+      { href: '/show-db',         label: 'Show DB',  icon: <IconShows /> },
+      { href: '/market/prodcos',  label: 'Prod Cos', icon: <IconBuilding /> },
+    ],
+  },
+  {
+    items: [
+      { href: '/pipeline', label: 'Pipeline', icon: <IconPipeline /> },
+      { href: '/decks',    label: 'Decks',    icon: <IconDecks /> },
+      { href: '/sizzles',  label: 'Sizzles',  icon: <IconSizzle /> },
+      { href: '/build',    label: 'Build',    icon: <IconBuild /> },
+    ],
+  },
 ];
 
 const marketingNavItems: NavItem[] = [
@@ -239,7 +250,9 @@ export default function Nav() {
     if (m === 'marketing') router.push('/marketing');
   };
 
-  const navItems = mode === 'shows' ? showsNavItems : marketingNavItems;
+  const navGroups: NavGroup[] = mode === 'shows'
+    ? showsNavGroups
+    : [{ items: marketingNavItems }];
 
   const isActive = (href: string) => {
     // Exact-match roots so /marketing doesn't stay active on /marketing/shows
@@ -279,26 +292,42 @@ export default function Nav() {
       </div>
 
       {/* Nav links */}
-      <ul className="flex-1 flex flex-col gap-0.5 p-3 mt-1 overflow-y-auto">
-        {navItems.map(({ href, label, icon }) => {
-          const active = isActive(href);
-          return (
-            <li key={href}>
-              <Link
-                href={href}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all"
-                style={{
-                  color: active ? 'var(--accent)' : 'var(--text-secondary)',
-                  background: active ? 'var(--bg-surface-alt)' : 'transparent',
-                  borderLeft: active ? '3px solid var(--accent)' : '3px solid transparent',
-                }}
-              >
-                <span style={{ opacity: active ? 1 : 0.7 }}>{icon}</span>
-                {label}
-              </Link>
-            </li>
-          );
-        })}
+      <ul className="flex-1 flex flex-col p-3 mt-1 overflow-y-auto">
+        {navGroups.map((group, gi) => (
+          <li key={gi}>
+            {gi > 0 && (
+              <div className="my-1.5" style={{ borderTop: '1px solid var(--border-subtle)' }} />
+            )}
+            <ul
+              className="flex flex-col gap-0.5"
+              style={group.indent ? {
+                marginLeft: 8,
+                paddingLeft: 8,
+                borderLeft: '1px solid var(--border-subtle)',
+              } : undefined}
+            >
+              {group.items.map(({ href, label, icon }) => {
+                const active = isActive(href);
+                return (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all"
+                      style={{
+                        color: active ? 'var(--accent)' : 'var(--text-secondary)',
+                        background: active ? 'var(--bg-surface-alt)' : 'transparent',
+                        borderLeft: active ? '3px solid var(--accent)' : '3px solid transparent',
+                      }}
+                    >
+                      <span style={{ opacity: active ? 1 : 0.7 }}>{icon}</span>
+                      {label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </li>
+        ))}
 
         {/* Preview site link — Marketing mode only */}
         {mode === 'marketing' && (

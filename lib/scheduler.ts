@@ -32,9 +32,8 @@ export function initScheduler(): void {
   });
 
   // ── Job 2: Gmail pipeline poller ────────────────────────────────────────────
-  // Polls for new buyer emails on a configurable interval (default 5 min)
-  const pollInterval = parseInt(process.env.PIPELINE_POLL_INTERVAL_SECONDS || '300', 10);
-  const pollCron = `*/${Math.max(1, Math.floor(pollInterval / 60))} * * * *`;
+  // Hourly during business hours (7 AM–7 PM EST), no overnight polling
+  const pollCron = process.env.PIPELINE_POLL_CRON || '0 7-19 * * *';
 
   cron.schedule(pollCron, async () => {
     console.log(`[scheduler] ${timestamp()} — polling pipeline emails`);
@@ -46,7 +45,7 @@ export function initScheduler(): void {
     } catch (err) {
       console.error(`[scheduler] ${timestamp()} — email poll failed:`, err instanceof Error ? err.message : err);
     }
-  });
+  }, { timezone: 'America/New_York' });
 
   // ── Job 3: days_in_stage incrementer ────────────────────────────────────────
   // Runs every hour and bumps the counter for all packages that have a stage_entered_at.
@@ -68,5 +67,5 @@ export function initScheduler(): void {
     }
   });
 
-  console.log(`[scheduler] ${timestamp()} — initialized (scraper: ${scraperCron}, poll: ${pollCron})`);
+  console.log(`[scheduler] ${timestamp()} — initialized (scraper: ${scraperCron}, poll: ${pollCron} America/New_York)`);
 }

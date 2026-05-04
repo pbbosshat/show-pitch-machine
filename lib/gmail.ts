@@ -173,7 +173,7 @@ export async function getNewsletterMessages(sinceDate?: Date): Promise<GmailMess
   return results;
 }
 
-// Fetch MYE pitch mailbox emails for pipeline classification.
+// Fetch sm@gototeam.com pitch mailbox emails for pipeline classification.
 // Uses OAuth so it reads the actual user's Sent + Inbox for buyer correspondence.
 export async function getPipelineMessages(sinceDate?: Date): Promise<GmailMessage[]> {
   const auth = getOAuthClient();
@@ -205,6 +205,76 @@ export async function getPipelineMessages(sinceDate?: Date): Promise<GmailMessag
     const full = await gmail.users.messages.get({ userId: 'me', id: m.id, format: 'full' });
     const parsed = parseMessage(full.data);
     if (!ingested.has(parsed.threadId)) results.push(parsed);
+  }
+
+  return results;
+}
+
+// ── MYE (myentprod.com) pipeline polling ──────────────────────────────────────
+
+// All major TV/streaming buyer domains — expanded beyond the sm@gototeam.com filter
+// to cover the full range of network relationships myentprod.com maintains.
+const MYE_BUYER_DOMAIN_FILTER = [
+  // Big streaming
+  'netflix.com', 'hulu.com', 'amazon.com', 'apple.com',
+  // Broadcast / cable
+  'nbcuni.com', 'wbd.com', 'hbo.com', 'max.com', 'fox.com', 'paramount.com',
+  'aenetworks.com', 'amc.com', 'amcnetworks.com',
+  // Premium
+  'showtime.com', 'starz.com', 'mgm.com',
+  // Cable lifestyle / reality / doc
+  'discovery.com', 'scripps.com', 'peacocktv.com', 'paramountplus.com',
+  'disneystreaming.com', 'bravo.com', 'oxygen.com', 'lifetime.com',
+  // Studios / distributors
+  'sonypictures.com', 'lionsgate.com', 'a24films.com',
+  // International
+  'bbc.co.uk', 'bbc.com', 'channel4.com', 'itv.com', 'skystudios.com',
+].map((d) => `from:${d}`).join(' OR ');
+
+// myentprod.com mailboxes to scan for buyer emails, ordered by likelihood of contact.
+// Reads all via service account DWD (client ID 101663092871827294753 authorized on
+// myentprod.com workspace with gmail.readonly scope — see Google Admin API Controls).
+const MYE_PIPELINE_MAILBOXES = [
+  'michael@myentprod.com',
+  'hhansen@myentprod.com',
+  'admin@myentprod.com',
+  'jtownley@myentprod.com',
+  'kmiles@myentprod.com',
+];
+
+// Fetch buyer emails across all key myentprod.com mailboxes via service account DWD.
+// Individual mailbox failures are warned and skipped — DWD may not cover every account.
+// Cross-mailbox duplicates (same thread forwarded internally) are suppressed within a run.
+export async function getMYEPipelineMessages(sinceDate?: Date): Promise<GmailMessage[]> {
+  const after = sinceDate ? Math.floor(sinceDate.getTime() / 1000) : undefined;
+  const q = [`(${MYE_BUYER_DOMAIN_FILTER})`, after ? `after:${after}` : ''].filter(Boolean).join(' ');
+  const ingested = getIngestedThreadIds();
+  const results: GmailMessage[] = [];
+
+  for (const mailbox of MYE_PIPELINE_MAILBOXES) {
+    try {
+      const auth = getServiceAccountAuth(
+        ['https://www.googleapis.com/auth/gmail.readonly'],
+        mailbox
+      );
+      const gmail = google.gmail({ version: 'v1', auth });
+
+      const listRes = await gmail.users.messages.list({ userId: 'me', q, maxResults: 50 });
+      const msgs = listRes.data.messages ?? [];
+
+      for (const m of msgs) {
+        if (!m.id) continue;
+        const full = await gmail.users.messages.get({ userId: 'me', id: m.id, format: 'full' });
+        const parsed = parseMessage(full.data);
+        if (!ingested.has(parsed.threadId)) {
+          results.push(parsed);
+          ingested.add(parsed.threadId); // suppress cross-mailbox duplicates within this run
+        }
+      }
+    } catch (err) {
+      console.warn(`[gmail] getMYEPipelineMessages skipping ${mailbox}:`,
+        err instanceof Error ? err.message : err);
+    }
   }
 
   return results;

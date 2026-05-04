@@ -14,15 +14,15 @@ function fetchNetworks(): NetworkListItem[] {
     const rows = query<NetworkListItem>(
       `SELECT
         bc.id, bc.name, bc.type, bc.tier, bc.hq_city, bc.notes,
+        bc.parent_id,
+        (SELECT COUNT(*) FROM buyer_companies child WHERE child.parent_id = bc.id) AS child_count,
         (SELECT COUNT(*) FROM buyer_contacts bcon WHERE bcon.company_id = bc.id)   AS contact_count,
         (SELECT COUNT(DISTINCT d.id) FROM deals d WHERE d.network_id = bc.id)      AS deal_count,
         (SELECT COUNT(*) FROM market_orders mo WHERE mo.buyer_company_id = bc.id)  AS order_count,
-        -- Most recent MYE touch to any buyer at this network (enrichment pipeline, migration 017)
         (SELECT MAX(bct.touch_date)
          FROM buyer_contact_touches bct
          JOIN buyer_contacts bc2 ON bc2.id = bct.contact_id
          WHERE bc2.company_id = bc.id)                                             AS last_touch_date,
-        -- Active packages targeting this network (excludes pass and archived stages)
         (SELECT COUNT(*)
          FROM packages p
          WHERE p.target_company_id = bc.id

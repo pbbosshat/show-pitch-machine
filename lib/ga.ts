@@ -90,6 +90,17 @@ export async function fetchGAData(propertyId: string): Promise<GASummary | null>
 
   const dateRange30 = { startDate: '30daysAgo', endDate: 'today' };
 
+  // Excludes bot/crawler sessions (0 engagement time) from all breakdown queries.
+  // Singapore crawler had 441 sessions with 0s avg duration and 0 engaged sessions.
+  const engagedOnly = {
+    metricFilter: {
+      filter: {
+        fieldName: 'engagedSessions',
+        numericFilter: { operation: 'GREATER_THAN', value: { int64Value: '0' } },
+      },
+    },
+  };
+
   try {
     const [overview, pages, sources, countries, devices, trend] = await Promise.all([
       // Core metrics: sessions, users, pageviews, new users, bounce rate, avg duration, engagement rate, engaged sessions
@@ -106,42 +117,46 @@ export async function fetchGAData(propertyId: string): Promise<GASummary | null>
           { name: 'engagedSessions' },
         ],
       }),
-      // Top 10 pages by views
+      // Top 10 pages by views — engaged sessions only
       runReport(propertyId, token, {
         dateRanges: [dateRange30],
         dimensions: [{ name: 'pagePath' }],
         metrics:    [{ name: 'screenPageViews' }],
         orderBys:   [{ metric: { metricName: 'screenPageViews' }, desc: true }],
         limit: 10,
+        ...engagedOnly,
       }),
-      // Top 8 traffic sources
+      // Top 8 traffic sources — engaged sessions only
       runReport(propertyId, token, {
         dateRanges: [dateRange30],
         dimensions: [{ name: 'sessionSource' }],
-        metrics:    [{ name: 'sessions' }],
-        orderBys:   [{ metric: { metricName: 'sessions' }, desc: true }],
+        metrics:    [{ name: 'engagedSessions' }],
+        orderBys:   [{ metric: { metricName: 'engagedSessions' }, desc: true }],
         limit: 8,
+        ...engagedOnly,
       }),
-      // Top 8 countries
+      // Top 8 countries — engaged sessions only
       runReport(propertyId, token, {
         dateRanges: [dateRange30],
         dimensions: [{ name: 'country' }],
-        metrics:    [{ name: 'sessions' }],
-        orderBys:   [{ metric: { metricName: 'sessions' }, desc: true }],
+        metrics:    [{ name: 'engagedSessions' }],
+        orderBys:   [{ metric: { metricName: 'engagedSessions' }, desc: true }],
         limit: 8,
+        ...engagedOnly,
       }),
-      // Device category (desktop / mobile / tablet)
+      // Device category — engaged sessions only
       runReport(propertyId, token, {
         dateRanges: [dateRange30],
         dimensions: [{ name: 'deviceCategory' }],
-        metrics:    [{ name: 'sessions' }],
-        orderBys:   [{ metric: { metricName: 'sessions' }, desc: true }],
+        metrics:    [{ name: 'engagedSessions' }],
+        orderBys:   [{ metric: { metricName: 'engagedSessions' }, desc: true }],
+        ...engagedOnly,
       }),
-      // 14-day daily sessions for trend bars
+      // 14-day daily engaged sessions for trend bars
       runReport(propertyId, token, {
         dateRanges: [{ startDate: '13daysAgo', endDate: 'today' }],
         dimensions: [{ name: 'date' }],
-        metrics:    [{ name: 'sessions' }],
+        metrics:    [{ name: 'engagedSessions' }],
         orderBys:   [{ dimension: { dimensionName: 'date' }, desc: false }],
       }),
     ]);

@@ -61,7 +61,7 @@ function TrendBars({ data }: { data: { date: string; sessions: number }[] }) {
     <div className="rounded-lg p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
       <div className="flex items-center justify-between mb-3">
         <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-          14-Day Sessions Trend
+          14-Day Engaged Sessions
         </p>
         <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
           avg {avg.toLocaleString()}/day · peak {max.toLocaleString()}
@@ -213,19 +213,19 @@ export default async function MarketingDashboard() {
       ) : (
         <div className="space-y-4">
 
-          {/* 8 metric tiles — 4 columns */}
+          {/* 8 metric tiles — 4 columns. Engaged Sessions leads; raw Sessions shown for reference. */}
           <div className="grid grid-cols-4 gap-3">
-            <MetricTile label="Sessions"         value={ga.sessions} />
+            <MetricTile label="Engaged Sessions" value={ga.engagedSessions} sub="real visitors, bots excluded" highlight />
             <MetricTile label="Total Users"      value={ga.users} sub={`${ga.newUsers.toLocaleString()} new`} />
             <MetricTile label="Page Views"       value={ga.pageviews} />
-            <MetricTile label="Engaged Sessions" value={ga.engagedSessions} />
-            <MetricTile label="Bounce Rate"      value={`${ga.bounceRate}%`} />
+            <MetricTile label="Sessions (total)" value={ga.sessions} sub="incl. crawlers" />
+            <MetricTile label="Engagement Rate"  value={`${ga.engagementRate}%`} />
             <MetricTile label="Avg Session"      value={fmtDuration(ga.avgSessionSecs)} />
-            <MetricTile label="Engagement Rate"  value={`${ga.engagementRate}%`} highlight />
+            <MetricTile label="Bounce Rate"      value={`${ga.bounceRate}%`} />
             <MetricTile label="Return Rate"      value={`${returnRate}%`} sub="returning visitors" />
           </div>
 
-          {/* 14-day trend */}
+          {/* 14-day trend — engaged sessions only (bots excluded) */}
           {ga.dailyTrend.length > 0 && <TrendBars data={ga.dailyTrend} />}
 
           {/* 4-column detail grid */}

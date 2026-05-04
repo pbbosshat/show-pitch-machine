@@ -337,14 +337,15 @@ async function scrapeAENetworks(maxArticles = 20): Promise<ScrapedArticle[]> {
 }
 
 /**
- * NBCUniversal Media Village (nbcuniversalmediavillage.com/)
- * Covers NBC, Bravo, E!, Oxygen, USA Network, Syfy, MSNBC, CNBC, Telemundo.
- * Press releases accessible on main listing page without login.
+ * NBCUniversal Press (nbcuniversal.com/press-releases)
+ * Covers NBC, Bravo, Peacock, Oxygen, USA Network, Syfy, MSNBC, CNBC, Telemundo.
+ * Moved from nbcuniversalmediavillage.com (defunct) to nbcuniversal.com in 2025.
+ * Article links follow /article/<slug> pattern.
  */
 async function scrapeNBCUniversal(maxArticles = 20): Promise<ScrapedArticle[]> {
   const SOURCE: NetworkPressSource = 'nbcuniversal-press';
-  const BASE_URL = 'https://www.nbcuniversalmediavillage.com';
-  const INDEX_URL = `${BASE_URL}/press-releases/`;
+  const BASE_URL = 'https://www.nbcuniversal.com';
+  const INDEX_URL = `${BASE_URL}/press-releases`;
   const articles: ScrapedArticle[] = [];
 
   try {
@@ -354,7 +355,8 @@ async function scrapeNBCUniversal(maxArticles = 20): Promise<ScrapedArticle[]> {
     const links: Array<{ url: string; headline: string }> = [];
     const seen = new Set<string>();
 
-    $('a[href*="/press-release"], a[href*="/releases/"], .press-list a, .release-listing a, article a, h2 a, h3 a').each((_, el) => {
+    // New site uses /article/<slug> paths; headlines sit in h6 tags or adjacent anchors
+    $('a[href^="/article/"], h6 a, h4 a, h3 a, h2 a').each((_, el) => {
       const href = $(el).attr('href') || '';
       const headline = $(el).text().trim();
       if (!href || !headline || headline.length < 10 || seen.has(href)) return;
@@ -367,21 +369,6 @@ async function scrapeNBCUniversal(maxArticles = 20): Promise<ScrapedArticle[]> {
 
       links.push({ url, headline });
     });
-
-    // NBCUniversal sometimes lists press releases on the root page too
-    if (links.length === 0) {
-      const rootHtml = await withRetry(() => fetchHtml(BASE_URL));
-      const $r = cheerio.load(rootHtml);
-      $r('a[href*="/press-release"], a[href*="/releases/"], h2 a, h3 a').each((_, el) => {
-        const href = $r(el).attr('href') || '';
-        const headline = $r(el).text().trim();
-        if (!href || !headline || headline.length < 10 || seen.has(href)) return;
-        seen.add(href);
-        let url: string;
-        try { url = new URL(href, BASE_URL).toString(); } catch { return; }
-        links.push({ url, headline });
-      });
-    }
 
     const toProcess = links.slice(0, maxArticles);
 

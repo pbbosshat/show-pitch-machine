@@ -3,10 +3,10 @@
 // Only auto-moves on high-confidence signals to prevent false stage transitions.
 
 import { v4 as uuidv4 } from 'uuid';
-import { getPipelineMessages } from './gmail';
+import { getPipelineMessages, getMYEPipelineMessages } from './gmail';
 import { classifyEmail } from './groq';
 import { query, run } from './db';
-import type { Package, GrokSignal } from '../types';
+import type { Package, GrokSignal, GmailMessage } from '../types';
 
 // Signals that warrant an automatic stage move when confidence is high
 const AUTO_MOVE_MAP: Partial<Record<GrokSignal, string>> = {
@@ -50,14 +50,23 @@ export async function pollPipelineEmails(): Promise<{ processed: number; moved: 
   )[0];
   const since = lastRow?.received_at ? new Date(lastRow.received_at) : undefined;
 
-  let messages;
+  // Gather buyer emails from all sources — sm@gototeam.com + all myentprod.com mailboxes.
+  // Each source is isolated in its own try/catch so one auth failure doesn't block the rest.
+  const messages: GmailMessage[] = [];
+
   try {
-    messages = await getPipelineMessages(since);
+    messages.push(...await getPipelineMessages(since));
   } catch (err) {
-    // Gmail auth may not be configured yet in dev — log and return cleanly
-    console.error('[email-poller] getPipelineMessages failed:', err instanceof Error ? err.message : err);
-    return { processed: 0, moved: 0 };
+    console.error('[email-poller] getPipelineMessages (sm) failed:', err instanceof Error ? err.message : err);
   }
+
+  try {
+    messages.push(...await getMYEPipelineMessages(since));
+  } catch (err) {
+    console.error('[email-poller] getMYEPipelineMessages failed:', err instanceof Error ? err.message : err);
+  }
+
+  if (messages.length === 0) return { processed: 0, moved: 0 };
 
   const activePitches = getActivePitches();
 

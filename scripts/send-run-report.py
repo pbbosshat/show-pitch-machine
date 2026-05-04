@@ -254,7 +254,7 @@ def main():
     if n_failed:
         subject += f" | {n_failed} scraper{'s' if n_failed != 1 else ''} FAILED"
     if not run_complete:
-        subject += " | ⚠ run incomplete"
+        subject += " | RUN INCOMPLETE"
     if tvdb_updated:
         subject += f" | TVDB +{tvdb_updated}"
     if epis_updated:
@@ -263,11 +263,11 @@ def main():
 
     # ── Body ──────────────────────────────────────────────────────────────────
     lines = []
-    lines.append("Show Pitch Machine — Daily Run Report")
+    lines.append("Show Pitch Machine - Daily Run Report")
     lines.append("=" * 52)
     lines.append(f"Run time   : {run.get('run_time', 'unknown')}")
     lines.append(f"Report     : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    lines.append(f"Run status : {'COMPLETE' if run_complete else 'INCOMPLETE — check scrape.log'}")
+    lines.append(f"Run status : {'COMPLETE' if run_complete else 'INCOMPLETE - check scrape.log'}")
     lines.append("")
 
     # ── 1. Per-scraper status table ───────────────────────────────────────────
@@ -280,7 +280,7 @@ def main():
         row[0]: row[1] for row in stats.get("scraper_rows", [])
     }
 
-    lines.append(f"TRADE SCRAPERS — {scraper_total} new articles today")
+    lines.append(f"TRADE SCRAPERS - {scraper_total} new articles today")
     lines.append("-" * 52)
     ok_count   = 0
     fail_count = 0
@@ -293,15 +293,15 @@ def main():
             # Shorten common error messages to keep the line readable
             reason = re.sub(r"Failed to fetch browser webSocket URL from .+?: ", "CDP: ", reason)
             reason = re.sub(r"ENOENT: no such file or directory, open '(.+?)'", r"Missing: \1", reason)
-            lines.append(f"  ✗ {src_label} {items:>4}  ({reason[:70]})")
+            lines.append(f"  FAIL {src_label} {items:>4}  ({reason[:70]})")
             fail_count += 1
         elif src in status_lookup or src in article_lookup:
-            lines.append(f"  ✓ {src_label} {items:>4} article{'s' if items != 1 else ''}")
+            lines.append(f"  ok   {src_label} {items:>4} article{'s' if items != 1 else ''}")
             ok_count += 1
         else:
-            lines.append(f"  - {src_label}   —   (not yet run)")
+            lines.append(f"  --   {src_label}        (not yet run)")
 
-    lines.append(f"  {'─'*46}")
+    lines.append(f"  {'-'*46}")
     lines.append(f"  {ok_count} scrapers OK  |  {fail_count} failed  |  {scraper_total} total articles")
     lines.append(f"  Total articles in DB : {stats.get('total_articles', 0):,}")
     lines.append("")
@@ -311,7 +311,7 @@ def main():
     signal_map  = {s: n for s, n in signal_rows}
     signal_total = sum(n for _, n in signal_rows)
 
-    lines.append("CLASSIFY — actionable signals in today's articles")
+    lines.append("CLASSIFY - actionable signals in today's articles")
     lines.append("-" * 40)
     if signal_rows:
         label_map = {
@@ -347,7 +347,7 @@ def main():
 
     # ── 3. Episodate enrichment ───────────────────────────────────────────────
     epis = run.get("episodate", {})
-    lines.append("EPISODATE — episode/season gap-fill")
+    lines.append("EPISODATE - episode/season gap-fill")
     lines.append("-" * 40)
     if epis:
         lines.append(f"  Matched  : {epis['matched']}")
@@ -362,7 +362,7 @@ def main():
 
     # ── 4. TVDB enrichment ────────────────────────────────────────────────────
     tvdb = run.get("tvdb", {})
-    lines.append("TVDB — episode/season data")
+    lines.append("TVDB - episode/season data")
     lines.append("-" * 40)
     if tvdb:
         lines.append(f"  Matched  : {tvdb['matched']}")

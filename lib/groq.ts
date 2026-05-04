@@ -5,10 +5,10 @@
 import Groq from 'groq-sdk';
 import type { EmailClassification, GrokSignal } from '../types';
 
-// Groq is OpenAI-compatible so the base URL only needs the v1 endpoint root
+// groq-sdk sets https://api.groq.com as its base and appends /openai/v1 internally —
+// do NOT pass a baseURL here or it doubles the path to /openai/v1/openai/v1/...
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY || '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',
-  baseURL: 'https://api.groq.com/openai/v1',
 });
 
 const MODEL = 'llama-3.3-70b-versatile';
