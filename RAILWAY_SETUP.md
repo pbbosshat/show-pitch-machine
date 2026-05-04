@@ -20,26 +20,22 @@
 
 ---
 
-## Sean's Claude Code Configuration
+## Shawn's Claude Code Configuration
 
-Sean adds this to `~/.claude/settings.json` on his Mac:
+Shawn runs this one command in Terminal on his Mac:
 
-```json
-{
-  "mcpServers": {
-    "show-pitch-machine": {
-      "type": "http",
-      "url": "https://mcp-server-production-f138.up.railway.app/mcp",
-      "headers": {
-        "Authorization": "Bearer mcp_ca8f896dac0194b0d29260861da06c8c4fc6a07f4afafc93a89046e4d52e7ed6"
-      }
-    }
-  }
-}
+```bash
+claude mcp add show-pitch-machine https://mcp-server-production-f138.up.railway.app/mcp \
+  --transport http \
+  --scope user \
+  --header "Authorization: Bearer mcp_ca8f896dac0194b0d29260861da06c8c4fc6a07f4afafc93a89046e4d52e7ed6"
 ```
 
 Verify it's working:
 ```bash
+claude mcp list
+# → show-pitch-machine  ✓ Connected
+
 curl https://mcp-server-production-f138.up.railway.app/health
 # → {"status":"ok","db":"connected","tools":12}
 ```
@@ -50,7 +46,7 @@ curl https://mcp-server-production-f138.up.railway.app/health
 
 | Key | Value | Who uses it |
 |-----|-------|-------------|
-| `MCP_API_KEY` | `mcp_ca8f896dac0194b0d29260861da06c8c4fc6a07f4afafc93a89046e4d52e7ed6` | Sean's Claude Code |
+| `MCP_API_KEY` | `mcp_ca8f896dac0194b0d29260861da06c8c4fc6a07f4afafc93a89046e4d52e7ed6` | Shawn's Claude Code |
 | `INGEST_API_KEY` | `ingest_dd8210af261f2c8053f6d38e5ca6217cd215340e73b7746e767123d6f43ae796` | Bang scraper machine |
 
 ---
@@ -86,7 +82,7 @@ curl -X POST $MCP_HOST/ingest/buyers \
 
 ---
 
-## Available MCP Tools (what Sean can use)
+## Available MCP Tools (what Shawn can use)
 
 | Tool | Description |
 |------|-------------|
