@@ -69,6 +69,7 @@ function buildMcpServer(): McpServer {
   );
 
   // ── Tool 2: Full buyer profile ────────────────────────────────────────────
+  // @ts-ignore TS2589: MCP SDK v1 deep generic inference hits TypeScript's recursion limit
   mcp.tool(
     'get_buyer_profile',
     'Returns complete profile for a buyer contact: contact record, company, mandate history, and recent pitch history.',
@@ -108,6 +109,7 @@ function buildMcpServer(): McpServer {
   );
 
   // ── Tool 5: Market orders ─────────────────────────────────────────────────
+  // @ts-ignore TS2589: MCP SDK v1 deep generic inference hits TypeScript's recursion limit
   mcp.tool(
     'get_market_orders',
     'Returns recent market orders filtered by network, genre, format, or date. Use to identify buying trends and validate pitch timing.',
