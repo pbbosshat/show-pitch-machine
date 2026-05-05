@@ -6,15 +6,12 @@ export async function register() {
   // Only run in the Node.js runtime (not edge), and only on the server
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
 
-  // webpackIgnore: true prevents webpack from analyzing these imports at build time.
-  // Without it, webpack traverses puppeteer/googleapis/lancedb into Node built-ins
-  // (fs, http, net) that fail in the browser bundle. These only ever run server-side.
-  const { initDb } = await import(/* webpackIgnore: true */ './lib/db');
+  const { initDb } = await import('./lib/db');
   initDb();
 
-  const { startMcpServer } = await import(/* webpackIgnore: true */ './lib/mcp');
+  const { startMcpServer } = await import('./lib/mcp');
   await startMcpServer();
 
-  const { initScheduler } = await import(/* webpackIgnore: true */ './lib/scheduler');
+  const { initScheduler } = await import('./lib/scheduler');
   initScheduler();
 }

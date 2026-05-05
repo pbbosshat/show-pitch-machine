@@ -12,11 +12,28 @@ const nextConfig: NextConfig = {
     "csv-parse",
   ],
   webpack: (config) => {
-    // Externalize native binary packages in ALL webpack bundles (server + browser).
-    // serverExternalPackages only helps for Server Component compilation, but lib/*.ts
-    // files (embed.ts, vectors.ts) are traversed directly by webpack and their
-    // transitive .node binaries trigger nextErrorBrowserBinaryLoader at build time.
-    const nativePkgs = ['fastembed', '@lancedb/lancedb', 'onnxruntime-node', '@anush008/tokenizers', 'better-sqlite3'];
+    // Externalize server-only packages from ALL webpack bundles (server + browser).
+    // serverExternalPackages only covers Server Component compilation; webpack still
+    // traverses instrumentation.ts dynamic imports and lib/*.ts files directly.
+    // These packages either contain native .node binaries or import bare Node built-ins
+    // (e.g. require('fs'), require('https')) that fail in the browser bundle.
+    const serverOnlyPkgs = [
+      // Native binary packages
+      'fastembed', '@lancedb/lancedb', 'onnxruntime-node', '@anush008/tokenizers', 'better-sqlite3',
+      // Server-only packages that use bare Node built-in names (fs, http, https, net…)
+      'puppeteer', 'puppeteer-core', 'puppeteer-extra', 'puppeteer-extra-plugin-stealth',
+      'googleapis', 'google-auth-library', 'gaxios', 'gcp-metadata', 'google-p12-pem', 'gtoken',
+      '@modelcontextprotocol/sdk',
+      'node-cron',
+      'csv-parse',
+      'cheerio', 'htmlparser2', 'domhandler', 'css-select',
+      'html-to-text',
+      'nodemailer',
+      'apache-arrow',
+      '@anthropic-ai/sdk',
+      'groq-sdk',
+      'openai',
+    ];
 
     config.externals = [
       ...(Array.isArray(config.externals) ? config.externals : [config.externals].filter(Boolean)),
@@ -24,7 +41,7 @@ const nextConfig: NextConfig = {
         if (request?.startsWith('node:')) {
           return callback(null, `commonjs ${request}`);
         }
-        if (nativePkgs.some(pkg => request === pkg || request?.startsWith(`${pkg}/`))) {
+        if (serverOnlyPkgs.some(pkg => request === pkg || request?.startsWith(`${pkg}/`))) {
           return callback(null, `commonjs ${request}`);
         }
         callback();
