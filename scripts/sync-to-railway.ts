@@ -9,20 +9,23 @@
 //
 // Usage: npx tsx --env-file=.env scripts/sync-to-railway.ts
 //
-// Required env vars:
+// Required env vars (set in .env or as shell vars in bang-scrape-and-sync.bat):
 //   RAILWAY_MCP_URL    — base URL of the Railway MCP server (Sean's Claude Code)
 //   RAILWAY_INGEST_KEY — INGEST_API_KEY for the MCP server
 //   RAILWAY_APP_URL    — base URL of the Railway Next.js app (Intelligence page)
 //   RAILWAY_APP_KEY    — INGEST_API_KEY for the Next.js app (can be same key)
+//   DATABASE_PATH      — path to local SQLite DB (defaults to ./data/db.sqlite)
 
-import Database from 'better-sqlite3';
+// node:sqlite is built-in to Node 24 — no install needed
+import { DatabaseSync } from 'node:sqlite';
 import * as path from 'path';
 
 const MCP_URL = process.env.RAILWAY_MCP_URL || 'https://mcp-server-production-f138.up.railway.app';
 const MCP_KEY = process.env.RAILWAY_INGEST_KEY || '';
 const APP_URL = process.env.RAILWAY_APP_URL || 'https://app-production-1ac7.up.railway.app';
 const APP_KEY = process.env.RAILWAY_APP_KEY || process.env.RAILWAY_INGEST_KEY || '';
-const DB_PATH = process.env.DB_PATH || path.join(process.cwd(), 'data', 'show-pitch.db');
+// Bang's .env uses DATABASE_PATH; fall back to DB_PATH for compatibility
+const DB_PATH = process.env.DATABASE_PATH || process.env.DB_PATH || path.join(process.cwd(), 'data', 'db.sqlite');
 const CHUNK = 500; // rows per POST request
 
 if (!MCP_KEY) {
@@ -34,7 +37,8 @@ if (!APP_KEY) {
   process.exit(1);
 }
 
-const db = new Database(DB_PATH, { readonly: true });
+console.log(`[sync] Opening DB: ${DB_PATH}`);
+const db = new DatabaseSync(DB_PATH);
 
 async function post(baseUrl: string, apiKey: string, endpoint: string, body: unknown): Promise<void> {
   const url = `${baseUrl}${endpoint}`;
@@ -51,7 +55,8 @@ async function post(baseUrl: string, apiKey: string, endpoint: string, body: unk
     throw new Error(`POST ${endpoint} → ${resp.status}: ${text.substring(0, 200)}`);
   }
   const result = await resp.json() as { inserted: number; updated: number; total: number };
-  console.log(`[sync] ${baseUrl.replace('https://', '')} ${endpoint}: inserted=${result.inserted} updated=${result.updated} total=${result.total}`);
+  const host = baseUrl.replace('https://', '').split('.')[0];
+  console.log(`[sync] ${host} ${endpoint}: inserted=${result.inserted} updated=${result.updated} total=${result.total}`);
 }
 
 function chunks<T>(arr: T[], size: number): T[][] {
@@ -69,12 +74,12 @@ const articles = db.prepare(`
   FROM trade_articles
   ORDER BY scraped_at DESC
   LIMIT 10000
-`).all();
+`).all() as Record<string, unknown>[];
 console.log(`[sync] articles: ${articles.length} rows`);
 
 for (const chunk of chunks(articles, CHUNK)) {
-  // MCP server — basic fields only (matches its ingest schema)
-  const basicChunk = chunk.map((a: Record<string, unknown>) => ({
+  // MCP server — basic fields only (matches its Postgres ingest schema)
+  const basicChunk = chunk.map((a) => ({
     id: a.id, source: a.source, url: a.url, headline: a.headline,
     body: a.body, item_type: a.item_type, scraped_at: a.scraped_at,
   }));
@@ -91,7 +96,7 @@ const orders = db.prepare(`
   FROM market_orders
   ORDER BY order_date DESC
   LIMIT 5000
-`).all();
+`).all() as Record<string, unknown>[];
 console.log(`[sync] orders: ${orders.length} rows`);
 for (const chunk of chunks(orders, CHUNK)) {
   await post(MCP_URL, MCP_KEY, '/ingest/orders', { orders: chunk });
@@ -104,7 +109,7 @@ const shows = db.prepare(`
   FROM shows
   ORDER BY updated_at DESC
   LIMIT 20000
-`).all();
+`).all() as Record<string, unknown>[];
 console.log(`[sync] shows: ${shows.length} rows`);
 for (const chunk of chunks(shows, CHUNK)) {
   await post(MCP_URL, MCP_KEY, '/ingest/shows', { shows: chunk });
@@ -113,13 +118,13 @@ for (const chunk of chunks(shows, CHUNK)) {
 // ── 4. Buyers → MCP server only ───────────────────────────────────────────────
 const companies = db.prepare(`
   SELECT id, name, type, tier FROM buyer_companies ORDER BY name
-`).all();
+`).all() as Record<string, unknown>[];
 const contacts = db.prepare(`
   SELECT id, company_id, name, email, title, mandate_statement,
          activity_status, last_greenlit_date
   FROM buyer_contacts
   ORDER BY name
-`).all();
+`).all() as Record<string, unknown>[];
 console.log(`[sync] buyer companies: ${companies.length}, contacts: ${contacts.length}`);
 for (const chunk of chunks(companies, CHUNK)) {
   await post(MCP_URL, MCP_KEY, '/ingest/buyers', { companies: chunk, contacts: [] });
@@ -129,19 +134,27 @@ for (const chunk of chunks(contacts, CHUNK)) {
 }
 
 // ── 5. Pipeline: packages + pitches → MCP server only ────────────────────────
-const packages = db.prepare(`
-  SELECT id, name, ip_id, target_company_id, target_contact_id,
-         pipeline_stage, status
-  FROM packages
-  ORDER BY updated_at DESC
-`).all();
-const pitches = db.prepare(`
-  SELECT id, ip_id, buyer_company_id, buyer_contact_id,
-         pitch_date, outcome, pass_reason, pass_reason_cat
-  FROM pitches
-  ORDER BY pitch_date DESC
-  LIMIT 5000
-`).all();
+let packages: Record<string, unknown>[] = [];
+try {
+  packages = db.prepare(`
+    SELECT id, name, ip_id, target_company_id, target_contact_id,
+           pipeline_stage, status
+    FROM packages
+    ORDER BY updated_at DESC
+  `).all() as Record<string, unknown>[];
+} catch { /* table may not exist on Bang */ }
+
+let pitches: Record<string, unknown>[] = [];
+try {
+  pitches = db.prepare(`
+    SELECT id, ip_id, buyer_company_id, buyer_contact_id,
+           pitch_date, outcome, pass_reason, pass_reason_cat
+    FROM pitches
+    ORDER BY pitch_date DESC
+    LIMIT 5000
+  `).all() as Record<string, unknown>[];
+} catch { /* table may not exist on Bang */ }
+
 console.log(`[sync] packages: ${packages.length}, pitches: ${pitches.length}`);
 for (const chunk of chunks(packages, CHUNK)) {
   await post(MCP_URL, MCP_KEY, '/ingest/pipeline', { packages: chunk, pitches: [] });
