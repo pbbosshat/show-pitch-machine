@@ -4,10 +4,8 @@
 //           404 if lead not found, 401 if not authenticated
 
 import { NextRequest, NextResponse } from 'next/server';
-import { initDb, queryOne, run } from '@/lib/db';
+import { queryOne, run } from '@/lib/db';
 import { getSessionUser, SESSION_COOKIE } from '@/lib/auth';
-
-initDb();
 
 export async function DELETE(
   request: NextRequest,

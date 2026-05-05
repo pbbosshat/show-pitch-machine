@@ -7,10 +7,8 @@
 // PATCH response: { data: { key, value } }
 
 import { NextRequest, NextResponse } from 'next/server';
-import { initDb, query, queryOne, run } from '@/lib/db';
+import { query, queryOne, run } from '@/lib/db';
 import { getSessionUser, SESSION_COOKIE } from '@/lib/auth';
-
-initDb();
 
 interface SettingRow {
   key: string;

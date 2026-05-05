@@ -6,11 +6,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'node:crypto';
-import { initDb, query, queryOne, run } from '@/lib/db';
+import { query, queryOne, run } from '@/lib/db';
 import { getSessionUser, SESSION_COOKIE } from '@/lib/auth';
 import { sendEmail } from '@/lib/gmail';
-
-initDb();
 
 interface Lead {
   id: string;
