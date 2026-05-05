@@ -30,7 +30,7 @@ export const pool = new Pool({
   connectionTimeoutMillis: 5_000,
 });
 
-pool.on('error', (err) => {
+pool.on('error', (err: Error) => {
   // Log pool-level errors without crashing — Railway will restart the process if needed
   console.error('[db] Pool error:', err.message);
 });
@@ -123,7 +123,7 @@ export async function initDb(): Promise<void> {
     const { rows: applied } = await client.query<{ filename: string }>(
       'SELECT filename FROM schema_migrations'
     );
-    const appliedSet = new Set(applied.map((r) => r.filename));
+    const appliedSet = new Set(applied.map((r: { filename: string }) => r.filename));
 
     for (const file of files) {
       if (appliedSet.has(file)) {
