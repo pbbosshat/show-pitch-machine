@@ -42,7 +42,13 @@ import {
 } from './ingest';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
-const TOOL_COUNT = 12;
+const TOOL_COUNT = 13;
+
+// Vitrina VIQI proxy — the mcp-server calls the Next.js app service which owns Puppeteer/Chromium.
+// VIQI_PROXY_URL: full URL to the /api/viqi endpoint on the app service (e.g. https://app-xxx.railway.app/api/viqi)
+// VIQI_PROXY_SECRET: shared secret matching VIQI_PROXY_SECRET on the app service
+const VIQI_PROXY_URL    = process.env.VIQI_PROXY_URL    ?? '';
+const VIQI_PROXY_SECRET = process.env.VIQI_PROXY_SECRET ?? '';
 
 // ── MCP server build ──────────────────────────────────────────────────────────
 
@@ -218,6 +224,35 @@ function buildMcpServer(): McpServer {
     async () => {
       const text = await getSizzleInventory();
       return { content: [{ type: 'text', text }] };
+    }
+  );
+
+  // ── Tool 13: Vitrina VIQI ─────────────────────────────────────────────────
+  // Proxies to the Next.js app service which owns Puppeteer/Chromium for auth.
+  mcp.tool(
+    'query_viqi',
+    'Query Vitrina\'s VIQI multi-agent entertainment intelligence system. VIQI runs parallel agents (Company Profiler, Person Profiler, Deals Analyst) and synthesizes a comprehensive answer. Use for deep research on a specific buyer, company, or deal that goes beyond local data — e.g. "What is HBO\'s current unscripted mandate?" or "Who are the key buyers at Peacock right now?"',
+    { query: z.string().describe('Research question about a buyer, company, show, or market trend') },
+    async ({ query }) => {
+      if (!VIQI_PROXY_URL || !VIQI_PROXY_SECRET) {
+        return { content: [{ type: 'text', text: 'Vitrina VIQI not configured (VIQI_PROXY_URL / VIQI_PROXY_SECRET missing).' }] };
+      }
+      const res = await fetch(VIQI_PROXY_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${VIQI_PROXY_SECRET}`,
+        },
+        body: JSON.stringify({ query }),
+        signal: AbortSignal.timeout(90_000),
+      });
+      if (!res.ok) {
+        const err = await res.text().catch(() => '');
+        return { content: [{ type: 'text', text: `VIQI proxy error ${res.status}: ${err.substring(0, 300)}` }] };
+      }
+      const json = await res.json() as { data?: { answer?: string }; error?: string };
+      const answer = json?.data?.answer ?? json?.error ?? 'No answer returned';
+      return { content: [{ type: 'text', text: answer }] };
     }
   );
 
