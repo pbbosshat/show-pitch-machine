@@ -2,8 +2,8 @@
 # The MCP server is a separate Railway service — see mcp-server/railway.toml
 
 [build]
-builder = "NIXPACKS"
-buildCommand = "npm run build"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "npm start"
