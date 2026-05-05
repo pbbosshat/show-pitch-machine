@@ -37,8 +37,10 @@ const PUBLIC_PREFIXES = [
   '/shows/',          // dynamic show detail pages e.g. /shows/some-slug
   '/press-releases/', // individual press release / article pages
   '/available/',      // buyer pitch deck pages — each has its own deck password gate
-  '/api/available/',  // deck password verify endpoint — must be callable without a session
-  '/api/contact',     // POST is public (form submission); GET enforces auth inside the handler
+  '/api/available/',      // deck password verify endpoint — must be callable without a session
+  '/api/contact',         // POST is public (form submission); GET enforces auth inside the handler
+  '/api/admin/db-restore', // protected by ADMIN_RESTORE_SECRET header, not session cookie
+  '/api/viqi',            // protected by VIQI_PROXY_SECRET header, not session cookie
 ];
 
 export function middleware(request: NextRequest) {
