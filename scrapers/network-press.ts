@@ -193,16 +193,15 @@ function extractBodyText(html: string, maxChars = 2000): string {
 // ─── Per-site scrapers ────────────────────────────────────────────────────────
 
 /**
- * Discovery Press (press.discovery.com/us/)
- * Lists press releases for Discovery, TLC, HGTV, Food Network, Investigation
- * Discovery, Animal Planet, Travel Channel, OWN, and other Discovery networks.
- *
- * The press release index uses standard <a> tags with headline text; article
- * pages are plain HTML. No JS rendering required.
+ * Warner Bros. Discovery Press (press.wbd.com/us/)
+ * Replaced press.discovery.com (defunct since WBD merger).
+ * Covers Discovery, TLC, HGTV, Food Network, ID, Animal Planet, Travel Channel,
+ * HBO, Max, TNT, CNN, and all other WBD brands.
+ * Article links follow /us/media-release/<slug> pattern; headlines in h6 tags.
  */
 async function scrapeDiscovery(maxArticles = 20): Promise<ScrapedArticle[]> {
   const SOURCE: NetworkPressSource = 'discovery-press';
-  const BASE_URL = 'https://press.discovery.com';
+  const BASE_URL = 'https://press.wbd.com';
   const INDEX_URL = `${BASE_URL}/us/`;
   const articles: ScrapedArticle[] = [];
 
@@ -210,12 +209,10 @@ async function scrapeDiscovery(maxArticles = 20): Promise<ScrapedArticle[]> {
     const html = await withRetry(() => fetchHtml(INDEX_URL));
     const $ = cheerio.load(html);
 
-    // Collect article links — Discovery press uses a standard listing layout
     const links: Array<{ url: string; headline: string }> = [];
     const seen = new Set<string>();
 
-    // Try multiple selectors to handle layout variations
-    $('a[href*="/releases/"], a[href*="/press-release/"], .press-list a, .release-list a, article a, h2 a, h3 a, h4 a').each((_, el) => {
+    $('a[href*="/media-release/"], h6 a, h4 a, h3 a, h2 a').each((_, el) => {
       const href = $(el).attr('href') || '';
       const headline = $(el).text().trim();
       if (!href || !headline || headline.length < 10 || seen.has(href)) return;
@@ -224,7 +221,6 @@ async function scrapeDiscovery(maxArticles = 20): Promise<ScrapedArticle[]> {
       let url: string;
       try { url = new URL(href, BASE_URL).toString(); } catch { return; }
 
-      // Skip navigation links — press releases should have date-like paths or /releases/
       if (/\/(about|contact|privacy|terms|category|tag|page|search)\b/i.test(url)) return;
 
       links.push({ url, headline });
@@ -247,7 +243,7 @@ async function scrapeDiscovery(maxArticles = 20): Promise<ScrapedArticle[]> {
           body: body || headline,
           item_type: itemType,
           show_title: extractShowTitle(headline),
-          network: extractNetwork(fullText) ?? 'Discovery',
+          network: extractNetwork(fullText) ?? 'Warner Bros. Discovery',
           genre: extractGenre(fullText),
           episode_count: extractEpisodeCount(fullText),
           location_type: locationHints.location_type,

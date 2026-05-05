@@ -34,6 +34,10 @@ export interface GASummary {
   topCountries:     { country: string; sessions: number }[];
   deviceBreakdown:  { device: string; sessions: number }[];
   dailyTrend:       { date: string; sessions: number }[]; // YYYYMMDD, last 14 days
+  // Organic search keywords — populated only if Search Console is linked to this GA4 property
+  topKeywords:      { query: string; clicks: number; impressions: number; ctr: number; position: number }[];
+  // Internal navigation flows — pageReferrer → pagePath pairs, top 20 by views
+  topFlows:         { from: string; to: string; views: number }[];
   dateRange:        string;
 }
 
@@ -102,6 +106,7 @@ export async function fetchGAData(propertyId: string): Promise<GASummary | null>
   };
 
   try {
+    // Core queries — any failure here returns null for the whole dashboard
     const [overview, pages, sources, countries, devices, trend] = await Promise.all([
       // Core metrics: sessions, users, pageviews, new users, bounce rate, avg duration, engagement rate, engaged sessions
       runReport(propertyId, token, {
@@ -161,6 +166,36 @@ export async function fetchGAData(propertyId: string): Promise<GASummary | null>
       }),
     ]);
 
+    // Optional queries — failures return empty arrays so the main dashboard still renders
+    // Organic keywords require Search Console linked to this GA4 property in Analytics Admin.
+    const keywords = await runReport(propertyId, token, {
+      dateRanges: [dateRange30],
+      dimensions: [{ name: 'organicGoogleSearchQuery' }],
+      metrics: [
+        { name: 'organicGoogleSearchClicks' },
+        { name: 'organicGoogleSearchImpressions' },
+        { name: 'organicGoogleSearchClickThroughRate' },
+        { name: 'organicGoogleSearchAveragePosition' },
+      ],
+      orderBys: [{ metric: { metricName: 'organicGoogleSearchClicks' }, desc: true }],
+      limit: 15,
+    }).catch(() => ({ rows: [] }));
+
+    // Internal navigation flows — pageReferrer → pagePath for same-domain navigations
+    const flows = await runReport(propertyId, token, {
+      dateRanges: [dateRange30],
+      dimensions: [{ name: 'pageReferrer' }, { name: 'pagePath' }],
+      metrics:    [{ name: 'screenPageViews' }],
+      orderBys:   [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+      limit: 20,
+      dimensionFilter: {
+        filter: {
+          fieldName: 'pageReferrer',
+          stringFilter: { matchType: 'CONTAINS', value: 'myentertainment.tv', caseSensitive: false },
+        },
+      },
+    }).catch(() => ({ rows: [] }));
+
     const ov = overview.rows?.[0]?.metricValues ?? [];
 
     return {
@@ -178,6 +213,19 @@ export async function fetchGAData(propertyId: string): Promise<GASummary | null>
       topCountries:    (countries.rows ?? []).map(r => ({ country: r.dimensionValues[0].value, sessions: parseInt(r.metricValues[0].value) })),
       deviceBreakdown: (devices.rows ?? []).map(r => ({ device: r.dimensionValues[0].value, sessions: parseInt(r.metricValues[0].value) })),
       dailyTrend:      (trend.rows ?? []).map(r => ({ date: r.dimensionValues[0].value, sessions: parseInt(r.metricValues[0].value) })),
+      topKeywords:     (keywords.rows ?? []).map(r => ({
+        query:       r.dimensionValues[0].value,
+        clicks:      parseInt(r.metricValues[0].value),
+        impressions: parseInt(r.metricValues[1].value),
+        ctr:         parseFloat((parseFloat(r.metricValues[2].value) * 100).toFixed(1)),
+        position:    parseFloat(parseFloat(r.metricValues[3].value).toFixed(1)),
+      })),
+      topFlows: (flows.rows ?? []).map(r => {
+        // Strip domain from referrer to get just the path for display
+        let from = r.dimensionValues[0].value;
+        try { from = new URL(from).pathname; } catch { /* keep raw if not a valid URL */ }
+        return { from, to: r.dimensionValues[1].value, views: parseInt(r.metricValues[0].value) };
+      }),
       dateRange:       'Last 30 Days',
     };
   } catch (err) {

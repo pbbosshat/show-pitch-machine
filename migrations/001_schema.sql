@@ -39,7 +39,8 @@ CREATE TABLE IF NOT EXISTS buyer_contacts (
   company_history       TEXT,
   notes                 TEXT,
   created_at            INTEGER,
-  updated_at            INTEGER
+  updated_at            INTEGER,
+  pitch_exclude         INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS mandate_updates (

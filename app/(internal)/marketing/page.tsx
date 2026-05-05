@@ -127,6 +127,88 @@ function fmtDuration(secs: number): string {
   return `${m}m ${s}s`;
 }
 
+function KeywordsPanel({ data }: { data: { query: string; clicks: number; impressions: number; ctr: number; position: number }[] }) {
+  if (data.length === 0) {
+    return (
+      <div className="rounded-lg p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>Search Keywords</p>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          No keyword data. Link Google Search Console to this GA4 property in Analytics → Admin → Search Console Links to see organic search queries.
+        </p>
+      </div>
+    );
+  }
+  const maxClicks = Math.max(...data.map(d => d.clicks), 1);
+  return (
+    <div className="rounded-lg p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Search Keywords</p>
+        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>clicks · impr · pos</span>
+      </div>
+      <div className="space-y-2.5">
+        {data.map(({ query, clicks, impressions, ctr, position }) => {
+          const pct = Math.round((clicks / maxClicks) * 100);
+          return (
+            <div key={query} className="space-y-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs truncate flex-1" style={{ color: 'var(--text-secondary)' }} title={query}>
+                  {query}
+                </span>
+                <span className="text-xs font-semibold tabular-nums shrink-0" style={{ color: 'var(--text-primary)' }}>
+                  {clicks.toLocaleString()}
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>
+                    {' '}· {impressions.toLocaleString()} · #{position}
+                  </span>
+                </span>
+              </div>
+              <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'var(--status-greenlit)' }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function FlowsPanel({ data }: { data: { from: string; to: string; views: number }[] }) {
+  // Group by source page, collapse same from→to pairs, then show top entries
+  const maxViews = Math.max(...data.map(d => d.views), 1);
+  return (
+    <div className="rounded-lg p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Navigation Flows</p>
+        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>internal page-to-page</span>
+      </div>
+      {data.length === 0 ? (
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No flow data yet.</p>
+      ) : (
+        <div className="space-y-2">
+          {data.map(({ from, to, views }, i) => {
+            const pct = Math.round((views / maxViews) * 100);
+            const fromLabel = from === '/' ? '(home)' : from;
+            const toLabel   = to   === '/' ? '(home)' : to;
+            return (
+              <div key={i} className="space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] truncate" style={{ color: 'var(--text-muted)', maxWidth: '38%' }} title={from}>{fromLabel}</span>
+                  <span className="text-[10px] shrink-0" style={{ color: 'var(--text-muted)' }}>→</span>
+                  <span className="text-[10px] truncate flex-1" style={{ color: 'var(--text-secondary)' }} title={to}>{toLabel}</span>
+                  <span className="text-[10px] font-semibold tabular-nums shrink-0" style={{ color: 'var(--text-primary)' }}>{views.toLocaleString()}</span>
+                </div>
+                <div className="h-0.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#8b5cf6' }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Data fetching ─────────────────────────────────────────────────────────────
 
 async function getGA(): Promise<{ data: GASummary | null; propertyId: string }> {
@@ -272,6 +354,13 @@ export default async function MarketingDashboard() {
             </div>
 
           </div>
+
+          {/* Keywords + Flows — 2-column row */}
+          <div className="grid grid-cols-2 gap-4">
+            <KeywordsPanel data={ga.topKeywords} />
+            <FlowsPanel    data={ga.topFlows} />
+          </div>
+
         </div>
       )}
     </div>

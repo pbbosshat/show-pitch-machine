@@ -8,6 +8,15 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 
+// Represents a linked available title (package/deck) associated with a site_show.
+// Sourced from available_titles WHERE site_show_id IS NOT NULL.
+export interface DeckLink {
+  id: string;
+  title: string;
+  slug: string | null;
+  site_show_id: string;
+}
+
 export interface SiteShow {
   id: string;
   title: string;
@@ -93,7 +102,15 @@ const ROW: React.CSSProperties = { marginBottom: 12 };
 
 const GENRES = ['Paranormal', 'Sports + Competition', 'Home + Lifestyle', 'Crime', 'Comedy', 'Food + Travel'];
 
-export default function MarketingShowsClient({ initialShows }: { initialShows: SiteShow[] }) {
+export default function MarketingShowsClient({
+  initialShows,
+  decksByShowId = {},
+}: {
+  initialShows: SiteShow[];
+  // Map of site_show_id → linked available_titles (deck packages). Defaults to empty so the
+  // component renders safely when called without this prop (e.g. storybook, tests).
+  decksByShowId?: Record<string, DeckLink[]>;
+}) {
   const [shows, setShows] = useState<SiteShow[]>(initialShows);
   const [editing, setEditing]     = useState<SiteShow | null>(null);
   const [form, setForm]           = useState<FormState | null>(null);
@@ -258,6 +275,46 @@ export default function MarketingShowsClient({ initialShows }: { initialShows: S
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                     {show.genre}
                   </p>
+                )}
+
+                {/* Deck links — shows linked available packages for this show */}
+                {(decksByShowId[show.id] ?? []).length > 0 && (
+                  <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {(decksByShowId[show.id] ?? []).map((deck) => (
+                      <a
+                        key={deck.id}
+                        href={`/marketing/available/${deck.id}/deck-settings`}
+                        onClick={(e) => e.stopPropagation()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          fontSize: 10,
+                          fontWeight: 600,
+                          color: 'var(--accent)',
+                          background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+                          border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
+                          borderRadius: 4,
+                          padding: '2px 7px',
+                          textDecoration: 'none',
+                          letterSpacing: '0.04em',
+                          textTransform: 'uppercase',
+                          cursor: 'pointer',
+                        }}
+                        title={`Open deck settings for "${deck.title}"`}
+                      >
+                        {/* small deck/layers icon */}
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                          <polyline points="2 17 12 22 22 17"/>
+                          <polyline points="2 12 12 17 22 12"/>
+                        </svg>
+                        Deck
+                      </a>
+                    ))}
+                  </div>
                 )}
 
                 {/* Production hours — shown on card so it's visible at a glance */}

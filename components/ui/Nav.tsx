@@ -72,6 +72,11 @@ function IconSizzle() {
   );
 }
 
+// Inbox tray — represents contact form leads from the public site
+function IconLeads() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>;
+}
+
 // Pulse / chart icon — represents live analytics dashboard
 function IconAnalytics() {
   return (
@@ -146,6 +151,7 @@ const marketingNavItems: NavItem[] = [
   { href: '/marketing/available', label: 'Available',     icon: <IconPipeline /> },
   { href: '/marketing/genres',    label: 'Genres',        icon: <IconTag /> },
   { href: '/marketing/content',   label: 'Content',       icon: <IconEdit /> },
+  { href: '/leads',               label: 'Leads',         icon: <IconLeads /> },
 ];
 
 interface NavUser { id: string; name: string; email: string; role: string | null; }
@@ -236,9 +242,9 @@ export default function Nav() {
     }
   }
 
-  // Auto-switch mode based on active route
+  // Auto-switch mode based on active route — /leads lives under Marketing
   useEffect(() => {
-    if (pathname.startsWith('/marketing')) setMode('marketing');
+    if (pathname.startsWith('/marketing') || pathname.startsWith('/leads')) setMode('marketing');
     else setMode('shows');
   }, [pathname]);
 

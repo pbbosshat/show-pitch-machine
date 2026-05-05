@@ -1,9 +1,11 @@
-// Webflow equivalent: .section.darkgrey with .container and a responsive image grid.
-// The Available page on myentertainment.tv displays artwork images that contain the
-// show title and description embedded in the graphic — no separate text labels needed.
-// paddingTop 100px clears the fixed nav.
+// Server component — queries the available_titles table directly.
+// Replaces the hardcoded AVAILABLE_SHOWS array with live DB data.
+// Cards link to /available/[slug] when a slug exists, to vimeo_url when not,
+// or are non-clickable when neither is set.
 
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import { query, initDb } from '@/lib/db';
 
 const OG_IMAGE = 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/67c9c4bc80ecce7a341a501c_MYE%20Banner%20.png';
 
@@ -27,71 +29,34 @@ export const metadata: Metadata = {
   },
 };
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Available show entries — images from the Webflow CDN.
-// Each item carries a "large" image (used in the grid card) and an optional
-// "thumb" for reference. Since the artwork contains show name + description,
-// we render only the large image.
-// ──────────────────────────────────────────────────────────────────────────────
-const CDN = 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e';
-const AVAILABLE_SHOWS = [
-  {
-    id: 'show-1',
-    large: `${CDN}/69135d967002171d5a647bad_The%20Art%20of%20Murder%20.png`,
-    alt: 'The Art of Murder — available title from MyEntertainment',
-    vimeoUrl: 'https://vimeo.com/1116791591/20323057f9',
-  },
-  {
-    id: 'show-2',
-    large: `${CDN}/69135d954ceff19e50189482_Botched%20by%20A%20TikTok%20Doc.png`,
-    alt: 'Botched by A TikTok Doc — available title from MyEntertainment',
-    vimeoUrl: 'https://vimeo.com/1085697854/293bac573a',
-  },
-  {
-    id: 'show-3',
-    large: `${CDN}/67c9e60a3d655f35fff44d19_Michelle%20Renee.png`,
-    alt: 'Michelle Renee — available title from MyEntertainment',
-    vimeoUrl: 'https://vimeo.com/1020264275/55db128984',
-  },
-  {
-    id: 'show-4',
-    large: `${CDN}/67ca10121d2919ac535085cc_Screenshot%202025-03-06%20at%204.13.45%20PM.png`,
-    alt: 'Available title from MyEntertainment',
-    vimeoUrl: 'https://vimeo.com/993640958/2e9d74f1da',
-  },
-  {
-    id: 'show-5',
-    large: `${CDN}/67c9ec19ddb6a5c59357144c_Screenshot%202025-03-06%20at%201.40.21%20PM.png`,
-    alt: 'Available title from MyEntertainment',
-    vimeoUrl: 'https://vimeo.com/1014504642/460bb75ad2',
-  },
-  {
-    id: 'show-6',
-    large: `${CDN}/67c9eb45e42d97eecedf274f_Screenshot%202025-03-06%20at%201.36.50%20PM.png`,
-    alt: 'Available title from MyEntertainment',
-    vimeoUrl: 'https://vimeo.com/1010691070/4d09f2144a',
-  },
-  {
-    id: 'show-7',
-    large: `${CDN}/69135d95e837871818cf12c5_Storm%20Warriors.png`,
-    alt: 'Storm Warriors — available title from MyEntertainment',
-    vimeoUrl: 'https://vimeo.com/1058661997/d23befd589',
-  },
-  {
-    id: 'show-8',
-    large: `${CDN}/67c9fd7bd89ef81a97ad9cdc_Screenshot%202025-03-06%20at%202.54.32%20PM.png`,
-    alt: 'Available title from MyEntertainment',
-    vimeoUrl: 'https://vimeo.com/958547025/93220f9860',
-  },
-  {
-    id: 'show-9',
-    large: `${CDN}/67c9eaf2adc0918387bf9935_Give%20Me%20Shelter%20.png`,
-    alt: 'Give Me Shelter — available title from MyEntertainment',
-    vimeoUrl: 'https://vimeo.com/1052365375/913e7080e5',
-  },
-];
+// Shape returned from the DB query — only the columns the grid needs.
+interface PublicTitle {
+  id: string;
+  title: string;
+  slug: string | null;
+  image_url: string | null;
+  vimeo_url: string | null;
+  is_active: number;
+}
+
+// Reads all active titles ordered by sort_order then title.
+// Returns an empty array on any DB error so the page still renders gracefully.
+function getTitles(): PublicTitle[] {
+  try {
+    initDb();
+    const rows = query<PublicTitle>(
+      'SELECT id, title, slug, image_url, vimeo_url FROM deck_sites WHERE is_active = 1 ORDER BY sort_order ASC, title ASC'
+    );
+    // Serialize through JSON to detach from the node:sqlite result proxy
+    return JSON.parse(JSON.stringify(rows));
+  } catch {
+    return [];
+  }
+}
 
 export default function AvailablePage() {
+  const titles = getTitles();
+
   return (
     // Webflow: body bg #000 — inherited from layout
     <div style={{ background: '#000' }}>
@@ -113,8 +78,6 @@ export default function AvailablePage() {
       >
         <h1
           style={{
-            // .subtitle-small in Webflow: color #e51d26, font-size 48px, uppercase,
-            // letter-spacing 0.2em, Roboto, text-align center
             fontFamily: "'Roboto', sans-serif",
             fontSize: 48,
             fontWeight: 400,
@@ -141,10 +104,9 @@ export default function AvailablePage() {
         <div style={{ maxWidth: 1180, margin: '0 auto' }}>
 
           {/*
-            2-column grid on desktop, 1-column on mobile.
-            Webflow uses .w-layout-grid with 2 equal columns.
-            Each card is just the artwork image — no overlay text since the
-            show title and description are baked into the image itself.
+            2-column grid on desktop, 1-column on mobile (≤479px via .available-grid media query).
+            Each card shows the artwork image; the card is wrapped in a Link for slug pages,
+            an <a> for external vimeo links, or a bare <div> when neither is set.
           */}
           <div
             className="available-grid"
@@ -155,27 +117,68 @@ export default function AvailablePage() {
               marginBottom: 48,
             }}
           >
-            {AVAILABLE_SHOWS.map((show) => {
-              const inner = (
+            {titles.map((t) => {
+              // Inner content: image if image_url exists, placeholder div otherwise
+              const inner = t.image_url ? (
                 <img
-                  src={show.large}
-                  alt={show.alt}
+                  src={t.image_url}
+                  alt={`${t.title} — available title from MyEntertainment`}
                   loading="lazy"
                   style={{ width: '100%', height: 'auto', display: 'block' }}
                 />
-              );
-              return show.vimeoUrl ? (
-                <a
-                  key={show.id}
-                  href={show.vimeoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ display: 'block', overflow: 'hidden' }}
-                >
-                  {inner}
-                </a>
               ) : (
-                <div key={show.id} style={{ display: 'block', overflow: 'hidden' }}>
+                // Placeholder when no image_url — 16:9 dark box with the title centered
+                <div
+                  style={{
+                    width: '100%',
+                    aspectRatio: '16/9',
+                    background: '#111',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <span
+                    style={{
+                      color: '#444',
+                      fontSize: 12,
+                      fontFamily: "'Roboto', sans-serif",
+                    }}
+                  >
+                    {t.title}
+                  </span>
+                </div>
+              );
+
+              // Routing priority: internal slug page > external vimeo > non-clickable div
+              if (t.slug) {
+                return (
+                  <Link
+                    key={t.id}
+                    href={`/available/${t.slug}`}
+                    style={{ display: 'block', overflow: 'hidden' }}
+                  >
+                    {inner}
+                  </Link>
+                );
+              }
+
+              if (t.vimeo_url) {
+                return (
+                  <a
+                    key={t.id}
+                    href={t.vimeo_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: 'block', overflow: 'hidden' }}
+                  >
+                    {inner}
+                  </a>
+                );
+              }
+
+              return (
+                <div key={t.id} style={{ display: 'block', overflow: 'hidden' }}>
                   {inner}
                 </div>
               );
@@ -197,7 +200,6 @@ export default function AvailablePage() {
             <a
               href="mailto:info@myentertainment.tv"
               style={{
-                // Webflow: .get-started-link color (#e02027) used for inline email links too
                 color: '#e02027',
                 textDecoration: 'none',
               }}
@@ -210,10 +212,7 @@ export default function AvailablePage() {
       </section>
 
       {/* ── Responsive breakpoints ── */}
-      {/*
-        Webflow mobile portrait (≤479px): collapse to single column
-        Webflow tablet (≤991px): still 2 columns — matches Webflow behavior
-      */}
+      {/* Webflow mobile portrait (≤479px): collapse to single column */}
       <style>{`
         @media (max-width: 479px) {
           .available-grid { grid-template-columns: 1fr !important; }

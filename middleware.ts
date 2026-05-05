@@ -36,6 +36,9 @@ const PUBLIC_PREFIXES = [
   '/favicon.ico',
   '/shows/',          // dynamic show detail pages e.g. /shows/some-slug
   '/press-releases/', // individual press release / article pages
+  '/available/',      // buyer pitch deck pages — each has its own deck password gate
+  '/api/available/',  // deck password verify endpoint — must be callable without a session
+  '/api/contact',     // POST is public (form submission); GET enforces auth inside the handler
 ];
 
 export function middleware(request: NextRequest) {
