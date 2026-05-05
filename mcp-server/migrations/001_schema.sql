@@ -244,6 +244,25 @@ CREATE TABLE IF NOT EXISTS pitch_portals (
   created_at INTEGER
 );
 
+-- ── Production companies (must precede shows for FK resolution) ──────────────
+
+CREATE TABLE IF NOT EXISTS production_companies (
+  id              TEXT PRIMARY KEY,
+  name            TEXT NOT NULL,
+  name_normalized TEXT NOT NULL,
+  ownership_type  TEXT DEFAULT 'independent',
+  parent_company  TEXT,
+  genres          TEXT,  -- JSON array
+  strategic_tag   TEXT DEFAULT 'watch_list',
+  notes           TEXT,
+  website         TEXT,
+  hq_city         TEXT,
+  created_at      INTEGER,
+  updated_at      INTEGER
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_prodco_name ON production_companies(name_normalized);
+
 -- ── Shows (comp database + MYE produced) ──────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS shows (
@@ -482,24 +501,7 @@ CREATE TABLE IF NOT EXISTS dev_tasks (
   created_at       TEXT DEFAULT NOW()
 );
 
--- ── Production companies and deals (from 005_people_and_prodcos) ──────────────
-
-CREATE TABLE IF NOT EXISTS production_companies (
-  id              TEXT PRIMARY KEY,
-  name            TEXT NOT NULL,
-  name_normalized TEXT NOT NULL,
-  ownership_type  TEXT DEFAULT 'independent',
-  parent_company  TEXT,
-  genres          TEXT,  -- JSON array
-  strategic_tag   TEXT DEFAULT 'watch_list',
-  notes           TEXT,
-  website         TEXT,
-  hq_city         TEXT,
-  created_at      INTEGER,
-  updated_at      INTEGER
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_prodco_name ON production_companies(name_normalized);
+-- ── Deals (from 005_people_and_prodcos) ──────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS deals (
   id           TEXT PRIMARY KEY,
