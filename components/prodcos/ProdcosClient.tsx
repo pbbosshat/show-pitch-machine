@@ -260,7 +260,7 @@ export default function ProdcosClient({ initialProdcos }: ProdcosClientProps) {
     return [...filtered].sort((a, b) => {
       const getVal = (p: ProductionCompany) => {
         if (sort.col === 'city') return cityOrRegion(p.hq_city, p.region);
-        return (p as Record<string, unknown>)[sort.col!];
+        return (p as unknown as Record<string, unknown>)[sort.col!];
       };
       const av = getVal(a); const bv = getVal(b);
       if (av == null && bv == null) return 0; if (av == null) return 1; if (bv == null) return -1;
