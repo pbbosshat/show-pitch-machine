@@ -301,21 +301,6 @@ async function main(): Promise<void> {
       return;
     }
 
-    // ── /debug/tables — list all tables so we can verify migrations ran ───────
-    if (url === '/debug/tables' && method === 'GET') {
-      try {
-        const { rows } = await pool.query(
-          "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename"
-        );
-        const migrations = await pool.query('SELECT filename, applied_at FROM schema_migrations ORDER BY applied_at').catch(() => ({ rows: [] }));
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ tables: rows.map((r: { tablename: string }) => r.tablename), migrations: migrations.rows }));
-      } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: (err as Error).message }));
-      }
-      return;
-    }
 
     // ── /mcp — MCP protocol endpoint ─────────────────────────────────────────
     // Handles both GET (SSE stream establishment) and POST (JSON-RPC calls).

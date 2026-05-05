@@ -194,7 +194,7 @@ export async function handleIngestArticles(
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('[ingest/articles] Error:', err);
-    sendJson(res, 500, { error: 'Database error during ingest', detail: (err as Error).message, stack: ((err as Error).stack ?? '').split('\n').slice(0, 8).join(' | ') });
+    sendJson(res, 500, { error: 'Database error during ingest' });
     return;
   } finally {
     client.release();
@@ -283,7 +283,7 @@ export async function handleIngestOrders(
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('[ingest/orders] Error:', err);
-    sendJson(res, 500, { error: 'Database error during ingest', detail: (err as Error).message, stack: ((err as Error).stack ?? '').split('\n').slice(0, 8).join(' | ') });
+    sendJson(res, 500, { error: 'Database error during ingest' });
     return;
   } finally {
     client.release();
@@ -371,7 +371,7 @@ export async function handleIngestShows(
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('[ingest/shows] Error:', err);
-    sendJson(res, 500, { error: 'Database error during ingest', detail: (err as Error).message, stack: ((err as Error).stack ?? '').split('\n').slice(0, 8).join(' | ') });
+    sendJson(res, 500, { error: 'Database error during ingest' });
     return;
   } finally {
     client.release();
@@ -487,7 +487,7 @@ export async function handleIngestBuyers(
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('[ingest/buyers] Error:', err);
-    sendJson(res, 500, { error: 'Database error during ingest', detail: (err as Error).message, stack: ((err as Error).stack ?? '').split('\n').slice(0, 8).join(' | ') });
+    sendJson(res, 500, { error: 'Database error during ingest' });
     return;
   } finally {
     client.release();
@@ -586,7 +586,7 @@ export async function handleIngestPipeline(
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('[ingest/pipeline] Error:', err);
-    sendJson(res, 500, { error: 'Database error during ingest', detail: (err as Error).message, stack: ((err as Error).stack ?? '').split('\n').slice(0, 8).join(' | ') });
+    sendJson(res, 500, { error: 'Database error during ingest' });
     return;
   } finally {
     client.release();
