@@ -15,10 +15,15 @@ import type { GmailMessage } from '../types';
 // subject defaults to GMAIL_NEWSLETTER_USER but can be overridden to impersonate
 // any gototeam.com / assignmentdesk.com mailbox via domain-wide delegation.
 function getServiceAccountAuth(scopes: string[], subject?: string) {
-  const keyPath =
-    process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH ||
-    'C:/Users/pb/.claude/google/service_account.json';
-  const key = JSON.parse(fs.readFileSync(keyPath, 'utf-8'));
+  // On Railway, the key is injected as a JSON string env var.
+  // Locally, fall back to the file on disk.
+  const key = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+    ? JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON)
+    : JSON.parse(fs.readFileSync(
+        process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH ||
+        'C:/Users/pb/.claude/google/service_account.json',
+        'utf-8'
+      ));
 
   const auth = new google.auth.JWT({
     email: key.client_email,
@@ -245,9 +250,21 @@ const MYE_PIPELINE_MAILBOXES = [
 // Fetch buyer emails across all key myentprod.com mailboxes via service account DWD.
 // Individual mailbox failures are warned and skipped — DWD may not cover every account.
 // Cross-mailbox duplicates (same thread forwarded internally) are suppressed within a run.
+// Contacts with pitch_exclude=1 in buyer_contacts are excluded so production-show
+// correspondence (Ghost Adventures execs etc.) doesn't pollute the pitch pipeline.
 export async function getMYEPipelineMessages(sinceDate?: Date): Promise<GmailMessage[]> {
   const after = sinceDate ? Math.floor(sinceDate.getTime() / 1000) : undefined;
-  const q = [`(${MYE_BUYER_DOMAIN_FILTER})`, after ? `after:${after}` : ''].filter(Boolean).join(' ');
+
+  // Build -from: exclusions for production-show contacts flagged in the DB
+  const excluded = query<{ email: string }>(
+    "SELECT email FROM buyer_contacts WHERE pitch_exclude = 1 AND email IS NOT NULL AND email != ''"
+  );
+  const exclusionClause = excluded.length > 0
+    ? excluded.map((r) => `-from:${r.email}`).join(' ')
+    : '';
+
+  const q = [`(${MYE_BUYER_DOMAIN_FILTER})`, exclusionClause, after ? `after:${after}` : '']
+    .filter(Boolean).join(' ');
   const ingested = getIngestedThreadIds();
   const results: GmailMessage[] = [];
 
@@ -259,18 +276,23 @@ export async function getMYEPipelineMessages(sinceDate?: Date): Promise<GmailMes
       );
       const gmail = google.gmail({ version: 'v1', auth });
 
-      const listRes = await gmail.users.messages.list({ userId: 'me', q, maxResults: 50 });
-      const msgs = listRes.data.messages ?? [];
+      // Paginate through all results — 500/page is Gmail's max per request
+      let pageToken: string | undefined;
+      do {
+        const listRes = await gmail.users.messages.list({ userId: 'me', q, maxResults: 500, pageToken });
+        const msgs = listRes.data.messages ?? [];
+        pageToken = listRes.data.nextPageToken ?? undefined;
 
-      for (const m of msgs) {
-        if (!m.id) continue;
-        const full = await gmail.users.messages.get({ userId: 'me', id: m.id, format: 'full' });
-        const parsed = parseMessage(full.data);
-        if (!ingested.has(parsed.threadId)) {
-          results.push(parsed);
-          ingested.add(parsed.threadId); // suppress cross-mailbox duplicates within this run
+        for (const m of msgs) {
+          if (!m.id) continue;
+          const full = await gmail.users.messages.get({ userId: 'me', id: m.id, format: 'full' });
+          const parsed = parseMessage(full.data);
+          if (!ingested.has(parsed.threadId)) {
+            results.push(parsed);
+            ingested.add(parsed.threadId); // suppress cross-mailbox duplicates within this run
+          }
         }
-      }
+      } while (pageToken);
     } catch (err) {
       console.warn(`[gmail] getMYEPipelineMessages skipping ${mailbox}:`,
         err instanceof Error ? err.message : err);
