@@ -216,8 +216,8 @@ export default function BuyersClient({ initialBuyers }: BuyersClientProps) {
   const sorted = useMemo(() => {
     if (!sort.col) return filtered;
     return [...filtered].sort((a, b) => {
-      const av = (a as Record<string, unknown>)[sort.col!];
-      const bv = (b as Record<string, unknown>)[sort.col!];
+      const av = (a as unknown as Record<string, unknown>)[sort.col!];
+      const bv = (b as unknown as Record<string, unknown>)[sort.col!];
       if (av == null && bv == null) return 0;
       if (av == null) return 1;
       if (bv == null) return -1;
