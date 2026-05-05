@@ -41,8 +41,7 @@ const PUBLIC_PREFIXES = [
   '/api/contact',         // POST is public (form submission); GET enforces auth inside the handler
   '/api/admin/db-restore', // protected by ADMIN_RESTORE_SECRET header, not session cookie
   '/api/viqi',            // protected by VIQI_PROXY_SECRET header, not session cookie
-  '/api/scraper/run',     // called by internal scheduler (no session cookie in cron context)
-  '/api/scraper/log',     // polled by dashboard after triggering a run
+  '/api/ingest/',         // Bang pushes classified articles here via INGEST_API_KEY (no session)
 ];
 
 export function middleware(request: NextRequest) {

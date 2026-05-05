@@ -31,6 +31,8 @@ set LOG=%PROJECT%\data\scrape.log
 set PUPPETEER_CACHE_DIR=C:\Users\BubbaBang_old\.cache\puppeteer
 set RAILWAY_MCP_URL=https://mcp-server-production-f138.up.railway.app
 set RAILWAY_INGEST_KEY=ingest_dd8210af261f2c8053f6d38e5ca6217cd215340e73b7746e767123d6f43ae796
+set RAILWAY_APP_URL=https://app-production-1ac7.up.railway.app
+set RAILWAY_APP_KEY=ingest_dd8210af261f2c8053f6d38e5ca6217cd215340e73b7746e767123d6f43ae796
 
 echo [%DATE% %TIME%] ===== Daily run starting ===== >> %LOG%
 
