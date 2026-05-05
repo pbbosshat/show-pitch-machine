@@ -12,13 +12,19 @@ const nextConfig: NextConfig = {
     "csv-parse",
   ],
   webpack: (config) => {
-    // Teach webpack to resolve node: protocol built-ins (e.g. node:sqlite) as CommonJS externals.
-    // Without this, server components that transitively import lib/db.ts fail at runtime because
-    // webpack bundles them as URL-type externals which Node's CommonJS loader can't resolve.
+    // Externalize native binary packages in ALL webpack bundles (server + browser).
+    // serverExternalPackages only helps for Server Component compilation, but lib/*.ts
+    // files (embed.ts, vectors.ts) are traversed directly by webpack and their
+    // transitive .node binaries trigger nextErrorBrowserBinaryLoader at build time.
+    const nativePkgs = ['fastembed', '@lancedb/lancedb', 'onnxruntime-node', '@anush008/tokenizers', 'better-sqlite3'];
+
     config.externals = [
       ...(Array.isArray(config.externals) ? config.externals : [config.externals].filter(Boolean)),
       ({ request }: { request?: string }, callback: (err?: Error | null, result?: string) => void) => {
         if (request?.startsWith('node:')) {
+          return callback(null, `commonjs ${request}`);
+        }
+        if (nativePkgs.some(pkg => request === pkg || request?.startsWith(`${pkg}/`))) {
           return callback(null, `commonjs ${request}`);
         }
         callback();
