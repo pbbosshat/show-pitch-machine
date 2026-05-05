@@ -26,6 +26,9 @@ export function getDb(): DatabaseSync {
 
   // WAL mode dramatically improves concurrent read performance for dashboard queries
   _db.exec('PRAGMA journal_mode = WAL;');
+  // Retry for up to 10s when another connection holds the write lock (e.g. Next.js
+  // build runs 31 parallel workers that all open the DB simultaneously).
+  _db.exec('PRAGMA busy_timeout = 10000;');
   // Foreign key enforcement is off by default in SQLite — turn it on for referential safety
   _db.exec('PRAGMA foreign_keys = ON;');
 
