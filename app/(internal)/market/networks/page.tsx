@@ -1,3 +1,5 @@
+﻿export const dynamic = 'force-dynamic';
+
 // Networks list page — server component.
 // Queries the DB directly (avoids auth-middleware redirect that blocks server-side HTTP fetches).
 // Delegates search + table rendering to NetworksClient (client component).

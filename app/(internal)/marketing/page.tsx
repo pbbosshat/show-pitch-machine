@@ -1,3 +1,5 @@
+﻿export const dynamic = 'force-dynamic';
+
 // Marketing Dashboard — Website Analytics for myentertainment.tv
 // GA4 property 486537975 (account 352948949).
 // Property ID falls back to GA4_PROPERTY_ID env var if not stored in site_content DB.

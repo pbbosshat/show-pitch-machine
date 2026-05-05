@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 // Server component for the public show package page.
 // Fetches title data from DB, strips the password before passing to the client,
 // and delegates rendering (including the password gate) to AvailablePackageClient.
@@ -11,6 +13,7 @@ import AvailablePackageClient from './AvailablePackageClient';
 import GottaCatchEmAllOneSheet from './GottaCatchEmAllOneSheet';
 import HauntedWorldOneSheet from './HauntedWorldOneSheet';
 import MissingInAmericaOneSheet from './MissingInAmericaOneSheet';
+import HeartlandPowerOneSheet from './HeartlandPowerOneSheet';
 
 // Full DB row — password included here so we can compute has_password server-side.
 // The actual password value is never forwarded to the client component.
@@ -130,6 +133,9 @@ export default async function AvailablePackagePage(
   }
   if (slug === 'missing-in-america') {
     return <MissingInAmericaOneSheet title={safeTitle} />;
+  }
+  if (slug === 'heartland-power') {
+    return <HeartlandPowerOneSheet title={safeTitle} />;
   }
 
   return <AvailablePackageClient title={safeTitle} />;

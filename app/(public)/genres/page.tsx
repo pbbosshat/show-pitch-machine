@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 // ============================================================
 // Public genres page — driven by site_genres + site_shows DB tables.
 // Genre order from site_genres.sort_order; shows ordered by sort_order

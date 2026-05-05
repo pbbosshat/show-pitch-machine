@@ -1,3 +1,5 @@
+﻿export const dynamic = 'force-dynamic';
+
 // Show DB — server component fetches all shows directly from SQLite (no HTTP round-trip).
 // Passes the full dataset to ShowDbClient which handles search, filter, sort, and inline edit.
 // Pattern mirrors app/(internal)/buyers/page.tsx exactly.

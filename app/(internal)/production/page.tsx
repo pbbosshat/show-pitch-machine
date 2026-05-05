@@ -1,3 +1,5 @@
+﻿export const dynamic = 'force-dynamic';
+
 // /production — Shows Command Center.
 // Reached by clicking the SHOWS button in the sidebar.
 // Answers the two questions that matter: how many hours are we on air,

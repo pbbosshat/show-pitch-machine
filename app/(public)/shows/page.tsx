@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 // ============================================================
 // Public shows page — queries site_shows directly (no HTTP fetch, no auth loop).
 // Edits made in /marketing/shows are reflected here immediately on next page load.

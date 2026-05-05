@@ -1,3 +1,5 @@
+﻿export const dynamic = 'force-dynamic';
+
 // Marketing Shows — server wrapper that queries site_shows directly (no HTTP fetch, no auth loop).
 // Edits made here via the modal write to the DB and immediately reflect on the public /shows page.
 import MarketingShowsClient, { type SiteShow, type DeckLink } from '@/components/marketing/MarketingShowsClient';

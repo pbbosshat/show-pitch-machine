@@ -1,3 +1,5 @@
+﻿export const dynamic = 'force-dynamic';
+
 // Buyers Directory — server component queries the DB directly and passes the dataset
 // to BuyersClient which handles search, filter, and sort interactivity.
 // Direct DB query avoids the auth-middleware redirect that blocks server-side HTTP fetches.

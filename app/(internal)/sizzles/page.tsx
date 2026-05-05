@@ -1,3 +1,5 @@
+﻿export const dynamic = 'force-dynamic';
+
 // Sizzle Asset Catalog — server component, queries SQLite directly (no HTTP round-trip).
 // Sizzle reels are first-class brand assets (produced video reels that cost real money),
 // so this page is the canonical inventory. Two sections:

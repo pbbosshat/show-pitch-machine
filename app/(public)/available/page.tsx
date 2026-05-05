@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 // Server component — queries the available_titles table directly.
 // Replaces the hardcoded AVAILABLE_SHOWS array with live DB data.
 // Cards link to /available/[slug] when a slug exists, to vimeo_url when not,

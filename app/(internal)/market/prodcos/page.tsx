@@ -1,3 +1,5 @@
+﻿export const dynamic = 'force-dynamic';
+
 // Production Companies directory — server component queries DB directly (bypasses middleware),
 // passes full list to client component which handles search + filter in-memory.
 

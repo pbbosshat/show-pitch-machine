@@ -1,3 +1,5 @@
+﻿export const dynamic = 'force-dynamic';
+
 // Marketing Available — server component: reads available_titles directly from the DB
 // and passes the rows down to AvailableClient for all interactive card-grid features.
 // Uses a synchronous DB call (no async fetch) so the page works without the API server running.

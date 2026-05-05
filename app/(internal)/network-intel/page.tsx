@@ -1,3 +1,5 @@
+﻿export const dynamic = 'force-dynamic';
+
 // /network-intel — Network buying intelligence dashboard.
 // Pulls all buyer_companies from the DB. market_score and related intel
 // columns are set via migration 018 and updated manually each quarter.

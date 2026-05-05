@@ -1,3 +1,5 @@
+﻿export const dynamic = 'force-dynamic';
+
 // Internal admin dashboard — all decks in one place.
 // available_titles was merged into deck_sites; every show's deck is now a single row here.
 //

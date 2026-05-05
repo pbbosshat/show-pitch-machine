@@ -1,3 +1,5 @@
+﻿export const dynamic = 'force-dynamic';
+
 // Shows Database — server component queries DB directly (avoids auth-middleware redirect),
 // passes full list to ShowsClient which handles search and filter interactivity.
 

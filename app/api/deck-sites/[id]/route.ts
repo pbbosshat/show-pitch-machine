@@ -115,6 +115,7 @@ export async function PUT(
     const allowed = [
       'slug', 'title', 'subtitle', 'logline', 'canva_url', 'genre', 'format',
       'ep_count', 'network_target', 'ep_name', 'status', 'visibility', 'gate_password',
+      'image_url', 'vimeo_url', 'description', 'runtime_mins', 'episode_count',
     ] as const;
 
     const setClauses: string[] = [];

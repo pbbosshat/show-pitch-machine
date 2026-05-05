@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 // Server component — rendered headlessly by Puppeteer when exporting the pitch deck PDF.
 // No password gate, no nav, no interactive elements. Pure print layout.
 // Accessed at /available/[slug]/pdf-render — only intended for internal Puppeteer use.
