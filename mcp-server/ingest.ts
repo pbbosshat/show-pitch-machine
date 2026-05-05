@@ -110,8 +110,8 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.end(payload);
 }
 
-/** Current Unix time in seconds (Postgres INTEGER max is ~2.1B; nowSec() is ms). */
-const nowSec = (): number => Math.floor(nowSec() / 1000);
+/** Current Unix time in seconds (Postgres INTEGER max is ~2.1B; Date.now() is ms). */
+const nowSec = (): number => Math.floor(Date.now() / 1000);
 
 /**
  * Normalize a timestamp that may be in milliseconds to seconds.
