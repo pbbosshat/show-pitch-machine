@@ -96,7 +96,7 @@ interface Pitch {
   pass_reason_cat?: string;
 }
 
-// ── Helper ────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 /**
  * Send a JSON response with the given status code.
@@ -108,6 +108,20 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
     'Content-Length': Buffer.byteLength(payload),
   });
   res.end(payload);
+}
+
+/** Current Unix time in seconds (Postgres INTEGER max is ~2.1B; nowSec() is ms). */
+const nowSec = (): number => Math.floor(nowSec() / 1000);
+
+/**
+ * Normalize a timestamp that may be in milliseconds to seconds.
+ * SQLite stores some dates as Unix-ms (>= 1e12); Postgres INTEGER columns need seconds.
+ */
+function normTs(v: number | string | null | undefined): number | null {
+  if (v == null) return null;
+  const n = typeof v === 'string' ? parseInt(v, 10) : v;
+  if (!Number.isFinite(n)) return null;
+  return n >= 1_000_000_000_000 ? Math.floor(n / 1000) : n;
 }
 
 // ── Route handlers ────────────────────────────────────────────────────────────
@@ -165,7 +179,7 @@ export async function handleIngestArticles(
            item_type  = EXCLUDED.item_type,
            scraped_at = EXCLUDED.scraped_at
          RETURNING (xmax = 0) AS was_inserted`,
-        [id, article.source, article.url, article.headline, article.body, article.item_type, article.scraped_at]
+        [id, article.source, article.url, article.headline, article.body, article.item_type, normTs(article.scraped_at)]
       );
 
       // xmax = 0 means it was a fresh INSERT; xmax != 0 means it was an UPDATE
@@ -245,7 +259,7 @@ export async function handleIngestOrders(
                  source = $8
              WHERE source_url = $9`,
             [order.show_title, order.network, order.format, order.genre,
-             order.episode_count, order.order_type, order.order_date,
+             order.episode_count, order.order_type, normTs(order.order_date),
              order.source, order.source_url]
           );
           updated++;
@@ -259,8 +273,8 @@ export async function handleIngestOrders(
             order_date, source, source_url, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
         [id, order.show_title, order.network, order.format, order.genre,
-         order.episode_count, order.order_type, order.order_date,
-         order.source, order.source_url, Date.now()]
+         order.episode_count, order.order_type, normTs(order.order_date),
+         order.source, order.source_url, nowSec()]
       );
       inserted++;
     }
@@ -341,9 +355,9 @@ export async function handleIngestShows(
         [id, show.title, show.title_normalized, show.network ?? null,
          show.production_company ?? null, show.showrunner ?? null,
          show.host ?? null, show.format ?? null, show.genre ?? null,
-         show.status ?? null, show.greenlit_date ?? null,
+         show.status ?? null, normTs(show.greenlit_date),
          show.source ?? null, show.source_url ?? null,
-         show.data_source ?? 'trade', Date.now()]
+         show.data_source ?? 'trade', nowSec()]
       );
 
       if (result.rows[0]?.was_inserted) {
@@ -416,7 +430,7 @@ export async function handleIngestBuyers(
            tier = COALESCE(EXCLUDED.tier, buyer_companies.tier),
            updated_at = EXCLUDED.updated_at
          RETURNING (xmax = 0) AS was_inserted`,
-        [id, company.name, company.type ?? null, company.tier ?? null, Date.now()]
+        [id, company.name, company.type ?? null, company.tier ?? null, nowSec()]
       );
 
       if (result.rows[0]?.was_inserted) inserted++;
@@ -447,7 +461,7 @@ export async function handleIngestBuyers(
              WHERE email = $8`,
             [contact.name, contact.title ?? null, contact.company_id ?? null,
              contact.mandate_statement ?? null, contact.activity_status ?? null,
-             contact.last_greenlit_date ?? null, Date.now(), contact.email]
+             normTs(contact.last_greenlit_date), nowSec(), contact.email]
           );
           updated++;
           continue;
@@ -463,8 +477,8 @@ export async function handleIngestBuyers(
          ON CONFLICT (id) DO NOTHING`,
         [id, contact.name, contact.email ?? null, contact.title ?? null,
          contact.company_id ?? null, contact.mandate_statement ?? null,
-         contact.activity_status ?? 'unknown', contact.last_greenlit_date ?? null,
-         Date.now()]
+         contact.activity_status ?? 'unknown', normTs(contact.last_greenlit_date),
+         nowSec()]
       );
       inserted++;
     }
@@ -538,7 +552,7 @@ export async function handleIngestPipeline(
          RETURNING (xmax = 0) AS was_inserted`,
         [id, pkg.name, pkg.ip_id ?? null, pkg.target_company_id ?? null,
          pkg.target_contact_id ?? null, pkg.pipeline_stage ?? 'proposal',
-         pkg.status ?? 'draft', Date.now()]
+         pkg.status ?? 'draft', nowSec()]
       );
 
       if (result.rows[0]?.was_inserted) inserted++;
@@ -559,9 +573,9 @@ export async function handleIngestPipeline(
            pass_reason_cat = COALESCE(EXCLUDED.pass_reason_cat, pitches.pass_reason_cat)
          RETURNING (xmax = 0) AS was_inserted`,
         [id, pitch.ip_id ?? null, pitch.buyer_company_id ?? null,
-         pitch.buyer_contact_id ?? null, pitch.pitch_date ?? null,
+         pitch.buyer_contact_id ?? null, normTs(pitch.pitch_date),
          pitch.outcome ?? null, pitch.pass_reason ?? null,
-         pitch.pass_reason_cat ?? null, Date.now()]
+         pitch.pass_reason_cat ?? null, nowSec()]
       );
 
       if (result.rows[0]?.was_inserted) inserted++;
