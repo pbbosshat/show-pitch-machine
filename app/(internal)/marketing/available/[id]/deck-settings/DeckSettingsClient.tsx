@@ -7,8 +7,15 @@
 // Error display: exact API error message shown inline (never a generic message).
 
 import { useState, useEffect } from 'react';
+import { toVimeoEmbedUrl } from '@/lib/vimeo';
 
 // ── Types ────────────────────────────────────────────────────────────────────
+
+// A single entry in the sizzle reel version history.
+export interface SizzleEntry {
+  url: string;
+  added_at: number; // Unix timestamp seconds
+}
 
 // Deck row shape from deck_sites for the one-page catalog editor.
 // Exported so the server component can import the type for its return value.
@@ -30,6 +37,7 @@ export interface AvailableTitle {
   vimeo_url: string | null;
   password: string | null;      // aliased from gate_password by the server query
   site_show_id: string | null;
+  sizzle_history: SizzleEntry[]; // parsed by the API from JSON; always an array
 }
 
 // All editable fields as strings for controlled inputs.
@@ -48,8 +56,9 @@ interface FormState {
   is_active: boolean;
   sort_order: string;
   image_url: string;
-  vimeo_url: string;
+  vimeo_url: string;       // active sizzle URL; must match an entry in sizzle_history
   password: string;
+  sizzle_history: SizzleEntry[]; // full version list managed by the picker
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -63,21 +72,22 @@ function toFormState(t: AvailableTitle): FormState {
     catch { marketsStr = t.markets; }
   }
   return {
-    title:         t.title,
-    slug:          t.slug          ?? '',
-    rights_type:   t.rights_type   ?? '',
-    genre:         t.genre         ?? '',
-    seasons:       t.seasons       != null ? String(t.seasons)       : '',
-    episode_count: t.episode_count != null ? String(t.episode_count) : '',
-    runtime_mins:  t.runtime_mins  != null ? String(t.runtime_mins)  : '',
-    markets:       marketsStr,
-    description:   t.description   ?? '',
-    contact_email: t.contact_email ?? '',
-    is_active:     !!t.is_active,
-    sort_order:    String(t.sort_order ?? 0),
-    image_url:     t.image_url     ?? '',
-    vimeo_url:     t.vimeo_url     ?? '',
-    password:      t.password      ?? '',
+    title:          t.title,
+    slug:           t.slug          ?? '',
+    rights_type:    t.rights_type   ?? '',
+    genre:          t.genre         ?? '',
+    seasons:        t.seasons       != null ? String(t.seasons)       : '',
+    episode_count:  t.episode_count != null ? String(t.episode_count) : '',
+    runtime_mins:   t.runtime_mins  != null ? String(t.runtime_mins)  : '',
+    markets:        marketsStr,
+    description:    t.description   ?? '',
+    contact_email:  t.contact_email ?? '',
+    is_active:      !!t.is_active,
+    sort_order:     String(t.sort_order ?? 0),
+    image_url:      t.image_url     ?? '',
+    vimeo_url:      t.vimeo_url     ?? '',
+    password:       t.password      ?? '',
+    sizzle_history: Array.isArray(t.sizzle_history) ? t.sizzle_history : [],
   };
 }
 
@@ -144,6 +154,227 @@ const GENRES = [
   'Food + Travel',
 ];
 
+// ── SizzlePicker ─────────────────────────────────────────────────────────────
+
+interface SizzlePickerProps {
+  // The current active Vimeo URL (may be empty when no sizzle is set)
+  activeUrl: string;
+  // Full ordered history: most recently added is last
+  history: SizzleEntry[];
+  // Saving state forwarded from parent so "Add" button can disable during save
+  saving: boolean;
+  // Called with the updated activeUrl and updated history array
+  onChange: (activeUrl: string, history: SizzleEntry[]) => void;
+}
+
+/**
+ * SizzlePicker — manages the list of all stored sizzle reel URLs.
+ *
+ * Each row shows the URL with an "Active" badge or a "Set Active" button.
+ * The "Add sizzle URL" form at the bottom appends a new URL, normalises it
+ * to the embed format, marks it active, and fires onChange immediately.
+ */
+function SizzlePicker({ activeUrl, history, saving, onChange }: SizzlePickerProps) {
+  const [newUrl, setNewUrl] = useState('');
+  const [addError, setAddError] = useState<string | null>(null);
+
+  // Normalise activeUrl for comparison so different URL formats still match
+  const normalisedActive = toVimeoEmbedUrl(activeUrl);
+
+  function isActive(entry: SizzleEntry): boolean {
+    return entry.url === activeUrl || entry.url === normalisedActive;
+  }
+
+  // Set an existing history entry as the active sizzle URL
+  function handleSetActive(entry: SizzleEntry) {
+    onChange(entry.url, history);
+  }
+
+  // Add a brand-new URL: normalise, deduplicate, append, set active
+  function handleAdd() {
+    const trimmed = newUrl.trim();
+    if (!trimmed) {
+      setAddError('Please enter a URL.');
+      return;
+    }
+    setAddError(null);
+
+    const normalised = toVimeoEmbedUrl(trimmed);
+
+    // Deduplicate: if this URL (raw or normalised) is already in history,
+    // just promote it to active without adding a duplicate entry
+    const existingIndex = history.findIndex(
+      (e) => e.url === trimmed || e.url === normalised
+    );
+
+    let updatedHistory: SizzleEntry[];
+    let activeEntry: SizzleEntry;
+
+    if (existingIndex >= 0) {
+      // Already exists — reuse the existing entry (keep its original added_at)
+      activeEntry = history[existingIndex];
+      updatedHistory = history;
+    } else {
+      // New URL — append to end of history
+      activeEntry = { url: normalised, added_at: Math.floor(Date.now() / 1000) };
+      updatedHistory = [...history, activeEntry];
+    }
+
+    setNewUrl('');
+    onChange(activeEntry.url, updatedHistory);
+  }
+
+  // Format Unix timestamp to a readable date string (local timezone)
+  function formatDate(ts: number): string {
+    return new Date(ts * 1000).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+
+  return (
+    <div>
+      {/* ── History list ──────────────────────────────────────────────── */}
+      {history.length === 0 ? (
+        <p style={{ ...HELPER, marginBottom: 12 }}>
+          No sizzle reels saved yet. Add one below.
+        </p>
+      ) : (
+        <div
+          style={{
+            borderRadius: 6,
+            border: '1px solid var(--border-subtle)',
+            overflow: 'hidden',
+            marginBottom: 16,
+          }}
+        >
+          {history.map((entry, i) => {
+            const active = isActive(entry);
+            return (
+              <div
+                key={entry.url}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '9px 12px',
+                  background: active ? 'var(--bg-elevated)' : 'transparent',
+                  borderBottom:
+                    i < history.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                }}
+              >
+                {/* Active badge */}
+                {active && (
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: '#fff',
+                      background: '#22c55e',
+                      borderRadius: 4,
+                      padding: '2px 6px',
+                    }}
+                  >
+                    Active
+                  </span>
+                )}
+
+                {/* URL — truncated with full value in title for hover */}
+                <span
+                  title={entry.url}
+                  style={{
+                    flex: 1,
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    color: 'var(--text-primary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {entry.url}
+                </span>
+
+                {/* Added date */}
+                <span style={{ flexShrink: 0, fontSize: 11, color: 'var(--text-muted)' }}>
+                  {formatDate(entry.added_at)}
+                </span>
+
+                {/* Set Active button — disabled when already active or mid-save */}
+                {!active && (
+                  <button
+                    onClick={() => handleSetActive(entry)}
+                    disabled={saving}
+                    style={{
+                      flexShrink: 0,
+                      padding: '4px 10px',
+                      borderRadius: 5,
+                      background: 'var(--bg-surface-alt)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border-subtle)',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: saving ? 'not-allowed' : 'pointer',
+                      opacity: saving ? 0.6 : 1,
+                    }}
+                  >
+                    Set Active
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Add new sizzle URL ────────────────────────────────────────── */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+        <div style={{ flex: 1 }}>
+          <input
+            type="url"
+            value={newUrl}
+            onChange={(e) => { setNewUrl(e.target.value); setAddError(null); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAdd(); } }}
+            placeholder="https://vimeo.com/123456789/abc123hash"
+            style={FIELD}
+            disabled={saving}
+          />
+          {addError && (
+            <p style={{ ...HELPER, color: 'var(--status-pass)', marginTop: 4 }}>{addError}</p>
+          )}
+        </div>
+        <button
+          onClick={handleAdd}
+          disabled={saving || !newUrl.trim()}
+          style={{
+            flexShrink: 0,
+            padding: '6px 14px',
+            borderRadius: 6,
+            background: 'var(--accent)',
+            color: '#fff',
+            border: 'none',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: saving || !newUrl.trim() ? 'not-allowed' : 'pointer',
+            opacity: saving || !newUrl.trim() ? 0.6 : 1,
+            // Align with the input height
+            height: 31,
+          }}
+        >
+          Add
+        </button>
+      </div>
+      <p style={HELPER}>
+        Paste any Vimeo URL — it will be normalised to the embed format automatically.
+      </p>
+    </div>
+  );
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function DeckSettingsClient({ title }: { title: AvailableTitle }) {
@@ -167,6 +398,67 @@ export default function DeckSettingsClient({ title }: { title: AvailableTitle })
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  // Handler for the SizzlePicker — updates both vimeo_url and sizzle_history in
+  // form state, then immediately triggers a save so the active state is persisted.
+  async function handleSizzleChange(newActiveUrl: string, newHistory: SizzleEntry[]) {
+    // Update form state first so the UI reflects the change immediately
+    const updatedForm: FormState = {
+      ...form,
+      vimeo_url: newActiveUrl,
+      sizzle_history: newHistory,
+    };
+    setForm(updatedForm);
+
+    // Auto-save on picker interaction (Set Active / Add)
+    setSaving(true);
+    setSaveError(null);
+    setSaved(false);
+
+    try {
+      const marketsArray = updatedForm.markets
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      const payload = {
+        title:          updatedForm.title,
+        slug:           updatedForm.slug          || null,
+        rights_type:    updatedForm.rights_type   || null,
+        genre:          updatedForm.genre         || null,
+        seasons:        updatedForm.seasons       !== '' ? Number(updatedForm.seasons)       : null,
+        episode_count:  updatedForm.episode_count !== '' ? Number(updatedForm.episode_count) : null,
+        runtime_mins:   updatedForm.runtime_mins  !== '' ? Number(updatedForm.runtime_mins)  : null,
+        markets:        marketsArray,
+        description:    updatedForm.description   || null,
+        contact_email:  updatedForm.contact_email || null,
+        is_active:      updatedForm.is_active,
+        sort_order:     updatedForm.sort_order    !== '' ? Number(updatedForm.sort_order)    : 0,
+        image_url:      updatedForm.image_url     || null,
+        vimeo_url:      newActiveUrl              || null,
+        password:       updatedForm.password      || null,
+        sizzle_history: newHistory,
+      };
+
+      const res = await fetch(`/api/marketing/available/${title.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json() as { data?: AvailableTitle; error?: string };
+      if (!res.ok) throw new Error(data.error ?? res.statusText);
+
+      if (data.data) {
+        setForm(toFormState(data.data));
+      }
+      setSaved(true);
+    } catch (err) {
+      setSaveError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   // ── Save handler ────────────────────────────────────────────────────────
   async function handleSave() {
     setSaving(true);
@@ -181,21 +473,22 @@ export default function DeckSettingsClient({ title }: { title: AvailableTitle })
         .filter(Boolean);
 
       const payload = {
-        title:         form.title,
-        slug:          form.slug          || null,
-        rights_type:   form.rights_type   || null,
-        genre:         form.genre         || null,
-        seasons:       form.seasons       !== '' ? Number(form.seasons)       : null,
-        episode_count: form.episode_count !== '' ? Number(form.episode_count) : null,
-        runtime_mins:  form.runtime_mins  !== '' ? Number(form.runtime_mins)  : null,
-        markets:       marketsArray,
-        description:   form.description   || null,
-        contact_email: form.contact_email || null,
-        is_active:     form.is_active,
-        sort_order:    form.sort_order    !== '' ? Number(form.sort_order)    : 0,
-        image_url:     form.image_url     || null,
-        vimeo_url:     form.vimeo_url     || null,
-        password:      form.password      || null,
+        title:          form.title,
+        slug:           form.slug          || null,
+        rights_type:    form.rights_type   || null,
+        genre:          form.genre         || null,
+        seasons:        form.seasons       !== '' ? Number(form.seasons)       : null,
+        episode_count:  form.episode_count !== '' ? Number(form.episode_count) : null,
+        runtime_mins:   form.runtime_mins  !== '' ? Number(form.runtime_mins)  : null,
+        markets:        marketsArray,
+        description:    form.description   || null,
+        contact_email:  form.contact_email || null,
+        is_active:      form.is_active,
+        sort_order:     form.sort_order    !== '' ? Number(form.sort_order)    : 0,
+        image_url:      form.image_url     || null,
+        vimeo_url:      form.vimeo_url     || null,
+        password:       form.password      || null,
+        sizzle_history: form.sizzle_history,
       };
 
       const res = await fetch(`/api/marketing/available/${title.id}`, {
@@ -398,21 +691,19 @@ export default function DeckSettingsClient({ title }: { title: AvailableTitle })
         </div>
       </div>
 
-      {/* ── Section 4: Video ──────────────────────────────────────────── */}
+      {/* ── Section 4: Sizzle Reel ────────────────────────────────────── */}
+      {/* Replaces the old single Vimeo URL input with a full version picker.
+          The picker manages vimeo_url (active) + sizzle_history (all versions)
+          together. Clicking "Set Active" or "Add" triggers an immediate auto-save. */}
       <div style={SECTION}>
-        <p style={SECTION_TITLE}>Video</p>
+        <p style={SECTION_TITLE}>Sizzle Reel</p>
 
-        <div style={ROW}>
-          <label style={LABEL}>Vimeo URL</label>
-          <input
-            type="url"
-            value={form.vimeo_url}
-            onChange={(e) => set('vimeo_url', e.target.value)}
-            style={FIELD}
-            placeholder="https://vimeo.com/123456/abc123"
-          />
-          <p style={HELPER}>e.g. https://vimeo.com/123456/abc123</p>
-        </div>
+        <SizzlePicker
+          activeUrl={form.vimeo_url}
+          history={form.sizzle_history}
+          saving={saving}
+          onChange={handleSizzleChange}
+        />
       </div>
 
       {/* ── Section 5: Description ────────────────────────────────────── */}

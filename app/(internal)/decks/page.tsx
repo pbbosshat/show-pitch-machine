@@ -16,7 +16,7 @@ export default async function DecksPage() {
             slide_count, is_active, image_url, rights_type, canva_url,
             created_at, updated_at
      FROM deck_sites
-     ORDER BY sort_order ASC, created_at DESC`
+     ORDER BY updated_at DESC`
   );
   const decks = JSON.parse(JSON.stringify(decksRaw)) as DeckSite[];
 

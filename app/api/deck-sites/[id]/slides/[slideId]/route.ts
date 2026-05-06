@@ -1,18 +1,26 @@
-/**
+﻿/**
  * PUT /api/deck-sites/[id]/slides/[slideId]
- *   Update specific fields on a single slide. Only the fields listed below
- *   are writable via this endpoint (image paths, copy, section metadata).
- *   Body: { heading?, body?, section_label?, section_type?,
- *            ai_image_path?, ai_prompt?, stats_json? }
+ *   Update any writable fields on a single slide row.
+ *   Body: any subset of { section_label, section_type, heading, body, ai_prompt, stats_json }
  *   Response: { data: DeckSlide }
  *
- * Called by: deck editor inline slide editor, AI copy generation pipeline,
- *            image generation pipeline writing back ai_image_path
+ * DELETE /api/deck-sites/[id]/slides/[slideId]
+ *   Remove a single slide from a deck by its UUID.
+ *   Scopes the WHERE to `id AND deck_site_id` so a caller cannot delete a slide
+ *   belonging to a different deck.
+ *   After deletion, syncs deck_sites.slide_count to reflect the new total.
+ *   Response: { data: { success: true } }
+ *
+ * Called by: deck editor slide panel (edit, remove actions), import bots
  * Auth: none
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { queryOne, run } from '@/lib/db';
+
+// ---------------------------------------------------------------------------
+// Row type
+// ---------------------------------------------------------------------------
 
 interface DeckSlide {
   id: string;
@@ -29,34 +37,42 @@ interface DeckSlide {
   created_at: number;
 }
 
+// ---------------------------------------------------------------------------
+// PUT — partial update of a single slide's editable content fields
+// ---------------------------------------------------------------------------
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; slideId: string }> }
 ) {
   try {
-    const { id, slideId } = await params;
+    const { id: deckId, slideId } = await params;
 
-    // Confirm the slide exists AND belongs to the specified deck
-    const existing = queryOne<DeckSlide>(
-      `SELECT * FROM deck_slides WHERE id = ? AND deck_site_id = ?`,
-      [slideId, id]
+    // Verify parent deck exists
+    const deck = queryOne<{ id: string }>(
+      `SELECT id FROM deck_sites WHERE id = ?`,
+      [deckId]
+    );
+
+    if (!deck) {
+      return NextResponse.json({ error: 'Deck site not found' }, { status: 404 });
+    }
+
+    // Verify the slide belongs to this deck
+    const existing = queryOne<{ id: string }>(
+      `SELECT id FROM deck_slides WHERE id = ? AND deck_site_id = ?`,
+      [slideId, deckId]
     );
 
     if (!existing) {
-      return NextResponse.json(
-        { error: 'Slide not found for this deck' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Slide not found' }, { status: 404 });
     }
 
     const body = await request.json();
 
-    // Whitelist of columns writable through this endpoint
-    const allowed = [
-      'heading', 'body', 'section_label', 'section_type',
-      'ai_image_path', 'ai_prompt', 'stats_json',
-    ] as const;
-
+    // Only allow known, safe columns — never let callers overwrite image paths
+    // or structural fields like deck_site_id / slide_order
+    const allowed = ['section_label', 'section_type', 'heading', 'body', 'ai_prompt', 'stats_json'] as const;
     const setClauses: string[] = [];
     const values: unknown[] = [];
 
@@ -71,10 +87,11 @@ export async function PUT(
       return NextResponse.json({ error: 'No updatable fields provided' }, { status: 400 });
     }
 
-    values.push(slideId); // WHERE clause
+    values.push(slideId);
+    values.push(deckId);
 
     run(
-      `UPDATE deck_slides SET ${setClauses.join(', ')} WHERE id = ?`,
+      `UPDATE deck_slides SET ${setClauses.join(', ')} WHERE id = ? AND deck_site_id = ?`,
       values
     );
 
@@ -84,6 +101,49 @@ export async function PUT(
     );
 
     return NextResponse.json({ data: updated });
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string; slideId: string }> }
+) {
+  try {
+    const { id: deckId, slideId } = await params;
+
+    // Verify the parent deck exists before touching child rows
+    const deck = queryOne<{ id: string }>(
+      `SELECT id FROM deck_sites WHERE id = ?`,
+      [deckId]
+    );
+
+    if (!deck) {
+      return NextResponse.json({ error: 'Deck site not found' }, { status: 404 });
+    }
+
+    // Delete only if the slide belongs to this deck (prevents cross-deck deletion)
+    const result = run(
+      `DELETE FROM deck_slides WHERE id = ? AND deck_site_id = ?`,
+      [slideId, deckId]
+    );
+
+    if (result.changes === 0) {
+      return NextResponse.json({ error: 'Slide not found' }, { status: 404 });
+    }
+
+    // Keep deck_sites.slide_count in sync after removing a slide
+    const now = Date.now() / 1000 | 0;
+    run(
+      `UPDATE deck_sites
+          SET slide_count = (SELECT COUNT(*) FROM deck_slides WHERE deck_site_id = ?),
+              updated_at  = ?
+        WHERE id = ?`,
+      [deckId, now, deckId]
+    );
+
+    return NextResponse.json({ data: { success: true } });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }

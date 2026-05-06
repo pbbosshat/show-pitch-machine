@@ -136,10 +136,11 @@ const showsNavGroups: NavGroup[] = [
   },
   {
     items: [
-      { href: '/pipeline', label: 'Pipeline', icon: <IconPipeline /> },
-      { href: '/decks',    label: 'Decks',    icon: <IconDecks /> },
-      { href: '/sizzles',  label: 'Sizzles',  icon: <IconSizzle /> },
-      { href: '/build',    label: 'Build',    icon: <IconBuild /> },
+      { href: '/pipeline',      label: 'Pipeline',  icon: <IconPipeline /> },
+      { href: '/decks',         label: 'Decks',     icon: <IconDecks /> },
+      { href: '/sizzles',       label: 'Sizzles',   icon: <IconSizzle /> },
+      { href: '/vimeo-library', label: 'Vimeo Lib', icon: <IconSizzle /> },
+      { href: '/build',         label: 'Build',     icon: <IconBuild /> },
     ],
   },
 ];

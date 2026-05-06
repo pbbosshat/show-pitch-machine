@@ -13,7 +13,7 @@ function getTitles(): AvailableTitle[] {
   try {
     initDb();
     const rows = query<AvailableTitle>(
-      'SELECT *, gate_password AS password FROM deck_sites ORDER BY sort_order ASC, title ASC LIMIT 200'
+      'SELECT *, gate_password AS password FROM deck_sites ORDER BY is_active DESC, sort_order ASC, title ASC LIMIT 200'
     );
     return JSON.parse(JSON.stringify(rows));
   } catch {

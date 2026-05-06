@@ -4,10 +4,15 @@
 // Card type is inferred: canva_url set → pitch deck; otherwise → available package.
 //
 // Receives the server-fetched list via props (SSR, no client flash).
+//
+// Header controls:
+//   "Add Deck"     — opens AddDeckModal (native deck, no Canva URL required)
+//   "Import Canva" — opens the existing NewDeckForm modal (includes canva_url field)
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Modal from '@/components/ui/Modal';
+import AddDeckModal from '@/components/decks/AddDeckModal';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -145,9 +150,7 @@ function DeckCard({ deck }: { deck: DeckSite }) {
   // Pitch deck: has canva_url (capture pipeline). Available package: image + catalog fields.
   const isPitchDeck = !!deck.canva_url;
   const isPublished = deck.status === 'published';
-  const editPath    = isPitchDeck
-    ? `/decks/${deck.id}`
-    : `/marketing/available/${deck.id}/deck-settings`;
+  const editPath    = `/decks/${deck.id}`;
   const viewPath    = isPitchDeck
     ? `/deck/${deck.slug}`
     : `/available/${deck.slug}`;
@@ -362,6 +365,10 @@ export default function DecksClient({ initialDecks }: { initialDecks: DeckSite[]
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [filter, setFilter] = useState<FilterTab>('all');
+  const [search, setSearch] = useState('');
+  // addDeckOpen — controls the new native "Add Deck" modal (no Canva URL)
+  const [addDeckOpen, setAddDeckOpen] = useState(false);
+  // modalOpen — controls the existing "Import Canva" modal (includes canva_url field)
   const [modalOpen, setModalOpen] = useState(false);
 
   const draftCount     = initialDecks.filter((d) => d.status === 'draft').length;
@@ -374,10 +381,13 @@ export default function DecksClient({ initialDecks }: { initialDecks: DeckSite[]
     { id: 'published', label: `Published (${publishedCount})` },
   ];
 
+  const term = search.trim().toLowerCase();
   const filtered = initialDecks.filter((d) => {
-    if (filter === 'draft')     return d.status === 'draft';
-    if (filter === 'published') return d.status === 'published';
-    return true;
+    if (filter === 'draft'     && d.status !== 'draft')     return false;
+    if (filter === 'published' && d.status !== 'published') return false;
+    if (!term) return true;
+    return [d.title, d.subtitle, d.genre, d.format, d.ep_count, d.rights_type, d.status, d.visibility, d.slug]
+      .filter(Boolean).join(' ').toLowerCase().includes(term);
   });
 
   const handleNewDeckSuccess = (id: string) => {
@@ -393,35 +403,68 @@ export default function DecksClient({ initialDecks }: { initialDecks: DeckSite[]
           <span style={{ fontSize: 20, fontWeight: 700, color: '#CC1212', fontFamily: "'Oswald', 'Barlow Condensed', sans-serif", letterSpacing: '-0.01em' }}>MY</span>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontFamily: "'Barlow Condensed', 'Oswald', sans-serif", letterSpacing: '-0.01em' }}>Decks</h1>
         </div>
-        <button
-          onClick={() => setModalOpen(true)}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 8, border: 'none', background: '#CC1212', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.03em', transition: 'opacity 150ms ease' }}
-          onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.85')}
-          onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
-        >
-          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
-          New Deck
-        </button>
+        {/* Two-button group: "Add Deck" (primary) sits LEFT of "Import Canva" (outlined) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Add Deck — native deck creation, no Canva URL required */}
+          <button
+            onClick={() => setAddDeckOpen(true)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 8, border: 'none', background: '#CC1212', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.03em', transition: 'opacity 150ms ease' }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.85')}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+          >
+            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
+            Add Deck
+          </button>
+
+          {/* Import Canva — existing flow with canva_url field */}
+          <button
+            onClick={() => setModalOpen(true)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 8, border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.03em', transition: 'background 150ms ease, border-color 150ms ease' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-surface)'; e.currentTarget.style.borderColor = 'var(--border-strong, #CBD5E1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
+          >
+            Import Canva
+          </button>
+        </div>
       </div>
 
-      {/* Filter tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 24 }}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setFilter(tab.id)}
-            style={{
-              padding: '6px 14px', borderRadius: 6, border: '1px solid',
-              borderColor: filter === tab.id ? '#CC1212' : 'var(--border-subtle)',
-              background: filter === tab.id ? 'rgba(204,18,18,0.08)' : 'transparent',
-              color: filter === tab.id ? '#CC1212' : 'var(--text-secondary)',
-              fontSize: 12, fontWeight: filter === tab.id ? 700 : 500,
-              cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms ease',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Filter tabs + search bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setFilter(tab.id)}
+              style={{
+                padding: '6px 14px', borderRadius: 6, border: '1px solid',
+                borderColor: filter === tab.id ? '#CC1212' : 'var(--border-subtle)',
+                background: filter === tab.id ? 'rgba(204,18,18,0.08)' : 'transparent',
+                color: filter === tab.id ? '#CC1212' : 'var(--text-secondary)',
+                fontSize: 12, fontWeight: filter === tab.id ? 700 : 500,
+                cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms ease',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <input
+          type="search"
+          placeholder="Search by title, genre, format, visibility…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            flex: '1 1 220px', maxWidth: 380, padding: '6px 12px',
+            borderRadius: 6, border: '1px solid var(--border-subtle)',
+            background: 'var(--bg-surface)', color: 'var(--text-primary)',
+            fontSize: 13, fontFamily: 'inherit', outline: 'none',
+          }}
+        />
+        {term && (
+          <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+            {filtered.length} of {initialDecks.length} result{filtered.length !== 1 ? 's' : ''}
+          </span>
+        )}
       </div>
 
       {/* Card grid */}
@@ -429,7 +472,9 @@ export default function DecksClient({ initialDecks }: { initialDecks: DeckSite[]
         <div style={{ textAlign: 'center', padding: '80px 24px', color: 'var(--text-muted)' }}>
           <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.4 }}>🎬</div>
           <p style={{ fontSize: 14, margin: 0 }}>
-            {filter === 'all' ? 'No decks yet. Create the first one.' : `No ${filter} decks.`}
+            {term
+              ? `No decks match "${search}".`
+              : filter === 'all' ? 'No decks yet. Create the first one.' : `No ${filter} decks.`}
           </p>
         </div>
       ) : (
@@ -438,9 +483,13 @@ export default function DecksClient({ initialDecks }: { initialDecks: DeckSite[]
         </div>
       )}
 
+      {/* Import Canva modal — existing flow, unchanged */}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="New Deck Site">
         <NewDeckForm onSuccess={handleNewDeckSuccess} />
       </Modal>
+
+      {/* Add Deck modal — native deck creation without a Canva URL */}
+      {addDeckOpen && <AddDeckModal onClose={() => setAddDeckOpen(false)} />}
     </div>
   );
 }

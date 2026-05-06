@@ -7,7 +7,8 @@
 //   2. "Confirmed Exists" — sizzles whose cell noted a reel but no URL was captured
 // SizzleCard (client component) handles thumbnail fetch + VimeoPlayerModal on click.
 
-import SizzleCard, { type SizzleCardData } from '@/components/shows/SizzleCard';
+import { type SizzleCardData } from '@/components/shows/SizzleCard';
+import SizzlesClient from './SizzlesClient';
 import { query } from '@/lib/db';
 
 // ── Data fetch ─────────────────────────────────────────────────────────────────
@@ -47,10 +48,7 @@ function fetchSizzles(): SizzleCardData[] {
 
 export default function SizzlesPage() {
   const sizzles = fetchSizzles();
-
-  // Split into the two sections: accessible (has URL) vs. confirmed-exists (no URL)
   const withUrl = sizzles.filter((s) => s.vimeo_url);
-  const withoutUrl = sizzles.filter((s) => !s.vimeo_url);
 
   return (
     <div className="p-6 space-y-8">
@@ -73,61 +71,7 @@ export default function SizzlesPage() {
         </p>
       </div>
 
-      {/* ── Section 1: Sizzles with a video URL ── */}
-      {withUrl.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-baseline gap-3">
-            <h2
-              className="text-lg font-bold"
-              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800 }}
-            >
-              With Video Link
-            </h2>
-            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              {withUrl.length} reel{withUrl.length !== 1 ? 's' : ''} — ready to share
-            </span>
-          </div>
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {withUrl.map((sizzle) => (
-              <SizzleCard key={sizzle.id} sizzle={sizzle} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ── Section 2: Confirmed exists but no URL captured yet ── */}
-      {withoutUrl.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-baseline gap-3">
-            <h2
-              className="text-lg font-bold"
-              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800 }}
-            >
-              Confirmed Exists
-            </h2>
-            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              {withoutUrl.length} reel{withoutUrl.length !== 1 ? 's' : ''} — noted in sheet, URL not captured
-            </span>
-          </div>
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {withoutUrl.map((sizzle) => (
-              <SizzleCard key={sizzle.id} sizzle={sizzle} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ── Empty state — should rarely happen if sizzle sync has run ── */}
-      {sizzles.length === 0 && (
-        <div
-          className="rounded-lg border p-12 text-center"
-          style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}
-        >
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            No sizzle reels found. Run the sheet sync to populate this catalog.
-          </p>
-        </div>
-      )}
+      <SizzlesClient sizzles={sizzles} />
 
     </div>
   );

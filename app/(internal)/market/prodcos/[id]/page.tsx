@@ -41,6 +41,34 @@ interface ProdcoBuyer {
   last_deal_date: number | null;
 }
 
+// Joined shape from entity_article_links + trade_articles for the articles section
+interface ArticleLink {
+  id: string;
+  headline: string | null;
+  url: string | null;
+  source: string | null;
+  item_type: string | null;
+  scraped_at: number | null;
+  auto_applied: number;
+  applied_field: string | null;
+}
+
+// Fetches trade articles linked to this production company via entity_article_links.
+// entity_type = 'production_company' scopes to the prodco dimension.
+// Capped at 20 most-recent articles.
+function fetchArticles(prodcoId: string): ArticleLink[] {
+  return query<ArticleLink>(
+    `SELECT ta.id, ta.headline, ta.url, ta.source, ta.item_type, ta.scraped_at,
+            eal.auto_applied, eal.applied_field
+     FROM entity_article_links eal
+     JOIN trade_articles ta ON ta.id = eal.article_id
+     WHERE eal.entity_type = 'production_company' AND eal.entity_id = ?
+     ORDER BY ta.scraped_at DESC
+     LIMIT 20`,
+    [prodcoId]
+  );
+}
+
 interface ProdcoDetail extends ProductionCompany {
   deal_count: number;
   contact_count?: number;
@@ -86,6 +114,7 @@ export default async function ProdcoDetailPage({ params }: { params: Promise<{ i
   const dealList    = deals;
   const dealCount   = prodco.deal_count ?? 0;
   const contactCount = prodco.contact_count ?? contactList.length;
+  const articles    = fetchArticles(id);
 
   const currentShows    = parseJsonArray(prodco.current_shows);
   const currentNetworks = parseJsonArray(prodco.current_networks);
@@ -568,6 +597,76 @@ export default async function ProdcoDetailPage({ params }: { params: Promise<{ i
           )}
         </div>
       </div>
+
+      {/* ── Trade Press — articles linked via entity_article_links, only rendered when data exists ── */}
+      {articles.length > 0 && (
+        <div className="mt-8">
+          <h2
+            className="text-base font-semibold mb-3"
+            style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, color: 'var(--text-primary)' }}
+          >
+            Trade Press
+          </h2>
+          <Card>
+            <div className="space-y-0">
+              {articles.map((article, idx) => (
+                <div key={article.id}>
+                  <div className="py-2.5">
+                    {/* Headline — truncated to 2 lines, links to original article */}
+                    <a
+                      href={article.url ?? '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium leading-snug"
+                      style={{
+                        color: 'var(--accent)',
+                        textDecoration: 'none',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {article.headline ?? '(No headline)'}
+                    </a>
+
+                    {/* Source + item type + date row */}
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {article.source && (
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                          {article.source}
+                        </span>
+                      )}
+                      {article.item_type && (
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                          · {article.item_type}
+                        </span>
+                      )}
+                      {article.scraped_at && (
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                          · {format(new Date(article.scraped_at), 'MMM d, yyyy')}
+                        </span>
+                      )}
+                      {/* Auto-applied indicator — surfaces when the article triggered a field update */}
+                      {article.auto_applied === 1 && article.applied_field && (
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                          · ✏ auto-updated
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Divider between articles, not after the last one */}
+                  {idx < articles.length - 1 && (
+                    <div style={{ height: 1, background: 'var(--border-subtle)' }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
+
     </div>
   );
 }

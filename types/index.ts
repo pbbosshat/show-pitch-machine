@@ -82,6 +82,8 @@ export interface BuyerContact {
   // Added in migration 017: enrichment pipeline fields
   // mye_user_email of the most recent touch (subquery result, not a DB column)
   last_contacted_by: string | null;
+  // Joined from buyer_companies via company_id FK — not a DB column on buyer_contacts
+  company_name: string | null;
 }
 
 export interface MandateUpdate {

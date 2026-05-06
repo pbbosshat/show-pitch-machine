@@ -2,7 +2,7 @@
 // BuyerTabs — client component for the five-tab profile section on the buyer detail page.
 // Also owns the "Copy Claude Code Prompt" button since clipboard API requires a client context.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatDistanceToNow, format } from 'date-fns';
 import Link from 'next/link';
 import useSWR from 'swr';
@@ -13,7 +13,7 @@ import type { MandateUpdate, MarketOrder, Pitch, TriangulationRow, ProdcoStrateg
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-type TabId = 'mandate' | 'greenlits' | 'mye' | 'career' | 'prodcos' | 'email';
+type TabId = 'mandate' | 'greenlits' | 'mye' | 'career' | 'prodcos' | 'email' | 'articles';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'mandate',   label: 'Mandate History' },
@@ -22,6 +22,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'career',    label: 'Career' },
   { id: 'prodcos',   label: 'Prod Cos' },
   { id: 'email',     label: 'Email' },
+  { id: 'articles',  label: 'Trade Press' },
 ];
 
 interface EmployerHistoryEntry {
@@ -47,12 +48,41 @@ interface EmailThreadSummary {
   direction: string | null;
 }
 
+// Full message returned by GET /api/gmail/thread/[thread_id]
+interface EmailMessage {
+  id: string;
+  sender: string;
+  recipient: string;
+  subject: string;
+  date: string;
+  internalDate: string | null;
+  body: string;
+}
+
+// Joined record from entity_article_links + trade_articles
+interface ArticleLink {
+  id: string;
+  headline: string | null;
+  url: string | null;
+  source: string | null;
+  item_type: string | null;
+  scraped_at: number | null;
+  signal_type: string | null;
+  link_reason: string | null;
+  auto_applied: number;
+  applied_field: string | null;
+  applied_value: string | null;
+}
+
+// Pitch extended with ip_title from the mye-history JOIN
+type PitchWithTitle = Pitch & { ip_title?: string | null };
+
 interface BuyerTabsProps {
   buyerId: string;
   buyerName: string;
   mandateHistory: MandateUpdate[];
   greenlits: MarketOrder[];
-  myeHistory: Pitch[];
+  myeHistory: PitchWithTitle[];
   companyHistory: string | null;
   // Structured employer history from buyer_employer_history table (migration 006+)
   employerHistory: EmployerHistoryEntry[];
@@ -67,6 +97,15 @@ function strategicTagVariant(tag: string | null): 'greenlit' | 'inreview' | 'pas
   if (tag === 'co_pro_partner')     return 'greenlit';
   if (tag === 'acquisition_target') return 'inreview';
   if (tag === 'competitor')         return 'pass';
+  return 'muted';
+}
+
+// Maps entity_article_links.link_reason to a badge variant
+function linkReasonVariant(reason: string | null): 'greenlit' | 'inreview' | 'pass' | 'muted' {
+  if (reason === 'exec_move')  return 'inreview';
+  if (reason === 'cancelled')  return 'pass';
+  if (reason === 'mandate')    return 'greenlit';
+  if (reason === 'greenlit')   return 'greenlit';
   return 'muted';
 }
 
@@ -93,6 +132,9 @@ export default function BuyerTabs({
 }: BuyerTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('mandate');
   const [copied, setCopied] = useState(false);
+  const [selectedThread, setSelectedThread] = useState<EmailThreadSummary | null>(null);
+  const [threadMessages, setThreadMessages] = useState<EmailMessage[] | null>(null);
+  const [threadLoading, setThreadLoading] = useState(false);
 
   const claudePrompt = `Using the Show Pitch Machine MCP, pull the full profile for ${buyerName} and give me a strategic briefing on what MYE should pitch them right now, given our current catalog and their recent activity.`;
 
@@ -107,6 +149,35 @@ export default function BuyerTabs({
     }
   };
 
+  function closeThreadModal() {
+    setSelectedThread(null);
+    setThreadMessages(null);
+  }
+
+  async function handleEmailClick(thread: EmailThreadSummary) {
+    setSelectedThread(thread);
+    setThreadMessages(null);
+    setThreadLoading(true);
+    try {
+      const res = await fetch(`/api/gmail/thread/${thread.thread_id}`);
+      const data = await res.json();
+      setThreadMessages(data.messages ?? []);
+    } catch (err) {
+      console.error('[email modal] fetch failed:', err);
+      setThreadMessages([]);
+    } finally {
+      setThreadLoading(false);
+    }
+  }
+
+  // Close modal on Escape key
+  useEffect(() => {
+    if (!selectedThread) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeThreadModal(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [selectedThread]);
+
   // Always call — hooks must be unconditional, but we only render the result in the prodcos tab
   const { data: prodcosData } = useSWR(
     `/api/intelligence/triangulation?buyer_id=${buyerId}`,
@@ -114,6 +185,13 @@ export default function BuyerTabs({
   );
   const prodcoRows: (TriangulationRow & { strategic_tag?: ProdcoStrategicTag })[] =
     prodcosData?.data ?? prodcosData ?? [];
+
+  // Always call — articles tab SWR, rendered only when activeTab === 'articles'
+  const { data: articlesData } = useSWR(
+    `/api/buyers/${buyerId}/articles`,
+    fetcher
+  );
+  const articleRows: ArticleLink[] = articlesData?.data ?? [];
 
   // Parse company_history JSON — stored as a JSON string in the DB
   let careerTimeline: { company: string; title: string; from?: string; to?: string }[] = [];
@@ -262,9 +340,9 @@ export default function BuyerTabs({
                       </p>
                     )}
 
-                    {/* IP reference */}
+                    {/* IP reference — prefer title from ip_catalog JOIN, fall back to raw ID */}
                     <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      IP: {pitch.ip_id ?? 'Unknown'}
+                      {pitch.ip_title ?? pitch.ip_id ?? 'Unknown'}
                     </p>
 
                     {/* Format + outcome */}
@@ -386,7 +464,13 @@ export default function BuyerTabs({
             <div className="space-y-0">
               {emailThreads.map((thread, idx) => (
                 <div key={thread.id}>
-                  <div className="py-4">
+                  <button
+                    className="w-full text-left py-4 rounded transition-colors"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-surface-alt)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                    onClick={() => handleEmailClick(thread)}
+                  >
                     {/* Subject + direction badge on the same row */}
                     <div className="flex items-center gap-3 mb-1 flex-wrap">
                       <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
@@ -432,7 +516,7 @@ export default function BuyerTabs({
                           : thread.snippet}
                       </p>
                     )}
-                  </div>
+                  </button>
 
                   {/* Divider between threads, but not after the last one */}
                   {idx < emailThreads.length - 1 && (
@@ -496,6 +580,153 @@ export default function BuyerTabs({
               </Link>
             ))
           )}
+        </div>
+      )}
+
+      {/* ── Trade Press — linked trade articles from entity_article_links ── */}
+      {activeTab === 'articles' && (
+        <div className="space-y-0">
+          {articleRows.length === 0 ? (
+            <EmptyState message="No trade press coverage linked yet" />
+          ) : (
+            <div className="space-y-0">
+              {articleRows.map((article, idx) => (
+                <div key={article.id}>
+                  <div className="py-3">
+                    {/* Headline row — clickable link to original article */}
+                    <div className="flex items-start justify-between gap-3 mb-1.5 flex-wrap">
+                      <a
+                        href={article.url ?? '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium leading-snug flex-1 min-w-0"
+                        style={{ color: 'var(--accent)', textDecoration: 'none' }}
+                      >
+                        {article.headline ?? '(No headline)'}
+                      </a>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {/* Source chip */}
+                        {article.source && (
+                          <span
+                            className="px-2 py-0.5 text-xs rounded"
+                            style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
+                          >
+                            {article.source}
+                          </span>
+                        )}
+                        {/* Scraped date */}
+                        {article.scraped_at && (
+                          <span
+                            className="text-xs"
+                            style={{ color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}
+                          >
+                            {new Date(article.scraped_at).toLocaleDateString('en-US', {
+                              year: 'numeric', month: 'short', day: 'numeric',
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Second row — link_reason badge + auto-applied note */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {article.link_reason && (
+                        <Badge
+                          label={article.link_reason.replace(/_/g, ' ')}
+                          variant={linkReasonVariant(article.link_reason)}
+                        />
+                      )}
+                      {article.auto_applied === 1 && article.applied_field && (
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                          ✏ updated {article.applied_field}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Divider between articles, not after the last one */}
+                  {idx < articleRows.length - 1 && (
+                    <div style={{ height: 1, background: 'var(--border-subtle)' }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Email thread modal ── */}
+      {selectedThread && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          onClick={closeThreadModal}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-lg p-6"
+            style={{ background: 'var(--bg-surface)', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  {selectedThread.subject ?? '(No subject)'}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                  {selectedThread.message_count} message{selectedThread.message_count !== 1 ? 's' : ''}
+                  {selectedThread.first_message_date && ` · ${selectedThread.first_message_date.substring(0, 10)}`}
+                  {selectedThread.first_message_date !== selectedThread.last_message_date && selectedThread.last_message_date && (
+                    <> → {selectedThread.last_message_date.substring(0, 10)}</>
+                  )}
+                </p>
+              </div>
+              <button
+                onClick={closeThreadModal}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, lineHeight: 1, color: 'var(--text-muted)', padding: '0 4px' }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Messages */}
+            {threadLoading ? (
+              <p className="text-sm text-center py-8" style={{ color: 'var(--text-muted)' }}>
+                Loading messages…
+              </p>
+            ) : threadMessages && threadMessages.length > 0 ? (
+              <div className="space-y-4">
+                {threadMessages.map((msg, i) => (
+                  <div
+                    key={msg.id || i}
+                    className="rounded-md p-4"
+                    style={{ background: 'var(--bg-surface-alt)', borderLeft: '3px solid var(--border-strong)' }}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
+                      <p className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                        {msg.sender || '—'}
+                      </p>
+                      <p className="text-xs shrink-0" style={{ color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>
+                        {msg.internalDate
+                          ? new Date(parseInt(msg.internalDate)).toLocaleString()
+                          : msg.date}
+                      </p>
+                    </div>
+                    <pre
+                      className="text-xs leading-relaxed"
+                      style={{ color: 'var(--text-primary)', fontFamily: 'inherit', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                    >
+                      {msg.body || '(No body)'}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            ) : threadMessages !== null ? (
+              <p className="text-sm text-center py-4" style={{ color: 'var(--text-muted)' }}>
+                Could not load messages from Gmail.
+              </p>
+            ) : null}
+          </div>
         </div>
       )}
     </div>

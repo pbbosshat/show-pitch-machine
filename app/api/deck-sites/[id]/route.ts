@@ -116,6 +116,7 @@ export async function PUT(
       'slug', 'title', 'subtitle', 'logline', 'canva_url', 'genre', 'format',
       'ep_count', 'network_target', 'ep_name', 'status', 'visibility', 'gate_password',
       'image_url', 'vimeo_url', 'description', 'runtime_mins', 'episode_count',
+      'theme_color', // migration 028: per-deck accent colour for the viewer
     ] as const;
 
     const setClauses: string[] = [];

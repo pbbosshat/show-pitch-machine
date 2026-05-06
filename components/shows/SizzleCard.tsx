@@ -9,6 +9,7 @@ import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
 import VimeoPlayerModal from '@/components/ui/VimeoPlayerModal';
 import ThumbnailPickerModal from '@/components/shows/ThumbnailPickerModal';
+import VideoUploader from '@/components/ui/VideoUploader';
 
 export interface SizzleCardData {
   id: string;
@@ -23,6 +24,14 @@ export interface SizzleCardData {
   last_email_date: string | null;
   email_thread_count: number;
   thumbnail_url: string | null;
+}
+
+function platformLabel(url: string | null): string {
+  if (!url) return 'Vimeo';
+  if (/drive\.google\.com/i.test(url)) return 'Google Drive';
+  if (/frame\.io/i.test(url)) return 'Frame.io';
+  if (/vimeo\.com\/showcase/i.test(url)) return 'Vimeo Showcase';
+  return 'Vimeo';
 }
 
 function sheetSourceVariant(source: string | null): 'greenlit' | 'inreview' | 'muted' | 'unknown' {
@@ -44,18 +53,21 @@ function formatDate(dateStr: string | null): string | null {
 export default function SizzleCard({ sizzle }: { sizzle: SizzleCardData }) {
   const [playing, setPlaying] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [uploaderOpen, setUploaderOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  // localThumbnail overrides the DB value after a successful capture — no page reload needed
   const [localThumbnail, setLocalThumbnail] = useState<string | null>(null);
+  const [localUrl, setLocalUrl] = useState<string | null>(null);
   const lastEmail = formatDate(sizzle.last_email_date);
-  const hasVideo = !!sizzle.vimeo_url;
+  const activeUrl = localUrl ?? sizzle.vimeo_url;
+  const hasVideo = !!activeUrl;
+  const platform = platformLabel(activeUrl);
   const activeThumbnail = localThumbnail ?? sizzle.thumbnail_url;
   const hasThumbnail = !!activeThumbnail;
 
   function handleCopy(e: React.MouseEvent) {
     e.stopPropagation();
-    if (!sizzle.vimeo_url) return;
-    navigator.clipboard.writeText(sizzle.vimeo_url).then(() => {
+    if (!activeUrl) return;
+    navigator.clipboard.writeText(activeUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     }).catch(() => {});
@@ -63,22 +75,35 @@ export default function SizzleCard({ sizzle }: { sizzle: SizzleCardData }) {
 
   return (
     <>
-      {playing && sizzle.vimeo_url && (
+      {playing && activeUrl && (
         <VimeoPlayerModal
-          vimeoUrl={sizzle.vimeo_url}
+          vimeoUrl={activeUrl}
           title={sizzle.project_title}
           vimeoPassword={sizzle.vimeo_password}
           onClose={() => setPlaying(false)}
         />
       )}
 
-      {pickerOpen && sizzle.vimeo_url && (
+      {pickerOpen && activeUrl && (
         <ThumbnailPickerModal
           sizzleId={sizzle.id}
-          vimeoUrl={sizzle.vimeo_url}
+          vimeoUrl={activeUrl}
           title={sizzle.project_title}
           onSaved={(url) => setLocalThumbnail(url)}
           onClose={() => setPickerOpen(false)}
+        />
+      )}
+
+      {uploaderOpen && (
+        <VideoUploader
+          sizzleId={sizzle.id}
+          projectTitle={sizzle.project_title}
+          onUploaded={(url, thumbnail_url) => {
+            if (url && url !== '__skip__') setLocalUrl(url);
+            if (thumbnail_url) setLocalThumbnail(thumbnail_url);
+            setUploaderOpen(false);
+          }}
+          onClose={() => setUploaderOpen(false)}
         />
       )}
 
@@ -183,17 +208,35 @@ export default function SizzleCard({ sizzle }: { sizzle: SizzleCardData }) {
                 </div>
               </>
             ) : (
-              <span
-                style={{
-                  color: 'rgba(255,255,255,0.28)',
-                  fontSize: 11,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  fontWeight: 600,
-                }}
-              >
-                No link captured
-              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                <span
+                  style={{
+                    color: 'rgba(255,255,255,0.28)',
+                    fontSize: 11,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    fontWeight: 600,
+                  }}
+                >
+                  No video
+                </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setUploaderOpen(true); }}
+                  style={{
+                    background: 'var(--accent, #e51d26)',
+                    border: 'none',
+                    borderRadius: 5,
+                    color: '#fff',
+                    cursor: 'pointer',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: '5px 12px',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  ↑ Upload
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -270,8 +313,8 @@ export default function SizzleCard({ sizzle }: { sizzle: SizzleCardData }) {
             )}
           </div>
 
-          {/* Share link row — only shown when a Vimeo URL exists */}
-          {sizzle.vimeo_url && (
+          {/* Share link row — only shown when a video URL exists */}
+          {activeUrl && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <button
                 onClick={handleCopy}
@@ -292,30 +335,34 @@ export default function SizzleCard({ sizzle }: { sizzle: SizzleCardData }) {
                 {copied ? '✓ Copied!' : '⧉ Copy link'}
               </button>
               <a
-                href={sizzle.vimeo_url}
+                href={activeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ fontSize: 11, color: 'var(--text-muted)', textDecoration: 'none' }}
               >
-                Open on Vimeo ↗
+                Open on {platform} ↗
               </a>
-              {/* Separator */}
-              <span style={{ color: 'var(--border-subtle)', fontSize: 11 }}>·</span>
-              <button
-                onClick={(e) => { e.stopPropagation(); setPickerOpen(true); }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: 'var(--text-muted)',
-                  letterSpacing: '0.03em',
-                }}
-              >
-                🎬 Pick thumbnail
-              </button>
+              {/* ThumbnailPickerModal uses Vimeo postMessage API — hide for Drive/Frame.io */}
+              {platform === 'Vimeo' && (
+                <>
+                  <span style={{ color: 'var(--border-subtle)', fontSize: 11 }}>·</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setPickerOpen(true); }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: 'var(--text-muted)',
+                      letterSpacing: '0.03em',
+                    }}
+                  >
+                    🎬 Pick thumbnail
+                  </button>
+                </>
+              )}
             </div>
           )}
 

@@ -107,6 +107,34 @@ async function run_all() {
 
   const total = query<{ cnt: number }>('SELECT COUNT(*) AS cnt FROM trade_articles')[0]?.cnt ?? 0;
   console.log(`\nDone. ${totalItems} new/updated articles this run. Total in DB: ${total}`);
+
+  // Auto-run entity processor so new articles link to buyers/shows/prodcos immediately.
+  // processNewArticles only touches rows where processed_at IS NULL, so it's safe to chain.
+  if (totalItems > 0) {
+    console.log('\n🔗  Running entity processor on new articles…');
+    const { processNewArticles } = await import('./process-articles');
+    await processNewArticles();
+  }
+
+  // Ingest buyer email threads as trade articles (runs every cycle, deduped by ingestion_log)
+  console.log('\n📧  Ingesting buyer emails…');
+  const { ingestBuyerEmails } = await import('./ingest-inbox-emails');
+  const emailThreads = await ingestBuyerEmails();
+
+  // Re-run entity processor if emails added new articles
+  if (emailThreads > 0) {
+    console.log('\n🔗  Running entity processor on new email articles…');
+    const { processNewArticles } = await import('./process-articles');
+    await processNewArticles();
+  }
+
+  // Embed all unembedded articles (scraped + emails) into LanceDB
+  console.log('\n🔢  Embedding new articles…');
+  const { embedArticles } = await import('./embed-articles');
+  const embedStats = await embedArticles();
+  if (embedStats.embedded > 0) {
+    console.log(`  ✅  ${embedStats.embedded} articles embedded (${embedStats.chunks} chunks)`);
+  }
 }
 
 run_all().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });

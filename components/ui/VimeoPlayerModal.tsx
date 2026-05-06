@@ -1,8 +1,7 @@
 'use client';
-// VimeoPlayerModal — full-screen overlay that embeds a Vimeo video with autoplay.
-// Parses both public URLs (vimeo.com/ID) and private hash-link URLs (vimeo.com/ID/HASH).
-// The HASH in a private link IS the unlock token — passed as ?h= in the embed URL so no
-// password prompt appears. Vimeo's iframe handles its own native fullscreen button.
+// VimeoPlayerModal — full-screen overlay supporting Vimeo, Google Drive, Frame.io, and
+// Vimeo Showcases. Detects URL type and renders the appropriate embed or fallback.
+// Vimeo private hash-links pass h= param so no password prompt appears.
 
 import { useEffect, useCallback } from 'react';
 
@@ -11,6 +10,23 @@ interface VimeoPlayerModalProps {
   title: string;
   vimeoPassword: string | null;
   onClose: () => void;
+}
+
+type UrlType = 'vimeo' | 'vimeo-showcase' | 'drive' | 'frameio' | 'unknown';
+
+function detectUrlType(url: string): UrlType {
+  if (/vimeo\.com\/showcase\//i.test(url)) return 'vimeo-showcase';
+  if (/vimeo\.com\/\d+/i.test(url)) return 'vimeo';
+  if (/drive\.google\.com/i.test(url)) return 'drive';
+  if (/frame\.io/i.test(url)) return 'frameio';
+  return 'unknown';
+}
+
+// Extracts Google Drive file ID from share/view URLs
+// https://drive.google.com/file/d/{ID}/view → ID
+function parseDriveFileId(url: string): string | null {
+  const m = url.match(/\/file\/d\/([^/]+)/);
+  return m ? m[1] : null;
 }
 
 // Extracts video ID and optional private hash from a Vimeo URL.
@@ -27,11 +43,28 @@ export default function VimeoPlayerModal({
   vimeoPassword,
   onClose,
 }: VimeoPlayerModalProps) {
+  const urlType = detectUrlType(vimeoUrl);
   const parsed = parseVimeoUrl(vimeoUrl);
 
   const params = new URLSearchParams({ autoplay: '1', title: '0', byline: '0', portrait: '0' });
   if (parsed?.hash) params.set('h', parsed.hash);
-  const embedUrl = parsed ? `https://player.vimeo.com/video/${parsed.id}?${params}` : null;
+  const vimeoEmbedUrl = parsed ? `https://player.vimeo.com/video/${parsed.id}?${params}` : null;
+
+  const driveFileId = urlType === 'drive' ? parseDriveFileId(vimeoUrl) : null;
+  const driveEmbedUrl = driveFileId ? `https://drive.google.com/file/d/${driveFileId}/preview` : null;
+
+  // Frame.io presentation URLs embed directly as iframes
+  const frameiоEmbedUrl = urlType === 'frameio' ? vimeoUrl : null;
+
+  // Determine which embed URL and label to use
+  const embedUrl = vimeoEmbedUrl ?? driveEmbedUrl ?? frameiоEmbedUrl;
+  const openLabel = urlType === 'drive' ? 'Open on Google Drive ↗'
+    : urlType === 'frameio' ? 'Open on Frame.io ↗'
+    : urlType === 'vimeo-showcase' ? 'Open Showcase ↗'
+    : 'Open on Vimeo ↗';
+
+  // Vimeo Showcases can't be embedded — open directly in a new tab instead
+  const isExternalOnly = urlType === 'vimeo-showcase' || urlType === 'unknown';
 
   // Escape key closes modal
   const handleKey = useCallback((e: KeyboardEvent) => {
@@ -136,42 +169,78 @@ export default function VimeoPlayerModal({
           </div>
         </div>
 
-        {/* 16:9 iframe container */}
-        <div
-          style={{
-            position: 'relative',
-            paddingTop: '56.25%',
-            borderRadius: 8,
-            overflow: 'hidden',
-            background: '#000',
-          }}
-        >
-          {embedUrl ? (
-            <iframe
-              src={embedUrl}
-              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-              title={title}
-            />
-          ) : (
-            <div
+        {/* 16:9 embed container — or external-only prompt for Showcases */}
+        {isExternalOnly ? (
+          <div
+            style={{
+              borderRadius: 8,
+              background: '#111',
+              border: '1px solid rgba(255,255,255,0.1)',
+              padding: '48px 24px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 16,
+            }}
+          >
+            <p style={{ color: '#a5a7ad', fontSize: 14, margin: 0, textAlign: 'center' }}>
+              This content can&apos;t be embedded — open it directly to watch.
+            </p>
+            <a
+              href={vimeoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#a5a7ad',
+                background: 'var(--accent, #e51d26)',
+                color: '#fff',
+                padding: '8px 20px',
+                borderRadius: 6,
                 fontSize: 14,
+                fontWeight: 700,
+                textDecoration: 'none',
+                letterSpacing: '0.02em',
               }}
             >
-              Could not parse Vimeo URL
-            </div>
-          )}
-        </div>
+              {openLabel}
+            </a>
+          </div>
+        ) : (
+          <div
+            style={{
+              position: 'relative',
+              paddingTop: '56.25%',
+              borderRadius: 8,
+              overflow: 'hidden',
+              background: '#000',
+            }}
+          >
+            {embedUrl ? (
+              <iframe
+                src={embedUrl}
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+                title={title}
+              />
+            ) : (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#a5a7ad',
+                  fontSize: 14,
+                }}
+              >
+                Could not load video
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* External link fallback */}
+        {/* External link — always shown */}
         <div style={{ marginTop: 10, textAlign: 'right' }}>
           <a
             href={vimeoUrl}
@@ -179,7 +248,7 @@ export default function VimeoPlayerModal({
             rel="noopener noreferrer"
             style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}
           >
-            Open on Vimeo ↗
+            {openLabel}
           </a>
         </div>
 

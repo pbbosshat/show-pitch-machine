@@ -14,6 +14,66 @@ import GottaCatchEmAllOneSheet from './GottaCatchEmAllOneSheet';
 import HauntedWorldOneSheet from './HauntedWorldOneSheet';
 import MissingInAmericaOneSheet from './MissingInAmericaOneSheet';
 import HeartlandPowerOneSheet from './HeartlandPowerOneSheet';
+import HeidiMontagRookiePiOneSheet from './HeidiMontagRookiePiOneSheet';
+import CanadaHeidiMontagOneSheet from './CanadaHeidiMontagOneSheet';
+import GoneViralOneSheet from './GoneViralOneSheet';
+import ScaredShirtlessOneSheet from './ScaredShirtlessOneSheet';
+import OutOfBoundsOneSheet from './OutOfBoundsOneSheet';
+import SenselessOneSheet from './SenselessOneSheet';
+import PrettyBigLiarsOneSheet from './PrettyBigLiarsOneSheet';
+import StormWarriorsOneSheet from './StormWarriorsOneSheet';
+import HauntedWorldYouTubeOneSheet from './HauntedWorldYouTubeOneSheet';
+import HauntedWorldNorthAmericaOneSheet from './HauntedWorldNorthAmericaOneSheet';
+import HomeGameOneSheet from './HomeGameOneSheet';
+import HomeGameExcelOneSheet from './HomeGameExcelOneSheet';
+import HomeGameAthletesFirstOneSheet from './HomeGameAthletesFirstOneSheet';
+import HomeGameCAAOneSheet from './HomeGameCAAOneSheet';
+import StormWarriorsUSOneSheet from './StormWarriorsUSOneSheet';
+import WelcomeToCrunkvilleOneSheet from './WelcomeToCrunkvilleOneSheet';
+import OpenSecretsOneSheet from './OpenSecretsOneSheet';
+import JustLikeHomeOneSheet from './JustLikeHomeOneSheet';
+import SwingThoughtsOneSheet from './SwingThoughtsOneSheet';
+import MagicShowdownOneSheet from './MagicShowdownOneSheet';
+import HappyHourHustlersOneSheet from './HappyHourHustlersOneSheet';
+import FandemoniumOneSheet from './FandemoniumOneSheet';
+import OopsIBrokeTheLawOneSheet from './OopsIBrokeTheLawOneSheet';
+import CarolinaGridironOneSheet from './CarolinaGridironOneSheet';
+import BotchedByATikTokDocOneSheet from './BotchedByATikTokDocOneSheet';
+import SomethingHappenedInNashvilleOneSheet from './SomethingHappenedInNashvilleOneSheet';
+import SusanSmithOneSheet from './SusanSmithOneSheet';
+import UpForParoleOneSheet from './UpForParoleOneSheet';
+import DontFWithMyKidsOneSheet from './DontFWithMyKidsOneSheet';
+import CollateralDamageOneSheet from './CollateralDamageOneSheet';
+import ExitStrategyOneSheet from './ExitStrategyOneSheet';
+import ColdBloodedOneSheet from './ColdBloodedOneSheet';
+import NumberOneWithABulletOneSheet from './NumberOneWithABulletOneSheet';
+import TheGirlInTheTeslaOneSheet from './TheGirlInTheTeslaOneSheet';
+import ProjectSkywatchOneSheet from './ProjectSkywatchOneSheet';
+import SummerOf69OneSheet from './SummerOf69OneSheet';
+import BuriedSecretsOneSheet from './BuriedSecretsOneSheet';
+import NowYouKnowOneSheet from './NowYouKnowOneSheet';
+import QueensVerdictOneSheet from './QueensVerdictOneSheet';
+import IAmTheWarriorOneSheet from './IAmTheWarriorOneSheet';
+import IraJudlesonOneSheet from './IraJudlesonOneSheet';
+import CurbsideCashOneSheet from './CurbsideCashOneSheet';
+import FrightBeforeChristmasOneSheet from './FrightBeforeChristmasOneSheet';
+import GhostedOneSheet from './GhostedOneSheet';
+import WeHuntSerialKillersOneSheet from './WeHuntSerialKillersOneSheet';
+import MyFatherTheSerialKillerOneSheet from './MyFatherTheSerialKillerOneSheet';
+import ShowTellSandyShawOneSheet from './ShowTellSandyShawOneSheet';
+import ArtOfMurderWalsheOneSheet from './ArtOfMurderWalsheOneSheet';
+import MurderOnMusicRowOneSheet from './MurderOnMusicRowOneSheet';
+import WhatHappenedToMichelleReneeOneSheet from './WhatHappenedToMichelleReneeOneSheet';
+import DeathOnDemandOneSheet from './DeathOnDemandOneSheet';
+import ParentalGuiltOneSheet from './ParentalGuiltOneSheet';
+import GiveMeShelterOneSheet from './GiveMeShelterOneSheet';
+import BouchardsOneSheet from './BouchardsOneSheet';
+import TheDayBeforeOneSheet from './TheDayBeforeOneSheet';
+import PVJOneSheet from './PVJOneSheet';
+import JoseFernandezOneSheet from './JoseFernandezOneSheet';
+import WoodyStrodeOneSheet from './WoodyStrodeOneSheet';
+import LoriVallowOneSheet from './LoriVallowOneSheet';
+import ALittleChristmasSpiritOneSheet from './ALittleChristmasSpiritOneSheet';
 
 // Full DB row — password included here so we can compute has_password server-side.
 // The actual password value is never forwarded to the client component.
@@ -136,6 +196,186 @@ export default async function AvailablePackagePage(
   }
   if (slug === 'heartland-power') {
     return <HeartlandPowerOneSheet title={safeTitle} />;
+  }
+  if (slug === 'heidi-montag-rookie-pi') {
+    return <HeidiMontagRookiePiOneSheet title={safeTitle} />;
+  }
+  if (slug === 'canada-heidi-montag') {
+    return <CanadaHeidiMontagOneSheet title={safeTitle} />;
+  }
+  if (slug === 'gone-viral') {
+    return <GoneViralOneSheet title={safeTitle} />;
+  }
+  if (slug === 'scared-shirtless') {
+    return <ScaredShirtlessOneSheet title={safeTitle} />;
+  }
+  if (slug === 'out-of-bounds') {
+    return <OutOfBoundsOneSheet title={safeTitle} />;
+  }
+  if (slug === 'senseless') {
+    return <SenselessOneSheet title={safeTitle} />;
+  }
+  if (slug === 'pretty-big-liars') {
+    return <PrettyBigLiarsOneSheet title={safeTitle} />;
+  }
+  if (slug === 'storm-warriors-deck') {
+    return <StormWarriorsOneSheet title={safeTitle} />;
+  }
+  if (slug === 'haunted-world-youtube') {
+    return <HauntedWorldYouTubeOneSheet title={safeTitle} />;
+  }
+  if (slug === 'haunted-world-north-america') {
+    return <HauntedWorldNorthAmericaOneSheet title={safeTitle} />;
+  }
+  if (slug === 'home-game') {
+    return <HomeGameOneSheet title={safeTitle} />;
+  }
+  if (slug === 'home-game-excel') {
+    return <HomeGameExcelOneSheet title={safeTitle} />;
+  }
+  if (slug === 'home-game-athletes-first') {
+    return <HomeGameAthletesFirstOneSheet title={safeTitle} />;
+  }
+  if (slug === 'home-game-caa') {
+    return <HomeGameCAAOneSheet title={safeTitle} />;
+  }
+  if (slug === 'storm-warriors-us') {
+    return <StormWarriorsUSOneSheet title={safeTitle} />;
+  }
+  if (slug === 'welcome-to-crunkville') {
+    return <WelcomeToCrunkvilleOneSheet title={safeTitle} />;
+  }
+  if (slug === 'open-secrets') {
+    return <OpenSecretsOneSheet title={safeTitle} />;
+  }
+  if (slug === 'just-like-home') {
+    return <JustLikeHomeOneSheet title={safeTitle} />;
+  }
+  if (slug === 'swing-thoughts') {
+    return <SwingThoughtsOneSheet title={safeTitle} />;
+  }
+  if (slug === 'magic-showdown') {
+    return <MagicShowdownOneSheet title={safeTitle} />;
+  }
+  if (slug === 'happy-hour-hustlers') {
+    return <HappyHourHustlersOneSheet title={safeTitle} />;
+  }
+  if (slug === 'fandemonium') {
+    return <FandemoniumOneSheet title={safeTitle} />;
+  }
+  if (slug === 'oops-i-broke-the-law') {
+    return <OopsIBrokeTheLawOneSheet title={safeTitle} />;
+  }
+  if (slug === 'carolina-gridiron') {
+    return <CarolinaGridironOneSheet title={safeTitle} />;
+  }
+  if (slug === 'botched-by-a-tiktok-doc') {
+    return <BotchedByATikTokDocOneSheet title={safeTitle} />;
+  }
+  if (slug === 'something-happened-in-nashville') {
+    return <SomethingHappenedInNashvilleOneSheet title={safeTitle} />;
+  }
+  if (slug === 'susan-smith') {
+    return <SusanSmithOneSheet title={safeTitle} />;
+  }
+  if (slug === 'up-for-parole') {
+    return <UpForParoleOneSheet title={safeTitle} />;
+  }
+  if (slug === 'dont-f-with-my-kids') {
+    return <DontFWithMyKidsOneSheet title={safeTitle} />;
+  }
+  if (slug === 'collateral-damage') {
+    return <CollateralDamageOneSheet title={safeTitle} />;
+  }
+  if (slug === 'exit-strategy') {
+    return <ExitStrategyOneSheet title={safeTitle} />;
+  }
+  if (slug === 'cold-blooded') {
+    return <ColdBloodedOneSheet title={safeTitle} />;
+  }
+  if (slug === 'number-one-with-a-bullet') {
+    return <NumberOneWithABulletOneSheet title={safeTitle} />;
+  }
+  if (slug === 'the-girl-in-the-tesla') {
+    return <TheGirlInTheTeslaOneSheet title={safeTitle} />;
+  }
+  if (slug === 'project-skywatch') {
+    return <ProjectSkywatchOneSheet title={safeTitle} />;
+  }
+  if (slug === 'summer-of-69') {
+    return <SummerOf69OneSheet title={safeTitle} />;
+  }
+  if (slug === 'buried-secrets') {
+    return <BuriedSecretsOneSheet title={safeTitle} />;
+  }
+  if (slug === 'now-you-know') {
+    return <NowYouKnowOneSheet title={safeTitle} />;
+  }
+  if (slug === 'queens-verdict') {
+    return <QueensVerdictOneSheet title={safeTitle} />;
+  }
+  if (slug === 'i-am-the-warrior') {
+    return <IAmTheWarriorOneSheet title={safeTitle} />;
+  }
+  if (slug === 'ira-judleson') {
+    return <IraJudlesonOneSheet title={safeTitle} />;
+  }
+  if (slug === 'curbside-cash') {
+    return <CurbsideCashOneSheet title={safeTitle} />;
+  }
+  if (slug === 'fright-before-christmas') {
+    return <FrightBeforeChristmasOneSheet title={safeTitle} />;
+  }
+  if (slug === 'ghosted') {
+    return <GhostedOneSheet title={safeTitle} />;
+  }
+  if (slug === 'we-hunt-serial-killers') {
+    return <WeHuntSerialKillersOneSheet title={safeTitle} />;
+  }
+  if (slug === 'my-father-the-serial-killer') {
+    return <MyFatherTheSerialKillerOneSheet title={safeTitle} />;
+  }
+  if (slug === 'show-tell-sandy-shaw') {
+    return <ShowTellSandyShawOneSheet title={safeTitle} />;
+  }
+  if (slug === 'art-of-murder-walshe') {
+    return <ArtOfMurderWalsheOneSheet title={safeTitle} />;
+  }
+  if (slug === 'murder-on-music-row') {
+    return <MurderOnMusicRowOneSheet title={safeTitle} />;
+  }
+  if (slug === 'what-happened-to-michelle-renee') {
+    return <WhatHappenedToMichelleReneeOneSheet title={safeTitle} />;
+  }
+  if (slug === 'death-on-demand') {
+    return <DeathOnDemandOneSheet title={safeTitle} />;
+  }
+  if (slug === 'parental-guilt') {
+    return <ParentalGuiltOneSheet title={safeTitle} />;
+  }
+  if (slug === 'give-me-shelter') {
+    return <GiveMeShelterOneSheet title={safeTitle} />;
+  }
+  if (slug === 'the-bouchards') {
+    return <BouchardsOneSheet title={safeTitle} />;
+  }
+  if (slug === 'the-day-before') {
+    return <TheDayBeforeOneSheet title={safeTitle} />;
+  }
+  if (slug === 'pvj') {
+    return <PVJOneSheet title={safeTitle} />;
+  }
+  if (slug === 'jose-fernandez') {
+    return <JoseFernandezOneSheet title={safeTitle} />;
+  }
+  if (slug === 'woody-strode') {
+    return <WoodyStrodeOneSheet title={safeTitle} />;
+  }
+  if (slug === 'lori-vallow') {
+    return <LoriVallowOneSheet title={safeTitle} />;
+  }
+  if (slug === 'a-little-christmas-spirit') {
+    return <ALittleChristmasSpiritOneSheet title={safeTitle} />;
   }
 
   return <AvailablePackageClient title={safeTitle} />;

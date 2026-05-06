@@ -83,6 +83,34 @@ function fetchDeals(showId: string): ShowDeal[] {
   );
 }
 
+// Shape returned from the entity_article_links + trade_articles JOIN
+interface ArticleLink {
+  id: string;
+  headline: string | null;
+  url: string | null;
+  source: string | null;
+  item_type: string | null;
+  scraped_at: number | null;
+  auto_applied: number;
+  applied_field: string | null;
+}
+
+// Fetches trade articles linked to this show via entity_article_links.
+// entity_type = 'show' scopes to the show dimension.
+// Capped at 20 most-recent articles.
+function fetchArticles(showId: string): ArticleLink[] {
+  return query<ArticleLink>(
+    `SELECT ta.id, ta.headline, ta.url, ta.source, ta.item_type, ta.scraped_at,
+            eal.auto_applied, eal.applied_field
+     FROM entity_article_links eal
+     JOIN trade_articles ta ON ta.id = eal.article_id
+     WHERE eal.entity_type = 'show' AND eal.entity_id = ?
+     ORDER BY ta.scraped_at DESC
+     LIMIT 20`,
+    [showId]
+  );
+}
+
 function fetchSimilar(showId: string, networkId: string | null, genre: string | null): Show[] {
   return query<Show>(
     `SELECT id, title, network, air_status, total_seasons, genre
@@ -206,6 +234,7 @@ export default async function ShowDetailPage({ params }: { params: Promise<{ id:
   const buyers = fetchBuyers(s.network_id ?? null);
   const deals  = fetchDeals(id);
   const similar = fetchSimilar(id, s.network_id ?? null, s.genre ?? null);
+  const articles = fetchArticles(id);
   const premiereYear = year(s.premiere_date);
   const offAirYear   = year(s.off_air_date);
 
@@ -688,6 +717,70 @@ export default async function ShowDetailPage({ params }: { params: Promise<{ id:
                 <p className="text-sm" style={{ color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
                   {s.notes}
                 </p>
+              </div>
+            </Card>
+          )}
+
+          {/* Trade Press — articles linked via entity_article_links, only rendered when there is data */}
+          {articles.length > 0 && (
+            <Card>
+              <div className="p-4">
+                <SectionHeading>Trade Press</SectionHeading>
+                <div className="space-y-0">
+                  {articles.map((article, idx) => (
+                    <div key={article.id}>
+                      <div className="py-2.5">
+                        {/* Headline — truncated to 2 lines, links to original article */}
+                        <a
+                          href={article.url ?? '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium leading-snug"
+                          style={{
+                            color: 'var(--accent)',
+                            textDecoration: 'none',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {article.headline ?? '(No headline)'}
+                        </a>
+
+                        {/* Source + type + date row */}
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {article.source && (
+                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                              {article.source}
+                            </span>
+                          )}
+                          {article.item_type && (
+                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                              · {article.item_type}
+                            </span>
+                          )}
+                          {article.scraped_at && (
+                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                              · {fmt(article.scraped_at)}
+                            </span>
+                          )}
+                          {/* Auto-applied indicator — surfaced when the article triggered a field update */}
+                          {article.auto_applied === 1 && article.applied_field && (
+                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                              · ✏ auto-updated
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Divider between articles, not after the last one */}
+                      {idx < articles.length - 1 && (
+                        <div style={{ height: 1, background: 'var(--border-subtle)' }} />
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </Card>
           )}

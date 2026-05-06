@@ -100,6 +100,9 @@ cur.execute('''SELECT id, ip_id, buyer_company_id, buyer_contact_id,
                pitch_date, outcome, pass_reason, pass_reason_cat
                FROM pitches''')
 pitches = [dict(r) for r in cur.fetchall()]
+# ip_catalog isn't ingested to the MCP Postgres — null out ip_id to avoid FK violation
+for p in pitches:
+    p['ip_id'] = None
 batch_post('/ingest/pipeline', 'pitches', pitches, 'pitches')
 
 con.close()

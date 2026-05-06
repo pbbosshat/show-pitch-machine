@@ -7,16 +7,36 @@ import { queryOne, initDb } from '@/lib/db';
 import DeckSettingsClient, { type AvailableTitle } from './DeckSettingsClient';
 import Link from 'next/link';
 
+// Raw DB shape before sizzle_history is parsed from its JSON string column.
+interface RawDeckRow extends Omit<AvailableTitle, 'sizzle_history'> {
+  sizzle_history: string | null;
+}
+
 // Read a single available title from the DB by primary key.
 // Serialized through JSON.parse/stringify to strip any non-plain-object values
 // (e.g. Buffers, BigInts) before passing down to the client component.
+// sizzle_history is stored as a JSON string in SQLite — parse it here so the
+// client component always receives a typed SizzleEntry[] (not a raw string).
 // Returns null on any DB error or missing row — handled below as 404.
 function getTitle(id: string): AvailableTitle | null {
   try {
     initDb();
-    const row = queryOne<AvailableTitle>('SELECT *, gate_password AS password FROM deck_sites WHERE id = ?', [id]);
+    const row = queryOne<RawDeckRow>('SELECT *, gate_password AS password FROM deck_sites WHERE id = ?', [id]);
     if (!row) return null;
-    return JSON.parse(JSON.stringify(row));
+    // Parse sizzle_history JSON; default to empty array if null/malformed
+    let sizzleHistory: AvailableTitle['sizzle_history'] = [];
+    if (row.sizzle_history) {
+      try {
+        const parsed = JSON.parse(row.sizzle_history) as unknown;
+        if (Array.isArray(parsed)) {
+          sizzleHistory = parsed as AvailableTitle['sizzle_history'];
+        }
+      } catch {
+        // Malformed JSON — silently default to empty array
+      }
+    }
+    const title: AvailableTitle = { ...row, sizzle_history: sizzleHistory };
+    return JSON.parse(JSON.stringify(title)) as AvailableTitle;
   } catch {
     return null;
   }

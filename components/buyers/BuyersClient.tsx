@@ -59,6 +59,7 @@ interface ColDef {
 const COLUMN_DEFS: ColDef[] = [
   // name is always visible (hideable: false) — it's the primary identifier
   { key: 'name',                  label: 'Name',           defaultWidth: 200, hideable: false, defaultVisible: true  },
+  { key: 'company_name',          label: 'Company',        defaultWidth: 160, hideable: true,  defaultVisible: true  },
   { key: 'title',                 label: 'Title',          defaultWidth: 190, hideable: true,  defaultVisible: true  },
   { key: 'email',                 label: 'Email',          defaultWidth: 180, hideable: true,  defaultVisible: true  },
   { key: 'activity_status',       label: 'Status',         defaultWidth: 130, hideable: true,  defaultVisible: true  },
@@ -81,6 +82,8 @@ function buildDefaultWidths(): Record<string, number> {
 
 // Fields exposed in the edit form — subset of BuyerContact that makes sense to hand-edit
 interface BuyerFormState {
+  company_id: string | null;
+  company_name: string | null;
   title: string;
   activity_status: ActivityStatus;
   role_type: BuyerRoleType | '';
@@ -141,6 +144,8 @@ export default function BuyersClient({ initialBuyers }: BuyersClientProps) {
   // Edit modal state
   const [editingBuyer, setEditingBuyer] = useState<BuyerContact | null>(null);
   const [formState, setFormState] = useState<BuyerFormState>({
+    company_id: null,
+    company_name: null,
     title: '',
     activity_status: 'unknown',
     role_type: '',
@@ -151,6 +156,9 @@ export default function BuyersClient({ initialBuyers }: BuyersClientProps) {
   });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Networks list — fetched once on mount for the company picker in the edit modal
+  const [networks, setNetworks] = useState<Array<{ id: string; name: string }>>([]);
 
   // Tracks which row's pencil icon is highlighted (hover)
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
@@ -178,6 +186,20 @@ export default function BuyersClient({ initialBuyers }: BuyersClientProps) {
   useEffect(() => { localStorage.setItem('buyers-sort', JSON.stringify(sort)); }, [sort]);
   useEffect(() => { localStorage.setItem('buyers-cols', JSON.stringify(visibleCols)); }, [visibleCols]);
   useEffect(() => { localStorage.setItem('buyers-widths', JSON.stringify(colWidths)); }, [colWidths]);
+
+  // ─── Fetch networks list on mount for company picker in edit modal ────────────
+  // Only needs to run once — the list rarely changes and is used only in the edit modal.
+
+  useEffect(() => {
+    fetch('/api/networks')
+      .then((r) => r.json())
+      .then((json) => {
+        if (Array.isArray(json.data)) {
+          setNetworks(json.data.map((n: { id: string; name: string }) => ({ id: n.id, name: n.name })));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // ─── Close column selector on outside click ──────────────────────────────────
 
@@ -268,6 +290,8 @@ export default function BuyersClient({ initialBuyers }: BuyersClientProps) {
     e.stopPropagation(); // prevent row click from navigating
     setEditingBuyer(buyer);
     setFormState({
+      company_id: buyer.company_id ?? null,
+      company_name: buyer.company_name ?? null,
       title: buyer.title ?? '',
       activity_status: buyer.activity_status,
       role_type: buyer.role_type ?? '',
@@ -294,9 +318,15 @@ export default function BuyersClient({ initialBuyers }: BuyersClientProps) {
       if (!res.ok) throw new Error(data.error ?? res.statusText);
       // Merge updated fields into local buyers list without a full re-fetch.
       // Convert the '' sentinel values back to null to stay compatible with BuyerContact types.
+      // Resolve company_name from the networks list so the Company column updates immediately.
+      const selectedNetwork = formState.company_id
+        ? networks.find((n) => n.id === formState.company_id)
+        : null;
       const merged: Partial<BuyerContact> = {
         ...formState,
         role_type: formState.role_type !== '' ? formState.role_type : null,
+        company_id: formState.company_id,
+        company_name: selectedNetwork?.name ?? null,
       };
       setBuyers((prev) =>
         prev.map((b) => (b.id === editingBuyer.id ? { ...b, ...merged } : b))
@@ -499,6 +529,24 @@ export default function BuyersClient({ initialBuyers }: BuyersClientProps) {
                         )}
                       </span>
                     );
+                  case 'company_name': {
+                    // Link to the network detail page when company_id is present
+                    return (
+                      <span key="company_name" className="text-sm truncate pr-2" style={{ color: 'var(--text-secondary)' }}>
+                        {buyer.company_id ? (
+                          <a
+                            href={`/market/networks/${buyer.company_id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ color: 'var(--accent)', textDecoration: 'none' }}
+                          >
+                            {buyer.company_name ?? '—'}
+                          </a>
+                        ) : (
+                          buyer.company_name ?? '—'
+                        )}
+                      </span>
+                    );
+                  }
                   case 'title':
                     return (
                       <span key="title" className="text-sm truncate pr-2" style={{ color: 'var(--text-secondary)' }}>
@@ -623,6 +671,21 @@ export default function BuyersClient({ initialBuyers }: BuyersClientProps) {
         onClose={() => { setEditingBuyer(null); setSaveError(null); }}
         title={editingBuyer?.name ?? 'Edit Buyer'}
       >
+        {/* Company / Network — picker populated from /api/networks */}
+        <div style={{ marginBottom: 12 }}>
+          <label style={LABEL_STYLE}>Company / Network</label>
+          <select
+            value={formState.company_id ?? ''}
+            onChange={(e) => setFormState((p) => ({ ...p, company_id: e.target.value || null }))}
+            style={FIELD_STYLE}
+          >
+            <option value="">— Unassigned —</option>
+            {networks.map((n) => (
+              <option key={n.id} value={n.id}>{n.name}</option>
+            ))}
+          </select>
+        </div>
+
         {/* Title */}
         <div style={{ marginBottom: 12 }}>
           <label style={LABEL_STYLE}>Title</label>

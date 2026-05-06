@@ -117,19 +117,20 @@ CALL npx tsx -e "import { initDb, run } from './lib/db.ts'; initDb(); run('PRAGM
 
 echo [%DATE% %TIME%] ===== Daily run complete ===== >> %LOG%
 
-:: ── 11. Email run report to patrickbryant@gototeam.com ───────────────────────
-:: Sends stats summary (TVDB progress, new articles, steps completed).
-:: Stops automatically once TVDB enrichment is complete.
-echo [%DATE% %TIME%] Step 11: Sending run report >> %LOG%
-CALL python scripts\send-run-report.py >> %LOG% 2>&1
-echo [%DATE% %TIME%] Report sent >> %LOG%
-
-:: ── 12. Sync to Railway MCP server ───────────────────────────────────────────
+:: ── 11. Sync to Railway MCP server ───────────────────────────────────────────
 :: Pushes articles, shows, orders, buyers, and pipeline data from local SQLite
 :: to the Railway-hosted MCP server so Sean's Claude Code stays current.
 :: Safe to re-run — all ingest endpoints use ON CONFLICT DO UPDATE (upsert).
-echo [%DATE% %TIME%] Step 12: Syncing to Railway MCP server >> %LOG%
+:: Must run BEFORE the report so send-run-report.py can capture sync results.
+echo [%DATE% %TIME%] Step 11: Syncing to Railway MCP server >> %LOG%
 CALL npx tsx --env-file=.env scripts\sync-to-railway.ts >> %LOG% 2>&1
 echo [%DATE% %TIME%] Railway sync complete >> %LOG%
+
+:: ── 12. Email run report to patrickbryant@gototeam.com ───────────────────────
+:: Sends stats summary (TVDB progress, new articles, steps completed).
+:: Stops automatically once TVDB enrichment is complete.
+echo [%DATE% %TIME%] Step 12: Sending run report >> %LOG%
+CALL python scripts\send-run-report.py >> %LOG% 2>&1
+echo [%DATE% %TIME%] Report sent >> %LOG%
 
 echo [%DATE% %TIME%] ===== All steps complete ===== >> %LOG%

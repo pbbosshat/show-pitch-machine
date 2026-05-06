@@ -9,7 +9,7 @@
  * PUT /api/buyers/[id]
  *   Updates editable contact fields. Scraped/computed fields are read-only via this endpoint.
  *   Body: { title?, mandate_statement?, notes?, activity_status?, role_type?,
- *           is_buyer_seat?, production_type_focus? }
+ *           is_buyer_seat?, production_type_focus?, company_id? }
  *   Response: { data: { changes: number } }
  *
  * PATCH /api/buyers/[id]/verify — handled in app/api/buyers/[id]/verify/route.ts
@@ -169,6 +169,7 @@ export async function PUT(
       'role_type',          // buyer classification added in migration 005
       'is_buyer_seat',      // 1 = active buying seat, 0 = other role
       'production_type_focus',
+      'company_id',         // reassign buyer to a different network/company
     ];
     const fields: string[] = [];
     const values: unknown[] = [];
