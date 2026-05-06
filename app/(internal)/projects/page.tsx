@@ -3,6 +3,7 @@
 // No re-fetch on tab switch — all filtering is done in memory.
 
 import ProjectsClient from '@/components/projects/ProjectsClient';
+import { getBaseUrl } from '@/lib/baseUrl';
 
 interface ProjectSummary {
   id: string;
@@ -28,7 +29,7 @@ interface ProjectSummary {
 // Limit set high (200) to get the full pipeline in one shot.
 async function fetchProjects(): Promise<ProjectSummary[]> {
   try {
-    const res = await fetch('http://localhost:3000/api/projects?limit=200', {
+    const res = await fetch(`${getBaseUrl()}/api/projects?limit=200`, {
       cache: 'no-store',
     });
     if (!res.ok) return [];

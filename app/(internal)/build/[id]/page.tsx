@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
+import { getBaseUrl } from '@/lib/baseUrl';
 
 interface Package {
   id: string;
@@ -25,7 +26,7 @@ interface Package {
 
 async function fetchPackage(id: string): Promise<Package | null> {
   try {
-    const res = await fetch(`http://localhost:3000/api/packages/${id}`, { cache: 'no-store' });
+    const res = await fetch(`${getBaseUrl()}/api/packages/${id}`, { cache: 'no-store' });
     if (!res.ok) return null;
     const { data } = await res.json();
     return data ?? null;

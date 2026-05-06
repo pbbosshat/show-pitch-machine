@@ -9,10 +9,11 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
 import type { NetworkDetail } from '@/types';
+import { getBaseUrl } from '@/lib/baseUrl';
 
 async function fetchNetwork(id: string): Promise<NetworkDetail | null> {
   try {
-    const res = await fetch(`http://localhost:3000/api/networks/${id}`, { cache: 'no-store' });
+    const res = await fetch(`${getBaseUrl()}/api/networks/${id}`, { cache: 'no-store' });
     if (res.status === 404) return null;
     if (!res.ok) return null;
     const { data } = await res.json();

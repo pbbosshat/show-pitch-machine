@@ -8,6 +8,7 @@ import Badge from '@/components/ui/Badge';
 import EmailTimeline from '@/components/projects/EmailTimeline';
 import SizzleCard, { type SizzleCardData } from '@/components/shows/SizzleCard';
 import { query } from '@/lib/db';
+import { getBaseUrl } from '@/lib/baseUrl';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -64,7 +65,7 @@ interface EmailsResponse {
 
 async function fetchProject(id: string): Promise<ProjectDetail | null> {
   try {
-    const res = await fetch(`http://localhost:3000/api/projects/${id}`, {
+    const res = await fetch(`${getBaseUrl()}/api/projects/${id}`, {
       cache: 'no-store',
     });
     if (!res.ok) return null;
@@ -78,7 +79,7 @@ async function fetchProject(id: string): Promise<ProjectDetail | null> {
 
 async function fetchEmails(id: string): Promise<EmailsResponse | null> {
   try {
-    const res = await fetch(`http://localhost:3000/api/projects/${id}/emails?limit=100`, {
+    const res = await fetch(`${getBaseUrl()}/api/projects/${id}/emails?limit=100`, {
       cache: 'no-store',
     });
     if (!res.ok) return null;

@@ -4,6 +4,7 @@
 
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { getBaseUrl } from '@/lib/baseUrl';
 
 interface PitchPortal {
   id: string;
@@ -25,7 +26,7 @@ interface PitchPortal {
 
 async function fetchPortal(slug: string): Promise<PitchPortal | null> {
   try {
-    const res = await fetch(`http://localhost:3000/api/pitch/${slug}`, { cache: 'no-store' });
+    const res = await fetch(`${getBaseUrl()}/api/pitch/${slug}`, { cache: 'no-store' });
     if (!res.ok) return null;
     const { data } = await res.json();
     return data ?? null;

@@ -9,6 +9,7 @@ import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
 import SizzlePlayRow from '@/components/shows/SizzlePlayRow';
 import type { PitchHub } from '@/types';
+import { getBaseUrl } from '@/lib/baseUrl';
 
 // ---------------------------------------------------------------------------
 // Data fetching
@@ -20,7 +21,7 @@ import type { PitchHub } from '@/types';
  */
 async function fetchPitchHub(id: string): Promise<PitchHub | null> {
   try {
-    const res = await fetch(`http://localhost:3000/api/pitches/${id}`, {
+    const res = await fetch(`${getBaseUrl()}/api/pitches/${id}`, {
       cache: 'no-store',
     });
     if (!res.ok) return null;

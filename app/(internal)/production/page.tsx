@@ -13,6 +13,7 @@ import Card from '@/components/ui/Card';
 import DashboardBuyerCards from '@/components/dashboard/DashboardBuyerCards';
 import { query, queryOne } from '@/lib/db';
 import type { BuyerContact, Show } from '@/types';
+import { getBaseUrl } from '@/lib/baseUrl';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -45,14 +46,14 @@ interface OnAirShow { title: string; production_hours: number; }
 
 async function fetchActiveBuyers(): Promise<BuyerContact[]> {
   try {
-    const res = await fetch('http://localhost:3000/api/buyers?activity_status=active', { cache: 'no-store' });
+    const res = await fetch(`${getBaseUrl()}/api/buyers?activity_status=active`, { cache: 'no-store' });
     return res.ok ? ((await res.json()).data ?? []) : [];
   } catch { return []; }
 }
 
 async function fetchAllShows(): Promise<Show[]> {
   try {
-    const res = await fetch('http://localhost:3000/api/shows', { cache: 'no-store' });
+    const res = await fetch(`${getBaseUrl()}/api/shows`, { cache: 'no-store' });
     return res.ok ? ((await res.json()).data ?? []) : [];
   } catch { return []; }
 }

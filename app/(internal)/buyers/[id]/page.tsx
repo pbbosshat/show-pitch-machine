@@ -8,6 +8,7 @@ import BuyerTabs from '@/components/buyers/BuyerTabs';
 import Badge from '@/components/ui/Badge';
 import UnverifiedSection from '@/components/ui/UnverifiedSection';
 import type { BuyerContact, MandateUpdate, MarketOrder, Pitch } from '@/types';
+import { getBaseUrl } from '@/lib/baseUrl';
 
 // Extended interface for the denormalized buyer detail response from GET /api/buyers/[id]
 // The API joins buyer_companies and buyer_employer_history — these fields aren't on BuyerContact base.
@@ -56,7 +57,7 @@ async function fetchJSON<T>(url: string): Promise<T | null> {
 
 export default async function BuyerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const base = 'http://localhost:3000';
+  const base = getBaseUrl();
 
   const [buyer, mandateHistory, greenlits, myeHistory] = await Promise.all([
     fetchJSON<BuyerDetailData>(`${base}/api/buyers/${id}`),

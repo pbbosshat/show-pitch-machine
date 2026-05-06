@@ -4,12 +4,13 @@
 
 import { format } from 'date-fns';
 import ScraperBanner from '@/components/dashboard/ScraperBanner';
+import { getBaseUrl } from '@/lib/baseUrl';
 import DailyBriefing from '@/components/intelligence/DailyBriefing';
 import type { ScraperSourceStatus } from '@/types';
 
 async function fetchScraperStatus(): Promise<ScraperSourceStatus[]> {
   try {
-    const res = await fetch('http://localhost:3000/api/scraper/status', { cache: 'no-store' });
+    const res = await fetch(`${getBaseUrl()}/api/scraper/status`, { cache: 'no-store' });
     if (!res.ok) return [];
     return (await res.json()).data ?? [];
   } catch { return []; }
