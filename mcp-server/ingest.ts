@@ -323,7 +323,11 @@ export async function handleIngestShows(
 
   let inserted = 0;
   let updated = 0;
+  let skipped = 0;
 
+  // Each row gets its own SAVEPOINT so a single bad row (duplicate PK, constraint
+  // violation, etc.) doesn't roll back the entire batch.  The actual Postgres
+  // error is logged so Railway logs show the root cause.
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -333,51 +337,63 @@ export async function handleIngestShows(
 
       const id = show.id || uuidv4();
 
-      const result = await client.query(
-        `INSERT INTO shows
-           (id, title, title_normalized, network, production_company, showrunner,
-            host, format, genre, status, greenlit_date, source, source_url,
-            data_source, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $15)
-         ON CONFLICT (title_normalized, network) DO UPDATE SET
-           title             = EXCLUDED.title,
-           production_company = EXCLUDED.production_company,
-           showrunner        = EXCLUDED.showrunner,
-           host              = EXCLUDED.host,
-           format            = EXCLUDED.format,
-           genre             = EXCLUDED.genre,
-           status            = EXCLUDED.status,
-           greenlit_date     = EXCLUDED.greenlit_date,
-           source            = EXCLUDED.source,
-           source_url        = EXCLUDED.source_url,
-           updated_at        = EXCLUDED.updated_at
-         RETURNING (xmax = 0) AS was_inserted`,
-        [id, show.title, show.title_normalized, show.network ?? null,
-         show.production_company ?? null, show.showrunner ?? null,
-         show.host ?? null, show.format ?? null, show.genre ?? null,
-         show.status ?? null, normTs(show.greenlit_date),
-         show.source ?? null, show.source_url ?? null,
-         show.data_source ?? 'trade', nowSec()]
-      );
+      try {
+        await client.query('SAVEPOINT sp_show');
 
-      if (result.rows[0]?.was_inserted) {
-        inserted++;
-      } else {
-        updated++;
+        const result = await client.query(
+          `INSERT INTO shows
+             (id, title, title_normalized, network, production_company, showrunner,
+              host, format, genre, status, greenlit_date, source, source_url,
+              data_source, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $15)
+           ON CONFLICT (title_normalized, network) DO UPDATE SET
+             title              = EXCLUDED.title,
+             production_company = EXCLUDED.production_company,
+             showrunner         = EXCLUDED.showrunner,
+             host               = EXCLUDED.host,
+             format             = EXCLUDED.format,
+             genre              = EXCLUDED.genre,
+             status             = EXCLUDED.status,
+             greenlit_date      = EXCLUDED.greenlit_date,
+             source             = EXCLUDED.source,
+             source_url         = EXCLUDED.source_url,
+             updated_at         = EXCLUDED.updated_at
+           RETURNING (xmax = 0) AS was_inserted`,
+          [id, show.title, show.title_normalized, show.network ?? null,
+           show.production_company ?? null, show.showrunner ?? null,
+           show.host ?? null, show.format ?? null, show.genre ?? null,
+           show.status ?? null, normTs(show.greenlit_date),
+           show.source ?? null, show.source_url ?? null,
+           show.data_source ?? 'trade', nowSec()]
+        );
+
+        await client.query('RELEASE SAVEPOINT sp_show');
+
+        if (result.rows[0]?.was_inserted) {
+          inserted++;
+        } else {
+          updated++;
+        }
+      } catch (rowErr) {
+        // Roll back only this row's savepoint — the rest of the batch continues.
+        await client.query('ROLLBACK TO SAVEPOINT sp_show');
+        skipped++;
+        const msg = rowErr instanceof Error ? rowErr.message : String(rowErr);
+        console.error(`[ingest/shows] Skipped "${show.title}" (${show.title_normalized}/${show.network ?? 'null'}): ${msg}`);
       }
     }
 
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[ingest/shows] Error:', err);
+    console.error('[ingest/shows] Fatal transaction error:', err);
     sendJson(res, 500, { error: 'Database error during ingest' });
     return;
   } finally {
     client.release();
   }
 
-  sendJson(res, 200, { inserted, updated, total: shows.length });
+  sendJson(res, 200, { inserted, updated, skipped, total: shows.length });
 }
 
 /**
