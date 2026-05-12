@@ -85,11 +85,13 @@ function extractBody(payload: {
   return '';
 }
 
-function parseMessages(messages: NonNullable<Awaited<ReturnType<ReturnType<typeof google.gmail>['users']['threads']['get']>>['data']['messages']>) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseMessages(messages: any[]) {
   return messages.map((msg) => {
     const headers = msg.payload?.headers ?? [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const get = (name: string) =>
-      headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? '';
+      headers.find((h: any) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? '';
     return {
       id: msg.id ?? '',
       sender: get('from'),

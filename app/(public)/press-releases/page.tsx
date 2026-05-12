@@ -1,9 +1,23 @@
+// Press releases list page — /press-releases
+//
+// DATA FLOW:
+//   DB (press_releases table, published_at DESC) is merged with 2 hardcoded editorial
+//   entries at the top, then rendered as a flat list.
+//
+// WHY HYBRID (not 100% DB-driven):
+//   The two editorial pages (film-commission-crew-directories,
+//   myentertainment-careers-assignment-desk) are hand-authored static Next.js routes,
+//   NOT scraped into the DB.  They live at fixed URLs and must always appear at the
+//   top of this list.  They are pinned here with hardcoded data that matches the
+//   original PRESS_RELEASES array values.
+//
 // Server component — metadata export requires no 'use client'.
 // Interactive FAQ accordion is in PressReleasesAccordion.tsx (client child).
 // Webflow equivalent: .section heading + press list + FAQ accordion + CTA.
 
 import type { Metadata } from 'next';
 import PressReleasesAccordion from './PressReleasesAccordion';
+import { query } from '@/lib/db';
 
 const OG_IMAGE = 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/67c9c4bc80ecce7a341a501c_MYE%20Banner%20.png';
 
@@ -27,42 +41,119 @@ export const metadata: Metadata = {
   },
 };
 
-const PRESS_RELEASES = [
-  { id: 'pr-11', date: 'May 3, 2026', dateIso: '2026-05-03', title: 'WORKING AT MYENTERTAINMENT IS A TOTAL BLAST — ALL HIRING THROUGH ASSIGNMENT DESK', href: '/press-releases/myentertainment-careers-assignment-desk' },
-  { id: 'pr-10', date: 'May 3, 2026', dateIso: '2026-05-03', title: 'HOW TO FIND PRODUCTION CREW: FILM COMMISSION DIRECTORIES AND ASSIGNMENTDESK', href: '/press-releases/film-commission-crew-directories' },
-  { id: 'pr-1', date: 'December 14, 2021', dateIso: '2021-12-14', title: 'KOREAN FORMATS AGENCY SOMETHING SPECIAL STRIKES DEVELOPMENT DEAL WITH MY ENTERTAINMENT' },
-  { id: 'pr-2', date: 'December 14, 2021', dateIso: '2021-12-14', title: "KOREAN FORMATS INCLUDING 'THE QUIZZY HORROR SHOW' HEAD TO U.S. AFTER SOMETHING SPECIAL STRIKES DEAL WITH MY ENTERTAINMENT" },
-  { id: 'pr-3', date: 'August 2, 2021', dateIso: '2021-08-02', title: "HOLLYWOOD'S MR ANTIQUES IS THE GO-TO MAN FOR A-LISTERS IN SEARCH OF SOMETHING SPECIAL" },
-  { id: 'pr-4', date: 'July 22, 2021', dateIso: '2021-07-22', title: 'MY PARANORMAL NETWORK TO LAUNCH WITH 13 ORIGINAL PODCASTS (PODCAST NEWS ROUNDUP)' },
-  { id: 'pr-5', date: 'April 28, 2021', dateIso: '2021-04-28', title: "MY ENTERTAINMENT'S ONE FOOT FORWARD TEAMS WITH UNREALISTIC IDEAS, SUGAR23 FOR PREMIUM PROJECTS" },
-  { id: 'pr-6', date: 'April 19, 2021', dateIso: '2021-04-19', title: 'ONE FOOT FORWARD UNVEILS UNSCRIPTED SLATE' },
-  { id: 'pr-7', date: 'April 18, 2021', dateIso: '2021-04-18', title: "MY ENTERTAINMENT'S ONE FOOT FORWARD INKS CONTENT DEALS WITH MARK WAHLBERG, MICHAEL SUGAR, ALAN ZWEIBEL, MORE" },
-  { id: 'pr-8', date: 'November 3, 2020', dateIso: '2020-11-03', title: "GHOST ADVENTURES: HORROR AT JOE EXOTIC'S ZOO" },
-  { id: 'pr-9', date: 'October 19, 2020', dateIso: '2020-10-19', title: "DISCOVERY ORDERS GLOBAL SERIES 'BILLY BUYS BROOKLYN' FEATURING 'BAGGAGE BATTLES' STAR BILLY LEROY" },
-];
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-// NewsArticle schema for each press release
-const newsSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'ItemList',
-  name: 'MyEntertainment Press Releases',
-  itemListElement: PRESS_RELEASES.map((pr, i) => ({
-    '@type': 'ListItem',
-    position: i + 1,
-    item: {
-      '@type': 'NewsArticle',
-      headline: pr.title,
-      datePublished: pr.dateIso,
-      publisher: {
-        '@type': 'Organization',
-        name: 'MyEntertainment',
-        url: 'https://www.myentertainment.tv',
-      },
-    },
-  })),
+type ListItem = {
+  id: string;
+  date: string;        // formatted "Month DD, YYYY"
+  dateIso: string;     // "YYYY-MM-DD" for schema.org
+  title: string;
+  href: string;        // absolute internal path
 };
 
+// ─── Hardcoded editorial entries ──────────────────────────────────────────────
+// These 2 press releases are static Next.js page routes, not DB records.
+// They must always appear at the top of the list in reverse-chronological order.
+// Slugs must exactly match the directory names under app/(public)/press-releases/.
+const EDITORIAL_ENTRIES: ListItem[] = [
+  {
+    id: 'pr-editorial-careers',
+    date: 'May 3, 2026',
+    dateIso: '2026-05-03',
+    title: 'WORKING AT MYENTERTAINMENT IS A TOTAL BLAST — ALL HIRING THROUGH ASSIGNMENT DESK',
+    href: '/press-releases/myentertainment-careers-assignment-desk',
+  },
+  {
+    id: 'pr-editorial-film-commission',
+    date: 'May 3, 2026',
+    dateIso: '2026-05-03',
+    title: 'HOW TO FIND PRODUCTION CREW: FILM COMMISSION DIRECTORIES AND ASSIGNMENTDESK',
+    href: '/press-releases/film-commission-crew-directories',
+  },
+];
+
+// ─── DB helper ────────────────────────────────────────────────────────────────
+
+/**
+ * Query all press releases from the DB, ordered newest first.
+ * Returns [] if the table is empty or if DB is unreachable at render time
+ * (e.g. a cold Railway deploy before migrations have run).
+ * Errors are surfaced to the console so they show up in Railway logs.
+ */
+function fetchDbPressReleases(): ListItem[] {
+  try {
+    const rows = query<{
+      id: string;
+      headline: string;
+      slug: string;
+      published_at: number | null;
+    }>(
+      'SELECT id, headline, slug, published_at FROM press_releases ORDER BY published_at DESC'
+    );
+
+    return rows.map((row) => {
+      // Format unix timestamp → human date.  Rows without a timestamp get
+      // an empty date so the UI can omit the date label rather than show "Invalid Date".
+      const displayDate =
+        row.published_at && row.published_at > 0
+          ? new Date(row.published_at * 1000).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })
+          : '';
+
+      const isoDate =
+        row.published_at && row.published_at > 0
+          ? new Date(row.published_at * 1000).toISOString().split('T')[0]
+          : '';
+
+      return {
+        id: row.id,
+        date: displayDate,
+        dateIso: isoDate,
+        title: row.headline,
+        href: `/press-releases/${row.slug}`,
+      };
+    });
+  } catch (err) {
+    // Don't crash the page — show editorial entries only and log the problem
+    console.error('[press-releases page] DB query failed:', err);
+    return [];
+  }
+}
+
+// ─── Page component ───────────────────────────────────────────────────────────
+
 export default function PressReleasesPage() {
+  // Merge: 2 pinned editorial entries first, then DB-driven entries below.
+  // The editorial entries are guaranteed to appear even when the DB is empty.
+  const dbEntries = fetchDbPressReleases();
+  const allItems: ListItem[] = [...EDITORIAL_ENTRIES, ...dbEntries];
+
+  // ── ItemList schema.org JSON-LD ────────────────────────────────────────────
+  // Combines editorial + DB entries in one ItemList for Google News rich results.
+  const newsSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'MyEntertainment Press Releases',
+    itemListElement: allItems.map((pr, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      item: {
+        '@type': 'NewsArticle',
+        headline: pr.title,
+        ...(pr.dateIso ? { datePublished: pr.dateIso } : {}),
+        url: `https://www.myentertainment.tv${pr.href}`,
+        publisher: {
+          '@type': 'Organization',
+          name: 'MyEntertainment',
+          url: 'https://www.myentertainment.tv',
+        },
+      },
+    })),
+  };
+
   return (
     <div style={{ background: '#000' }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(newsSchema) }} />
@@ -75,16 +166,24 @@ export default function PressReleasesPage() {
       </section>
 
       {/* ── Section 2: Press release list ── */}
+      {/*
+        Each item is a linked headline.  Editorial items link to their static page.tsx routes.
+        DB items link to the [slug] dynamic route.
+        Items without a date omit the date label entirely (rather than showing "").
+      */}
       <section style={{ background: '#000', padding: '40px 20px' }}>
         <div style={{ maxWidth: 1180, margin: '0 auto' }}>
-          {PRESS_RELEASES.map((item) => (
+          {allItems.map((item) => (
             <div key={item.id} style={{ padding: '24px 0', borderBottom: '1px solid #1a1a1a' }}>
-              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 11, color: '#e51d26', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>
-                {item.date}
-              </div>
+              {/* Date label — only rendered when we have a formatted date */}
+              {item.date && (
+                <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 11, color: '#e51d26', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>
+                  {item.date}
+                </div>
+              )}
               <h3 style={{ margin: 0 }}>
                 <a
-                  href={item.href ?? '/press-releases'}
+                  href={item.href}
                   style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 18, fontWeight: 400, color: '#f2f4f7', textTransform: 'uppercase', textDecoration: 'none', lineHeight: 1.4 }}
                 >
                   {item.title}
@@ -92,9 +191,13 @@ export default function PressReleasesPage() {
               </h3>
             </div>
           ))}
-          <div style={{ textAlign: 'center', padding: '32px 0', fontFamily: "'Roboto', sans-serif", fontSize: 14, color: '#a5a7ad' }}>
-            Next
-          </div>
+
+          {/* Show count when DB has populated entries, hide placeholder when empty */}
+          {dbEntries.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '32px 0', fontFamily: "'Roboto', sans-serif", fontSize: 14, color: '#a5a7ad' }}>
+              Additional press releases loading…
+            </div>
+          )}
         </div>
       </section>
 

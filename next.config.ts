@@ -53,6 +53,20 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["mye.local"],
   // Don't advertise Next.js to crawlers and bots
   poweredByHeader: false,
+  // Apex → www redirect. Webflow handled this at the edge; Railway doesn't, so we
+  // do it here. Matches `myentertainment.tv/*` (no www) at the host header level
+  // and 301s to `https://www.myentertainment.tv/*`. SEO requires a single
+  // canonical host — the sitemap and canonical tags all point at www.
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'myentertainment.tv' }],
+        destination: 'https://www.myentertainment.tv/:path*',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

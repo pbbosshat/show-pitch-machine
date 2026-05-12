@@ -12,6 +12,10 @@ const PUBLIC_PATHS = new Set([
   '/forgot-password',
   '/reset-password',
   '/setup-account',
+  // SEO endpoints — must be reachable by Googlebot/Bingbot without auth, otherwise
+  // crawlers see a 307 to /login and the site stops being indexed.
+  '/robots.txt',
+  '/sitemap.xml',
   // Public site pages rewritten from /site/* — must be listed here so the
   // middleware doesn't intercept them before Next.js rewrites resolve.
   '/shows',
