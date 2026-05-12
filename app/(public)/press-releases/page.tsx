@@ -4,6 +4,14 @@
 //   DB (press_releases table, published_at DESC) is merged with 2 hardcoded editorial
 //   entries at the top, then rendered as a flat list.
 //
+// MUST be force-dynamic: Railway's Docker build runs against an empty data/db.sqlite
+// (gitignored, volume not mounted at build time). Without this directive Next.js
+// statically generates the page at build time → 0 DB rows → only the 2 editorial
+// entries ever surface. force-dynamic re-runs the DB query on every request.
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+//
 // WHY HYBRID (not 100% DB-driven):
 //   The two editorial pages (film-commission-crew-directories,
 //   myentertainment-careers-assignment-desk) are hand-authored static Next.js routes,

@@ -2,7 +2,15 @@
 // show and genre slugs are pulled live so new CMS entries appear in the sitemap
 // immediately without a code deploy. Falls back to an empty array if the DB is
 // unreachable (e.g. during a build in a blank-DB CI environment).
-// Next.js calls this function at request time (not at build time) so it stays fresh.
+//
+// MUST be force-dynamic: the Railway Docker build runs against an empty data/db.sqlite
+// (the file is gitignored and the volume isn't mounted at build time). Without this
+// directive, Next.js statically generates an empty sitemap at build time and caches
+// it forever — runtime DB rows never appear. force-dynamic ensures the function
+// re-runs against the volume DB on every request.
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 import type { MetadataRoute } from 'next';
 import { query } from '@/lib/db';
