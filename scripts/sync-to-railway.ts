@@ -22,6 +22,9 @@ const APP_URL = process.env.RAILWAY_APP_URL || 'https://app-production-1ac7.up.r
 const APP_KEY = process.env.RAILWAY_APP_KEY || process.env.RAILWAY_INGEST_KEY || '';
 const DB_PATH = process.env.DATABASE_PATH || process.env.DB_PATH || path.join(process.cwd(), 'data', 'db.sqlite');
 const CHUNK = 500;
+// Shows have more columns than articles — smaller chunks prevent Railway Postgres
+// timeout and constraint errors that were killing the entire sync on 500-row payloads.
+const SHOWS_CHUNK = 200;
 
 async function post(baseUrl: string, apiKey: string, endpoint: string, body: unknown): Promise<void> {
   const url = `${baseUrl}${endpoint}`;
@@ -42,6 +45,45 @@ async function post(baseUrl: string, apiKey: string, endpoint: string, body: unk
   console.log(`[sync] ${host} ${endpoint}: inserted=${result.inserted} updated=${result.updated} total=${result.total}`);
 }
 
+// postSafe wraps post() — logs the error and returns false instead of throwing,
+// so a single bad chunk doesn't abort the rest of the sync.
+async function postSafe(baseUrl: string, apiKey: string, endpoint: string, body: unknown, chunkIdx: number): Promise<boolean> {
+  try {
+    await post(baseUrl, apiKey, endpoint, body);
+    return true;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[sync] chunk ${chunkIdx} failed — ${msg}`);
+    return false;
+  }
+}
+
+// postWithFallback: tries primarySize-row chunks; if a chunk fails it retries in
+// fallbackSize-row sub-chunks so a single bad row only drops fallbackSize rows
+// instead of the whole primary chunk.  Returns count of failed sub-chunks.
+async function postWithFallback(
+  baseUrl: string, apiKey: string, endpoint: string,
+  entityKey: string, items: Record<string, unknown>[],
+  primarySize: number, fallbackSize: number,
+): Promise<number> {
+  let failed = 0;
+  let i = 0;
+  for (const chunk of chunks(items, primarySize)) {
+    try {
+      await post(baseUrl, apiKey, endpoint, { [entityKey]: chunk });
+    } catch {
+      // Primary chunk failed — retry in smaller sub-chunks to isolate bad rows
+      let sub = 0;
+      for (const subChunk of chunks(chunk, fallbackSize)) {
+        if (!await postSafe(baseUrl, apiKey, endpoint, { [entityKey]: subChunk }, i * 1000 + sub)) failed++;
+        sub++;
+      }
+    }
+    i++;
+  }
+  return failed;
+}
+
 function chunks<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -55,6 +97,8 @@ async function main() {
   console.log(`[sync] Opening DB: ${DB_PATH}`);
   const db = new DatabaseSync(DB_PATH);
 
+  let totalFailed = 0;
+
   // ── 1. Trade articles → MCP server + Next.js app ─────────────────────────
   const articles = db.prepare(`
     SELECT id, source, url, headline, body, item_type,
@@ -66,16 +110,15 @@ async function main() {
   `).all() as Record<string, unknown>[];
   console.log(`[sync] articles: ${articles.length} rows`);
 
+  let i = 0;
   for (const chunk of chunks(articles, CHUNK)) {
-    // MCP server — basic fields only (its Postgres schema)
     const basicChunk = chunk.map((a) => ({
       id: a.id, source: a.source, url: a.url, headline: a.headline,
       body: a.body, item_type: a.item_type, scraped_at: a.scraped_at,
     }));
-    await post(MCP_URL, MCP_KEY, '/ingest/articles', { articles: basicChunk });
-
-    // Next.js app — full classified schema (Intelligence page)
-    await post(APP_URL, APP_KEY, '/api/ingest/articles', { articles: chunk });
+    if (!await postSafe(MCP_URL, MCP_KEY, '/ingest/articles', { articles: basicChunk }, i)) totalFailed++;
+    if (!await postSafe(APP_URL, APP_KEY, '/api/ingest/articles', { articles: chunk }, i)) totalFailed++;
+    i++;
   }
 
   // ── 2. Market orders → MCP server only ───────────────────────────────────
@@ -87,11 +130,15 @@ async function main() {
     LIMIT 5000
   `).all() as Record<string, unknown>[];
   console.log(`[sync] orders: ${orders.length} rows`);
+  i = 0;
   for (const chunk of chunks(orders, CHUNK)) {
-    await post(MCP_URL, MCP_KEY, '/ingest/orders', { orders: chunk });
+    if (!await postSafe(MCP_URL, MCP_KEY, '/ingest/orders', { orders: chunk }, i++)) totalFailed++;
   }
 
   // ── 3. Shows → MCP server only ────────────────────────────────────────────
+  // Shows use postWithFallback: primary chunk=200, fallback=20.
+  // If a 200-row chunk fails (Railway Postgres constraint/timeout), it retries
+  // in 20-row sub-chunks so only the specific bad rows get dropped, not 200 at once.
   const shows = db.prepare(`
     SELECT id, title, title_normalized, network, production_company, showrunner,
            host, format, genre, status, greenlit_date, source, source_url, data_source
@@ -99,10 +146,8 @@ async function main() {
     ORDER BY updated_at DESC
     LIMIT 20000
   `).all() as Record<string, unknown>[];
-  console.log(`[sync] shows: ${shows.length} rows`);
-  for (const chunk of chunks(shows, CHUNK)) {
-    await post(MCP_URL, MCP_KEY, '/ingest/shows', { shows: chunk });
-  }
+  console.log(`[sync] shows: ${shows.length} rows (primary chunk: ${SHOWS_CHUNK}, fallback: 20)`);
+  totalFailed += await postWithFallback(MCP_URL, MCP_KEY, '/ingest/shows', 'shows', shows, SHOWS_CHUNK, 20);
 
   // ── 4. Buyers → MCP server only ───────────────────────────────────────────
   const companies = db.prepare(`SELECT id, name, type, tier FROM buyer_companies ORDER BY name`).all() as Record<string, unknown>[];
@@ -112,11 +157,49 @@ async function main() {
     FROM buyer_contacts ORDER BY name
   `).all() as Record<string, unknown>[];
   console.log(`[sync] buyer companies: ${companies.length}, contacts: ${contacts.length}`);
+  i = 0;
   for (const chunk of chunks(companies, CHUNK)) {
-    await post(MCP_URL, MCP_KEY, '/ingest/buyers', { companies: chunk, contacts: [] });
+    if (!await postSafe(MCP_URL, MCP_KEY, '/ingest/buyers', { companies: chunk, contacts: [] }, i++)) totalFailed++;
   }
+  i = 0;
   for (const chunk of chunks(contacts, CHUNK)) {
-    await post(MCP_URL, MCP_KEY, '/ingest/buyers', { contacts: chunk, companies: [] });
+    if (!await postSafe(MCP_URL, MCP_KEY, '/ingest/buyers', { contacts: chunk, companies: [] }, i++)) totalFailed++;
+  }
+
+  // ── 4b. Vimeo library + show_videos → Next.js app only ───────────────────
+  // The Vimeo Library page (/vimeo-library) reads vimeo_library + show_videos
+  // directly. Scraped locally via scripts/scrape-vimeo-library.js, then pushed
+  // here so the live page mirrors the local catalog.
+  let videos: Record<string, unknown>[] = [];
+  try {
+    videos = db.prepare(`
+      SELECT id, clip_id, hash, url, title, duration_sec, privacy,
+             has_password, last_modified,
+             drive_file_id, drive_url, backfill_status, backfilled_at, size_bytes
+      FROM vimeo_library
+    `).all() as Record<string, unknown>[];
+  } catch { /* table may not exist on older Bang installs */ }
+
+  let showVideos: Record<string, unknown>[] = [];
+  try {
+    // Send clip_id (not the local UUID for vimeo_library) so the receiver
+    // can re-resolve the join in case ids drift between DBs.
+    showVideos = db.prepare(`
+      SELECT sv.id, sv.ip_catalog_id, vl.clip_id, sv.video_type, sv.sort_order, sv.notes
+      FROM show_videos sv
+      JOIN vimeo_library vl ON vl.id = sv.vimeo_library_id
+    `).all() as Record<string, unknown>[];
+  } catch { /* table may not exist */ }
+
+  console.log(`[sync] vimeo videos: ${videos.length}, show_video links: ${showVideos.length}`);
+
+  i = 0;
+  for (const chunk of chunks(videos, CHUNK)) {
+    if (!await postSafe(APP_URL, APP_KEY, '/api/ingest/vimeo', { videos: chunk }, i++)) totalFailed++;
+  }
+  i = 0;
+  for (const chunk of chunks(showVideos, CHUNK)) {
+    if (!await postSafe(APP_URL, APP_KEY, '/api/ingest/vimeo', { show_videos: chunk }, i++)) totalFailed++;
   }
 
   // ── 5. Pipeline → MCP server only ────────────────────────────────────────
@@ -131,15 +214,21 @@ async function main() {
   } catch { /* table may not exist on Bang */ }
 
   console.log(`[sync] packages: ${packages.length}, pitches: ${pitches.length}`);
+  i = 0;
   for (const chunk of chunks(packages, CHUNK)) {
-    await post(MCP_URL, MCP_KEY, '/ingest/pipeline', { packages: chunk, pitches: [] });
+    if (!await postSafe(MCP_URL, MCP_KEY, '/ingest/pipeline', { packages: chunk, pitches: [] }, i++)) totalFailed++;
   }
+  i = 0;
   for (const chunk of chunks(pitches, CHUNK)) {
-    await post(MCP_URL, MCP_KEY, '/ingest/pipeline', { packages: [], pitches: chunk });
+    if (!await postSafe(MCP_URL, MCP_KEY, '/ingest/pipeline', { packages: [], pitches: chunk }, i++)) totalFailed++;
   }
 
   db.close();
-  console.log('[sync] Railway sync complete');
+  if (totalFailed > 0) {
+    console.log(`[sync] Railway sync complete with ${totalFailed} failed chunk(s) — see errors above`);
+  } else {
+    console.log('[sync] Railway sync complete');
+  }
 }
 
 main().catch((err) => { console.error('[sync] Fatal:', err.message); process.exit(1); });
