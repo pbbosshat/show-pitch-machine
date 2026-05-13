@@ -229,14 +229,9 @@ async function uploadFileStreamingly(drive, folderId, filePath, filename, mimeTy
       body: fs.createReadStream(filePath),
     },
     fields: 'id, size',
-  }, {
-    // Resumable upload handles network hiccups + lets Drive accept 5GB+ files.
-    onUploadProgress: evt => {
-      const pct = ((evt.bytesRead / fileSize) * 100).toFixed(1);
-      process.stdout.write(`\r    uploading: ${pct}%   `);
-    },
   });
-  process.stdout.write('\n');
+  // No onUploadProgress callback — same reason as downloadToFile, high-rate
+  // \r writes to stdout crash on Windows under nohup. Caller logs final size.
 
   await drive.permissions.create({
     fileId: res.data.id,
@@ -356,13 +351,11 @@ async function main() {
       tmpFile = path.join(TMP_DIR, `${row.clip_id}-${Date.now()}.${ext}`);
 
       console.log(`    downloading ${rendition.width}×${rendition.height} (${rendition.quality})`);
-      const downloaded = await downloadToFile(rendition.link, tmpFile, (got, total) => {
-        if (total) {
-          const pct = ((got / total) * 100).toFixed(1);
-          process.stdout.write(`\r    download: ${pct}%   `);
-        }
-      });
-      process.stdout.write('\n');
+      // No per-chunk progress logging — when stdout is redirected to a file
+      // (nohup / tee / >), the high-frequency \r writes can throw UNKNOWN
+      // write errors on Windows and crash the whole run. Just print start
+      // and final size.
+      const downloaded = await downloadToFile(rendition.link, tmpFile, null);
 
       console.log(`    uploading ${(downloaded / 1024 / 1024).toFixed(1)} MB to Drive`);
       const { fileId, size } = await uploadFileStreamingly(
