@@ -56,7 +56,7 @@ export async function GET(
     const { id: deckId } = await params;
 
     // Verify the parent deck exists
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -66,7 +66,7 @@ export async function GET(
     }
 
     // LEFT JOIN so meetings with no linked buyer contact are still returned
-    const rows = query<DeckMeetingRow & {
+    const rows = await query<DeckMeetingRow & {
       contact_id: string | null;
       contact_name: string | null;
       contact_title: string | null;
@@ -119,7 +119,7 @@ export async function POST(
     const { id: deckId } = await params;
 
     // Verify the parent deck exists
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -138,7 +138,7 @@ export async function POST(
     const now = Date.now() / 1000 | 0;
     const id  = crypto.randomUUID();
 
-    run(
+    await run(
       `INSERT INTO deck_meetings
          (id, deck_id, buyer_contact_id, meeting_date, meeting_type, notes, outcome, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -155,7 +155,7 @@ export async function POST(
     );
 
     // Re-fetch with joined contact so the response shape matches GET
-    const row = queryOne<DeckMeetingRow & {
+    const row = await queryOne<DeckMeetingRow & {
       contact_id: string | null;
       contact_name: string | null;
       contact_title: string | null;

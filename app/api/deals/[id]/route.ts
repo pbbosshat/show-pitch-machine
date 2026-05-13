@@ -28,7 +28,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const row = queryOne<Deal>('SELECT * FROM deals WHERE id = ?', [id]);
+    const row = await queryOne<Deal>('SELECT * FROM deals WHERE id = ?', [id]);
 
     if (!row) {
       return NextResponse.json({ error: 'Deal not found' }, { status: 404 });
@@ -79,7 +79,7 @@ export async function PUT(
 
     values.push(id);
 
-    const result = run(
+    const result = await run(
       `UPDATE deals SET ${fields.join(', ')} WHERE id = ?`,
       values
     );
@@ -101,7 +101,7 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const result = run('DELETE FROM deals WHERE id = ?', [id]);
+    const result = await run('DELETE FROM deals WHERE id = ?', [id]);
 
     if (result.changes === 0) {
       return NextResponse.json({ error: 'Deal not found' }, { status: 404 });

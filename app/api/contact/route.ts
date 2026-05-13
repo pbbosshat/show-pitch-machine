@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const leads = query<Lead>(
+  const leads = await query<Lead>(
     `SELECT cl.id, cl.first_name, cl.last_name, cl.email, cl.message, cl.company,
             cl.available_title_id, cl.created_at, at.title AS show_title
      FROM contact_leads cl
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
   const id = randomBytes(16).toString('hex');
   const created_at = Date.now(); // milliseconds — existing behavior for contact_leads
 
-  run(
+  await run(
     'INSERT INTO contact_leads (id, first_name, last_name, email, message, company, available_title_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     [id, first_name, last_name, email, message ?? null, company ?? null, available_title_id ?? null, created_at]
   );
@@ -189,14 +189,14 @@ export async function POST(request: NextRequest) {
     created_at,
   };
 
-  const settingRow = queryOne<{ value: string }>('SELECT value FROM site_settings WHERE key = ?', ['leads_email']);
+  const settingRow = await queryOne<{ value: string }>('SELECT value FROM site_settings WHERE key = ?', ['leads_email']);
   const leadsEmail = settingRow?.value ?? 'sm@gototeam.com';
 
   // Look up the available title name to include in the notification email.
   // Do this synchronously before the fire-and-forget so the template renders correctly.
   let showTitle: string | undefined;
   if (available_title_id) {
-    const titleRow = queryOne<{ title: string }>('SELECT title FROM deck_sites WHERE id = ?', [available_title_id]);
+    const titleRow = await queryOne<{ title: string }>('SELECT title FROM deck_sites WHERE id = ?', [available_title_id]);
     showTitle = titleRow?.title;
   }
 

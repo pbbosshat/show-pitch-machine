@@ -25,7 +25,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
   }
 
-  const user = queryOne<{ id: string; password_hash: string | null }>(
+  const user = await queryOne<{ id: string; password_hash: string | null }>(
     'SELECT id, password_hash FROM team_users WHERE id = ?',
     [sessionUser.id]
   );
@@ -40,7 +40,7 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
-  run(
+  await run(
     'UPDATE team_users SET password_hash = ?, updated_at = ? WHERE id = ?',
     [createPasswordHash(newPassword), Date.now(), user.id]
   );

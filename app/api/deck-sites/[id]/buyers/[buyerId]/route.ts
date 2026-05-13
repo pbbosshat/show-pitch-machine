@@ -82,12 +82,12 @@ export async function PATCH(
     values.push(buyerId);
     values.push(deckId);
 
-    run(
+    await run(
       `UPDATE deck_buyers SET ${setClauses.join(', ')} WHERE id = ? AND deck_id = ?`,
       values
     );
 
-    const updated = queryOne<DeckBuyerRow>(
+    const updated = await queryOne<DeckBuyerRow>(
       `SELECT * FROM deck_buyers WHERE id = ?`,
       [buyerId]
     );
@@ -106,7 +106,7 @@ export async function DELETE(
     const { id: deckId, buyerId } = await params;
 
     // Verify the parent deck exists
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -116,7 +116,7 @@ export async function DELETE(
     }
 
     // Delete only if the row belongs to this deck (prevents cross-deck deletion)
-    const result = run(
+    const result = await run(
       `DELETE FROM deck_buyers WHERE id = ? AND deck_id = ?`,
       [buyerId, deckId]
     );

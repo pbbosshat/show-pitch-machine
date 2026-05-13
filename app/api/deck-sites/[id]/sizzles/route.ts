@@ -92,7 +92,7 @@ export async function POST(
     const id  = crypto.randomUUID();
     const now = Date.now() / 1000 | 0;
 
-    run(
+    await run(
       `INSERT INTO deck_sizzles (id, deck_id, vimeo_url, title, password, sort_order, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [

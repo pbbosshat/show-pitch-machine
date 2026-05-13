@@ -70,7 +70,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const site = queryOne<DeckSite>(
+    const site = await queryOne<DeckSite>(
       `SELECT * FROM deck_sites WHERE id = ?`,
       [id]
     );
@@ -79,7 +79,7 @@ export async function GET(
       return NextResponse.json({ error: 'Deck site not found' }, { status: 404 });
     }
 
-    const slides = query<DeckSlide>(
+    const slides = await query<DeckSlide>(
       `SELECT * FROM deck_slides WHERE deck_site_id = ? ORDER BY slide_order ASC`,
       [id]
     );
@@ -98,7 +98,7 @@ export async function PUT(
     const { id } = await params;
 
     // Verify record exists before attempting update
-    const existing = queryOne<{ id: string }>(
+    const existing = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [id]
     );
@@ -138,12 +138,12 @@ export async function PUT(
     values.push(now);
     values.push(id); // WHERE clause
 
-    run(
+    await run(
       `UPDATE deck_sites SET ${setClauses.join(', ')} WHERE id = ?`,
       values
     );
 
-    const updated = queryOne<DeckSite>(
+    const updated = await queryOne<DeckSite>(
       `SELECT * FROM deck_sites WHERE id = ?`,
       [id]
     );
@@ -161,7 +161,7 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const existing = queryOne<{ id: string }>(
+    const existing = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [id]
     );
@@ -171,7 +171,7 @@ export async function DELETE(
     }
 
     // CASCADE on deck_slides FK handles child row deletion automatically
-    run(`DELETE FROM deck_sites WHERE id = ?`, [id]);
+    await run(`DELETE FROM deck_sites WHERE id = ?`, [id]);
 
     return NextResponse.json({ data: { deleted: true } });
   } catch (err) {

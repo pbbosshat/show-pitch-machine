@@ -42,7 +42,7 @@ export async function PUT(
 
     const now = Date.now();
 
-    const result = run(
+    const result = await run(
       `UPDATE packages
        SET pipeline_stage = ?, stage_entered_at = ?, days_in_stage = 0, updated_at = ?
        WHERE id = ?`,

@@ -62,7 +62,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const row = queryOne<Record<string, unknown>>(
+  const row = await queryOne<Record<string, unknown>>(
     'SELECT *, gate_password AS password FROM deck_sites WHERE id = ?',
     [id]
   );
@@ -86,7 +86,7 @@ export async function PUT(
 ) {
   const { id } = await params;
 
-  const existing = queryOne<{ id: string; title: string; vimeo_url: string | null; sizzle_history: string | null }>(
+  const existing = await queryOne<{ id: string; title: string; vimeo_url: string | null; sizzle_history: string | null }>(
     'SELECT id, title, vimeo_url, sizzle_history FROM deck_sites WHERE id = ?',
     [id]
   );
@@ -141,7 +141,7 @@ export async function PUT(
   const now = Math.floor(Date.now() / 1000);
 
   try {
-    run(
+    await run(
       `UPDATE deck_sites SET
         title            = COALESCE(?, title),
         slug             = ?,
@@ -198,7 +198,7 @@ export async function PUT(
     throw err;
   }
 
-  const updated = queryOne<Record<string, unknown>>(
+  const updated = await queryOne<Record<string, unknown>>(
     'SELECT *, gate_password AS password FROM deck_sites WHERE id = ?',
     [id]
   );
@@ -216,10 +216,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const existing = queryOne('SELECT id FROM deck_sites WHERE id = ?', [id]);
+  const existing = await queryOne('SELECT id FROM deck_sites WHERE id = ?', [id]);
   if (!existing) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
-  run('DELETE FROM deck_sites WHERE id = ?', [id]);
+  await run('DELETE FROM deck_sites WHERE id = ?', [id]);
   return new NextResponse(null, { status: 204 });
 }

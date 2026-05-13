@@ -29,7 +29,7 @@ export async function GET(
     const { id } = await params;
 
     // Inline subqueries for deal_count and contact_count avoid extra round-trips
-    const row = queryOne<ProdcoWithStats>(
+    const row = await queryOne<ProdcoWithStats>(
       `SELECT
         pc.*,
         (SELECT COUNT(*) FROM deals d WHERE d.prodco_id = pc.id) AS deal_count,
@@ -107,7 +107,7 @@ export async function PUT(
     values.push(Date.now());
     values.push(id);
 
-    const result = run(
+    const result = await run(
       `UPDATE production_companies SET ${fields.join(', ')} WHERE id = ?`,
       values
     );

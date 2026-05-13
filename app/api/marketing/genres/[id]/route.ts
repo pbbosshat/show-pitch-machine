@@ -14,7 +14,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    const existing = queryOne<GenreRow>('SELECT id, name FROM site_genres WHERE id = ?', [id]);
+    const existing = await queryOne<GenreRow>('SELECT id, name FROM site_genres WHERE id = ?', [id]);
     if (!existing) {
       return NextResponse.json({ error: 'Genre not found' }, { status: 404 });
     }
@@ -22,7 +22,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // Derive slug from name
     const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-    run(
+    await run(
       `UPDATE site_genres SET name = ?, slug = ?, description = ? WHERE id = ?`,
       [name.trim(), slug, description?.trim() || null, id]
     );

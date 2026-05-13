@@ -6,9 +6,10 @@
  *   ip_id — required — the IP catalog ID to find comps for
  * Response: { data: Show[] } — top 10 comp shows by genre/format match
  *
- * Uses FTS5 to search the shows_fts virtual table using the IP's genre and format
- * as the query terms. Returns up to 10 most-relevant matches.
+ * Uses Postgres tsvector full-text search via shows.search_vector GIN index,
+ * building the query from the IP's genre and format fields.
  * Falls back to genre-only match if no format is set on the IP.
+ * If the IP has neither, returns the 10 most recent shows.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -24,35 +25,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'ip_id query param is required' }, { status: 400 });
     }
 
-    const ip = queryOne<IpCatalog>(`SELECT * FROM ip_catalog WHERE id = ?`, [ipId]);
+    const ip = await queryOne<IpCatalog>(`SELECT * FROM ip_catalog WHERE id = ?`, [ipId]);
 
     if (!ip) {
       return NextResponse.json({ error: 'IP not found' }, { status: 404 });
     }
 
-    // Build an FTS search query from the IP's genre + format fields.
-    // FTS5 OR-combines terms so partial matches still surface relevant shows.
+    // Build a plain-English search query from the IP's genre + format fields.
+    // plainto_tsquery handles OR-style matching for multiple terms naturally.
     const queryTerms = [ip.genre, ip.format]
       .filter(Boolean)
-      .map((t) => t!.trim().replace(/"/g, '""'))
-      .join(' OR ');
+      .map((t) => t!.trim())
+      .join(' ');
 
     if (!queryTerms) {
       // If the IP has no genre or format, return recent shows as a fallback
-      const fallback = query<Show>(
+      const fallback = await query<Show>(
         `SELECT * FROM shows ORDER BY greenlit_date DESC NULLS LAST LIMIT 10`
       );
       return NextResponse.json({ data: fallback });
     }
 
-    // FTS5 is a standalone table; join via title subquery to avoid rowid/UUID mismatch
-    const rows = query<Show>(
-      `SELECT s.*
-       FROM shows s
-       WHERE s.title IN (
-         SELECT title FROM shows_fts WHERE shows_fts MATCH ?
-       )
-       ORDER BY s.greenlit_date DESC NULLS LAST
+    // search_vector is a GIN-indexed tsvector column on shows — no join needed
+    const rows = await query<Show>(
+      `SELECT *
+       FROM shows
+       WHERE search_vector @@ plainto_tsquery('english', ?)
+       ORDER BY greenlit_date DESC NULLS LAST
        LIMIT 10`,
       [queryTerms]
     );

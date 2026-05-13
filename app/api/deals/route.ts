@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     values.push(limit);
 
-    const rows = query<Deal>(
+    const rows = await query<Deal>(
       `SELECT * FROM deals ${where} ORDER BY deal_date DESC NULLS LAST LIMIT ?`,
       values
     );
@@ -61,26 +61,26 @@ export async function POST(request: NextRequest) {
     // Resolve denormalized name fields from their FK tables when only the ID was supplied
     let buyerName = body.buyer_name ?? null;
     if (body.buyer_id && !buyerName) {
-      const bc = queryOne<{ name: string }>('SELECT name FROM buyer_contacts WHERE id = ?', [body.buyer_id]);
+      const bc = await queryOne<{ name: string }>('SELECT name FROM buyer_contacts WHERE id = ?', [body.buyer_id]);
       buyerName = bc?.name ?? null;
     }
 
     let prodcoName = body.prodco_name ?? null;
     if (body.prodco_id && !prodcoName) {
-      const pc = queryOne<{ name: string }>('SELECT name FROM production_companies WHERE id = ?', [body.prodco_id]);
+      const pc = await queryOne<{ name: string }>('SELECT name FROM production_companies WHERE id = ?', [body.prodco_id]);
       prodcoName = pc?.name ?? null;
     }
 
     let networkName = body.network_name ?? null;
     if (body.network_id && !networkName) {
-      const co = queryOne<{ name: string }>('SELECT name FROM buyer_companies WHERE id = ?', [body.network_id]);
+      const co = await queryOne<{ name: string }>('SELECT name FROM buyer_companies WHERE id = ?', [body.network_id]);
       networkName = co?.name ?? null;
     }
 
     const id = crypto.randomUUID();
     const now = Date.now();
 
-    run(
+    await run(
       `INSERT INTO deals
         (id, show_id, show_title, network_id, network_name, buyer_id, buyer_name,
          prodco_id, prodco_name, deal_type, genre, format, deal_date,

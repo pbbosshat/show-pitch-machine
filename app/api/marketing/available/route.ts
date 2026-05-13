@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 
 export async function GET() {
   try {
-    const data = query('SELECT *, gate_password AS password FROM deck_sites WHERE is_active = 1 ORDER BY sort_order ASC, title ASC');
+    const data = await query('SELECT *, gate_password AS password FROM deck_sites WHERE is_active = 1 ORDER BY sort_order ASC, title ASC');
     return NextResponse.json({ data, total: (data as unknown[]).length });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const id = randomUUID();
     const now = Math.floor(Date.now() / 1000);
-    run(
+    await run(
       `INSERT INTO deck_sites
          (id, title, slug, genre, rights_type, markets, seasons, episode_count,
           runtime_mins, description, contact_email, is_active, sort_order,

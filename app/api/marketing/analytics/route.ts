@@ -11,7 +11,7 @@ import { fetchGAData } from '@/lib/ga';
 export async function GET() {
   try {
     // Look up the GA4 property ID — DB value wins; fall back to GA4_PROPERTY_ID env var
-    const row = queryOne<{ value: string }>('SELECT value FROM site_content WHERE key = ?', ['site.ga4_id']);
+    const row = await queryOne<{ value: string }>('SELECT value FROM site_content WHERE key = ?', ['site.ga4_id']);
     const propertyId = row?.value?.trim() || process.env.GA4_PROPERTY_ID || '';
 
     if (!propertyId) {

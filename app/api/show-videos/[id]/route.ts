@@ -12,7 +12,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const { video_type, sort_order, notes } = body;
 
-    const existing = queryOne('SELECT id FROM show_videos WHERE id = ?', [id]);
+    const existing = await queryOne('SELECT id FROM show_videos WHERE id = ?', [id]);
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const sets: string[] = [];
@@ -25,9 +25,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (sets.length === 0) return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
 
     vals.push(id);
-    run(`UPDATE show_videos SET ${sets.join(', ')} WHERE id = ?`, vals);
+    await run(`UPDATE show_videos SET ${sets.join(', ')} WHERE id = ?`, vals);
 
-    const row = queryOne('SELECT * FROM show_videos WHERE id = ?', [id]);
+    const row = await queryOne('SELECT * FROM show_videos WHERE id = ?', [id]);
     return NextResponse.json(JSON.parse(JSON.stringify(row)));
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
@@ -37,10 +37,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const existing = queryOne('SELECT id FROM show_videos WHERE id = ?', [id]);
+    const existing = await queryOne('SELECT id FROM show_videos WHERE id = ?', [id]);
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    run('DELETE FROM show_videos WHERE id = ?', [id]);
+    await run('DELETE FROM show_videos WHERE id = ?', [id]);
     return NextResponse.json({ deleted: true });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });

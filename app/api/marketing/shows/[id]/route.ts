@@ -9,7 +9,7 @@ interface RouteContext { params: Promise<{ id: string }> }
 export async function GET(_req: NextRequest, ctx: RouteContext) {
   try {
     const { id } = await ctx.params;
-    const show = queryOne('SELECT * FROM site_shows WHERE id = ?', [id]);
+    const show = await queryOne('SELECT * FROM site_shows WHERE id = ?', [id]);
     if (!show) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ data: show });
   } catch (err) {
@@ -29,7 +29,7 @@ export async function PUT(req: NextRequest, ctx: RouteContext) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
-    const result = run(
+    const result = await run(
       `UPDATE site_shows SET
         title            = ?,
         slug             = ?,

@@ -91,7 +91,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const row = queryOne<BuyerRow>(
+    const row = await queryOne<BuyerRow>(
       `SELECT
         bc.*,
         co.name    AS company_name,
@@ -129,7 +129,7 @@ export async function GET(
     // Fetch email threads where this buyer's email appears in the participants JSON column.
     // Only possible when the buyer has an email address on record.
     const emailThreads: EmailThreadSummary[] = row.email
-      ? query<EmailThreadSummary>(
+      ? await query<EmailThreadSummary>(
           `SELECT
             id, ip_catalog_id, thread_id, subject, participants,
             first_message_date, last_message_date, message_count,
@@ -190,7 +190,7 @@ export async function PUT(
     values.push(Date.now());
     values.push(id);
 
-    const result = run(
+    const result = await run(
       `UPDATE buyer_contacts SET ${fields.join(', ')} WHERE id = ?`,
       values
     );

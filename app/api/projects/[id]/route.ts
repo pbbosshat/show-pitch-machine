@@ -104,7 +104,7 @@ export async function GET(
     const { id } = await params;
 
     // Fetch project header with email aggregates
-    const project = queryOne<ProjectDetail>(
+    const project = await queryOne<ProjectDetail>(
       `SELECT
         ip.id,
         ip.title,
@@ -140,7 +140,7 @@ export async function GET(
     }
 
     // Fetch email threads (first 5, newest first)
-    const emailThreads = query<EmailThreadSummary>(
+    const emailThreads = await query<EmailThreadSummary>(
       `SELECT
         id,
         thread_id,
@@ -159,7 +159,7 @@ export async function GET(
 
     // Fetch all sizzle reels for this project — ordered by created_at so newest is last
     // Sizzle reels are first-class brand assets; the detail page will render them prominently
-    const sizzleReels = query<SizzleReel>(
+    const sizzleReels = await query<SizzleReel>(
       `SELECT
         id,
         ip_catalog_id,
@@ -230,7 +230,7 @@ export async function PUT(
     values.push(Date.now());
     values.push(id);
 
-    const result = run(
+    const result = await run(
       `UPDATE ip_catalog SET ${fields.join(', ')} WHERE id = ?`,
       values
     );

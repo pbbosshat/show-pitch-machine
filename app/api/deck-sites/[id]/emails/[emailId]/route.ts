@@ -21,7 +21,7 @@ export async function DELETE(
     const { id: deckId, emailId } = await params;
 
     // Verify the parent deck exists
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -33,7 +33,7 @@ export async function DELETE(
     // Detach only if the email is currently linked to THIS deck.
     // The WHERE deck_id = deckId guard prevents accidentally detaching an email
     // that belongs to a different deck (e.g. if the caller sends the wrong id).
-    const result = run(
+    const result = await run(
       `UPDATE package_emails
           SET deck_id           = NULL,
               buyer_contact_id  = NULL,

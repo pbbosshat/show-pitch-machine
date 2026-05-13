@@ -46,27 +46,27 @@ export async function PATCH(
     const { parent_id } = body;
 
     // Verify the company exists
-    const company = queryOne<{ id: string; name: string }>(
+    const company = await queryOne<{ id: string; name: string }>(
       'SELECT id, name FROM buyer_companies WHERE id = ?', [id]
     );
     if (!company) return NextResponse.json({ error: 'Network not found' }, { status: 404 });
 
     if (parent_id !== null) {
       // Verify target parent exists and is not itself a department
-      const target = queryOne<{ id: string; parent_id: string | null }>(
+      const target = await queryOne<{ id: string; parent_id: string | null }>(
         'SELECT id, parent_id FROM buyer_companies WHERE id = ?', [parent_id]
       );
       if (!target) return NextResponse.json({ error: 'Target company not found' }, { status: 404 });
       if (target.parent_id) return NextResponse.json({ error: 'Cannot nest departments — target is already a department' }, { status: 422 });
 
       // Verify source has no children (can't make a parent into a department)
-      const childCount = queryOne<{ n: number }>(
+      const childCount = await queryOne<{ n: number }>(
         'SELECT COUNT(*) as n FROM buyer_companies WHERE parent_id = ?', [id]
       );
       if ((childCount?.n ?? 0) > 0) return NextResponse.json({ error: 'Cannot assign a company that has departments — detach its departments first' }, { status: 422 });
     }
 
-    run('UPDATE buyer_companies SET parent_id = ? WHERE id = ?', [parent_id, id]);
+    await run('UPDATE buyer_companies SET parent_id = ? WHERE id = ?', [parent_id, id]);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
@@ -80,7 +80,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const row = queryOne<NetworkRow>(
+    const row = await queryOne<NetworkRow>(
       `SELECT
         bc.id,
         bc.name,

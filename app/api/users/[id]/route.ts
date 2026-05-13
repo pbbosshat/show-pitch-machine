@@ -32,7 +32,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'You cannot remove yourself' }, { status: 400 });
   }
 
-  const target = queryOne<{ id: string; name: string; role: string | null }>(
+  const target = await queryOne<{ id: string; name: string; role: string | null }>(
     'SELECT id, name, role FROM team_users WHERE id = ?',
     [targetId]
   );
@@ -46,7 +46,7 @@ export async function DELETE(
   }
 
   // CASCADE on sessions table handles session cleanup automatically
-  run('DELETE FROM team_users WHERE id = ?', [targetId]);
+  await run('DELETE FROM team_users WHERE id = ?', [targetId]);
 
   return NextResponse.json({ data: { id: targetId, name: target.name } });
 }

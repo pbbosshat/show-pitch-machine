@@ -41,7 +41,7 @@ interface PackageRow {
 
 export async function GET() {
   try {
-    const rows = query<PackageRow>(
+    const rows = await query<PackageRow>(
       `SELECT
         pkg.*,
         ip.title  AS ip_title,
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     const id = uuidv4();
     const now = Date.now();
 
-    run(
+    await run(
       `INSERT INTO packages
          (id, name, ip_id, target_company_id, target_contact_id, created_by,
           pipeline_stage, stage_entered_at, days_in_stage, status, created_at, updated_at)
