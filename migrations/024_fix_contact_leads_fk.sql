@@ -1,26 +1,35 @@
 -- 024_fix_contact_leads_fk.sql
--- contact_leads.available_title_id referenced available_titles(id) which no longer
--- exists — data now lives in deck_sites. Recreate the table with the FK pointing
--- at deck_sites(id) so deck-page contact submissions can be saved and linked.
+-- contact_leads.available_title_id used to reference available_titles(id); the
+-- data is now in deck_sites. In SQLite this required a table rebuild + PRAGMA
+-- toggles. In Postgres we can DROP the old FK and ADD a new one in place.
+--
+-- The DO block locates and drops whichever FK constraint pg auto-named for
+-- the previous reference, then re-adds the new constraint pointing at deck_sites.
+-- Wrapped in IF NOT EXISTS checks so the migration is safe on a fresh schema
+-- (where no prior FK exists) and on an already-migrated DB.
 
-PRAGMA foreign_keys = OFF;
+-- Drop any existing FK on contact_leads.available_title_id, whatever it's named.
+DO $$
+DECLARE
+  con_name TEXT;
+BEGIN
+  SELECT tc.constraint_name INTO con_name
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.key_column_usage kcu
+    ON kcu.constraint_name = tc.constraint_name
+   AND kcu.constraint_schema = tc.constraint_schema
+  WHERE tc.table_name = 'contact_leads'
+    AND tc.constraint_type = 'FOREIGN KEY'
+    AND kcu.column_name = 'available_title_id'
+  LIMIT 1;
 
-CREATE TABLE contact_leads_new (
-  id                 TEXT PRIMARY KEY,
-  first_name         TEXT NOT NULL,
-  last_name          TEXT NOT NULL,
-  email              TEXT NOT NULL,
-  message            TEXT,
-  created_at         INTEGER NOT NULL,
-  company            TEXT,
-  available_title_id TEXT REFERENCES deck_sites(id)
-);
+  IF con_name IS NOT NULL THEN
+    EXECUTE format('ALTER TABLE contact_leads DROP CONSTRAINT %I', con_name);
+  END IF;
+END $$;
 
-INSERT INTO contact_leads_new
-  SELECT id, first_name, last_name, email, message, created_at, company, available_title_id
-  FROM contact_leads;
-
-DROP TABLE contact_leads;
-ALTER TABLE contact_leads_new RENAME TO contact_leads;
-
-PRAGMA foreign_keys = ON;
+-- Re-add the FK pointing at deck_sites(id) so deck-page contact submissions
+-- can be saved and linked.
+ALTER TABLE contact_leads
+  ADD CONSTRAINT contact_leads_available_title_id_fkey
+  FOREIGN KEY (available_title_id) REFERENCES deck_sites(id);

@@ -22,7 +22,8 @@
     "import:episodate": "npx tsx scripts/import-episodate.ts",
     "import:tvdb": "npx tsx scripts/import-tvdb.ts",
     "scrape:press": "npx tsx scripts/scrape-network-press.ts",
-    "enrich-buyers": "npx tsx scripts/enrich-buyers.ts"
+    "enrich-buyers": "npx tsx scripts/enrich-buyers.ts",
+    "migrate:sqlite-to-postgres": "npx tsx scripts/migrate-sqlite-to-postgres.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.92.0",
@@ -43,6 +44,7 @@
     "next": "16.2.4",
     "node-cron": "^3.0.3",
     "openai": "^6.35.0",
+    "pg": "^8.13.0",
     "puppeteer": "^22.0.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -55,6 +57,7 @@
     "@types/html-to-text": "^9.0.4",
     "@types/node": "^20",
     "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.11.10",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",

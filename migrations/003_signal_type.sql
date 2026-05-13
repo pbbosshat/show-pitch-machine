@@ -9,5 +9,5 @@
 --   mandate      — explicit buyer mandate statement → highest-priority signal
 --   noise        — outside MYE's lane, skip
 
-ALTER TABLE trade_articles ADD COLUMN signal_type TEXT;
+ALTER TABLE trade_articles ADD COLUMN IF NOT EXISTS signal_type TEXT;
 CREATE INDEX IF NOT EXISTS idx_articles_signal ON trade_articles(signal_type);

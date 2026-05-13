@@ -1,6 +1,11 @@
 -- 002_marketing.sql
--- Marketing CMS tables for the public-facing myentertainment.tv site.
--- Separate from the internal pitch machine tables — these power the rebuilt Webflow site.
+-- Marketing CMS tables for the public myentertainment.tv site. Separate from
+-- the internal pitch machine tables — these power the rebuilt site that
+-- replaced Webflow.
+--
+-- Postgres conversions from the original SQLite version:
+--   • `unixepoch()` → `EXTRACT(EPOCH FROM NOW())::INTEGER`
+--   • `INSERT OR IGNORE` → `INSERT … ON CONFLICT DO NOTHING`
 
 CREATE TABLE IF NOT EXISTS site_shows (
   id             TEXT PRIMARY KEY,
@@ -31,7 +36,7 @@ CREATE TABLE IF NOT EXISTS site_genres (
   sort_order  INTEGER DEFAULT 0
 );
 
--- Many-to-many: a show can span multiple genres
+-- Many-to-many: a show can span multiple genres.
 CREATE TABLE IF NOT EXISTS site_show_genres (
   show_id  TEXT REFERENCES site_shows(id) ON DELETE CASCADE,
   genre_id TEXT REFERENCES site_genres(id) ON DELETE CASCADE,
@@ -81,7 +86,7 @@ CREATE TABLE IF NOT EXISTS available_titles (
 );
 
 -- Key-value store for editable site copy (homepage, about, contact sections).
--- Key convention: 'section.field' e.g. 'homepage.tagline', 'about.body'
+-- Key convention: 'section.field' e.g. 'homepage.tagline', 'about.body'.
 CREATE TABLE IF NOT EXISTS site_content (
   key        TEXT PRIMARY KEY,
   value      TEXT NOT NULL,
@@ -90,22 +95,25 @@ CREATE TABLE IF NOT EXISTS site_content (
   updated_at INTEGER
 );
 
--- Seed default content keys so the CMS admin always has something to edit
-INSERT OR IGNORE INTO site_content (key, value, type, updated_at) VALUES
-  ('homepage.tagline',     'Compelling characters. Great storytelling. Innovative deals. High production value.', 'text', unixepoch()),
-  ('homepage.description', 'Independent, New York based production company known for its best-in-class non-fiction and documentary series. Over the past two decades, MyE has produced thousands of hours of content spanning a variety of genres for Discovery, A&E, National Geographic, BBC, Lifetime, MTV, Comedy Central, Travel Channel, Investigation Discovery, Oxygen, Nickelodeon, Food Network, Animal Planet, TruTV, PBS, Reelz and CMT.', 'text', unixepoch()),
-  ('about.founded',        '2000', 'text', unixepoch()),
-  ('about.acquired',       'Acquired by Media Content Services in 2022', 'text', unixepoch()),
-  ('about.offices',        'Manhattan, Toronto, London', 'text', unixepoch()),
-  ('contact.email',        'info@myentertainment.tv', 'text', unixepoch()),
-  ('contact.address',      '235 E 45th St., Floor 14 West, New York, NY 10017', 'text', unixepoch()),
-  ('site.ga4_id',          '', 'text', unixepoch());
+-- Seed default content keys so the CMS admin always has something to edit.
+-- ON CONFLICT DO NOTHING is the Postgres equivalent of SQLite's INSERT OR IGNORE.
+INSERT INTO site_content (key, value, type, updated_at) VALUES
+  ('homepage.tagline',     'Compelling characters. Great storytelling. Innovative deals. High production value.', 'text', EXTRACT(EPOCH FROM NOW())::INTEGER),
+  ('homepage.description', 'Independent, New York based production company known for its best-in-class non-fiction and documentary series. Over the past two decades, MyE has produced thousands of hours of content spanning a variety of genres for Discovery, A&E, National Geographic, BBC, Lifetime, MTV, Comedy Central, Travel Channel, Investigation Discovery, Oxygen, Nickelodeon, Food Network, Animal Planet, TruTV, PBS, Reelz and CMT.', 'text', EXTRACT(EPOCH FROM NOW())::INTEGER),
+  ('about.founded',        '2000', 'text', EXTRACT(EPOCH FROM NOW())::INTEGER),
+  ('about.acquired',       'Acquired by Media Content Services in 2022', 'text', EXTRACT(EPOCH FROM NOW())::INTEGER),
+  ('about.offices',        'Manhattan, Toronto, London', 'text', EXTRACT(EPOCH FROM NOW())::INTEGER),
+  ('contact.email',        'info@myentertainment.tv', 'text', EXTRACT(EPOCH FROM NOW())::INTEGER),
+  ('contact.address',      '235 E 45th St., Floor 14 West, New York, NY 10017', 'text', EXTRACT(EPOCH FROM NOW())::INTEGER),
+  ('site.ga4_id',          '', 'text', EXTRACT(EPOCH FROM NOW())::INTEGER)
+ON CONFLICT (key) DO NOTHING;
 
--- Seed the 6 genres from the Webflow site
-INSERT OR IGNORE INTO site_genres (id, name, slug, sort_order) VALUES
-  ('genre-paranormal',    'Paranormal',         'paranormal',    1),
-  ('genre-sports',        'Sports + Competition','sports',        2),
-  ('genre-home',          'Home + Lifestyle',   'home-lifestyle', 3),
-  ('genre-crime',         'Crime',              'crime',         4),
-  ('genre-comedy',        'Comedy',             'comedy',        5),
-  ('genre-food-travel',   'Food + Travel',      'food-travel',   6);
+-- Seed the 6 genres from the legacy Webflow site.
+INSERT INTO site_genres (id, name, slug, sort_order) VALUES
+  ('genre-paranormal',    'Paranormal',          'paranormal',     1),
+  ('genre-sports',        'Sports + Competition','sports',         2),
+  ('genre-home',          'Home + Lifestyle',    'home-lifestyle', 3),
+  ('genre-crime',         'Crime',               'crime',          4),
+  ('genre-comedy',        'Comedy',              'comedy',         5),
+  ('genre-food-travel',   'Food + Travel',       'food-travel',    6)
+ON CONFLICT (id) DO NOTHING;

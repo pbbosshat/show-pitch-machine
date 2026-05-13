@@ -3,4 +3,4 @@
 -- file in the myentprod.com "Sizzle Reels" folder (set anyone-with-link reader).
 -- vimeo_url stays as a legacy fallback for rows whose Drive backfill hasn't run.
 
-ALTER TABLE deck_sites ADD COLUMN drive_file_id TEXT;
+ALTER TABLE deck_sites ADD COLUMN IF NOT EXISTS drive_file_id TEXT;

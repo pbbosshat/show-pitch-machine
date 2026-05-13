@@ -9,8 +9,10 @@ export async function register() {
   // Only run in the Node.js runtime (not edge), and only on the server
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
 
+  // initDb is async since the Postgres migration — must await so migrations finish
+  // before the HTTP listener starts accepting requests.
   const { initDb } = await import('./lib/db');
-  initDb();
+  await initDb();
 
   const { startMcpServer } = await import('./lib/mcp');
   await startMcpServer();

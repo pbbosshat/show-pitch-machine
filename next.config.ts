@@ -10,6 +10,14 @@ const nextConfig: NextConfig = {
     "googleapis",
     "@modelcontextprotocol/sdk",
     "csv-parse",
+    // pg (node-postgres) and its optional peer pgpass use require('fs') /
+    // require('path') / require('net') — bare Node built-in names that
+    // Next's webpack pass cannot resolve. Externalize so they're loaded by
+    // Node at runtime, not bundled.
+    "pg",
+    "pgpass",
+    "pg-native",
+    "pg-cloudflare",
   ],
   webpack: (config) => {
     // Externalize server-only packages from ALL webpack bundles (server + browser).
@@ -33,6 +41,9 @@ const nextConfig: NextConfig = {
       '@anthropic-ai/sdk',
       'groq-sdk',
       'openai',
+      // pg (node-postgres) — pure JS but uses bare `require('fs')`, `require('path')`,
+      // `require('net')`, `require('tls')`, etc. Webpack can't resolve those in any bundle.
+      'pg', 'pgpass', 'pg-native', 'pg-cloudflare',
     ];
 
     config.externals = [

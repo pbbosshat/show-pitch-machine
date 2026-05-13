@@ -1,4 +1,4 @@
--- migrations/020_fox_nation_intel.sql
+-- 020_fox_nation_intel.sql
 -- Fixes Fox Nation being incorrectly seeded with Fox broadcast intel in 018.
 -- Fox Nation is a conservative streaming subscription platform — wholly different
 -- buyer profile from Fox Broadcasting. This migration overwrites the wrong data

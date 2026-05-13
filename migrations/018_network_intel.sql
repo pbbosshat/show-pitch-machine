@@ -1,27 +1,19 @@
--- migrations/018_network_intel.sql
+-- 018_network_intel.sql
 -- Adds market intelligence columns to buyer_companies so the Network Intel
 -- tab can display external buying activity scores alongside live relationship
 -- scores computed from deals, packages, and touches.
 --
--- market_score      (0–10) External buying activity — set manually from quarterly
---                   trade research (Deadline, Variety, THR, Realscreen).
--- budget_signal     'expanding' | 'stable' | 'contracting' | 'frozen'
--- key_buyer         Current decision-maker name(s) at this network.
--- genre_mandate     JSON array of genre strings the network is actively buying.
--- intel_notes       One-line strategic note on this network's current posture.
--- intel_updated_at  Unix ms timestamp of when this intel was last refreshed.
+-- Postgres conversions: just `ADD COLUMN IF NOT EXISTS`; the UPDATE clauses
+-- have no SQLite-specific syntax.
 
-ALTER TABLE buyer_companies ADD COLUMN market_score     REAL;
-ALTER TABLE buyer_companies ADD COLUMN budget_signal    TEXT;
-ALTER TABLE buyer_companies ADD COLUMN key_buyer        TEXT;
-ALTER TABLE buyer_companies ADD COLUMN genre_mandate    TEXT;
-ALTER TABLE buyer_companies ADD COLUMN intel_notes      TEXT;
-ALTER TABLE buyer_companies ADD COLUMN intel_updated_at INTEGER;
+ALTER TABLE buyer_companies ADD COLUMN IF NOT EXISTS market_score     REAL;
+ALTER TABLE buyer_companies ADD COLUMN IF NOT EXISTS budget_signal    TEXT;
+ALTER TABLE buyer_companies ADD COLUMN IF NOT EXISTS key_buyer        TEXT;
+ALTER TABLE buyer_companies ADD COLUMN IF NOT EXISTS genre_mandate    TEXT;
+ALTER TABLE buyer_companies ADD COLUMN IF NOT EXISTS intel_notes      TEXT;
+ALTER TABLE buyer_companies ADD COLUMN IF NOT EXISTS intel_updated_at INTEGER;
 
 -- ── Seed known networks by name (May 2026 research) ──────────────────────────
--- Uses broad LIKE patterns so it matches regardless of how the network was
--- entered (e.g. "A+E Networks", "A&E Networks", "A+E Global Media", etc.)
--- intel_updated_at = 1746403200000 = 2026-05-05 00:00:00 UTC
 
 UPDATE buyer_companies SET
   market_score     = 8.0,

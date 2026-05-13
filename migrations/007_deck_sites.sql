@@ -1,15 +1,17 @@
--- Migration 007: deck_sites and deck_slides tables
--- deck_sites: one row per imported pitch deck, tracks metadata + publication state
--- deck_slides: one row per captured slide image, with AI-generated copy and image fields
+-- 007_deck_sites.sql
+-- deck_sites: one row per imported pitch deck, tracks metadata + publication state.
+-- deck_slides: one row per captured slide image, with AI-generated copy and image fields.
+--
+-- Postgres conversion: trivial — only types kept. No SQLite-specific syntax was used.
 
 CREATE TABLE IF NOT EXISTS deck_sites (
   id              TEXT PRIMARY KEY,
   slug            TEXT UNIQUE NOT NULL,         -- URL slug e.g. "gotta-catch-em-all"
-  title           TEXT NOT NULL,                -- Show title
+  title           TEXT NOT NULL,
   subtitle        TEXT,                         -- Tagline or format description
   logline         TEXT,                         -- One-line pitch
   canva_url       TEXT,                         -- Source Canva URL
-  genre           TEXT,                         -- Genre tag
+  genre           TEXT,
   format          TEXT,                         -- "4-Part Investigation", "Documentary Series" etc
   ep_count        TEXT,                         -- "8 Episodes", "6 x 60 min" etc
   network_target  TEXT,                         -- Target network/buyer
@@ -31,8 +33,8 @@ CREATE TABLE IF NOT EXISTS deck_slides (
   ai_prompt        TEXT,                        -- Prompt sent to DALL-E for this slide
   section_label    TEXT,                        -- "THE CONCEPT", "THE FORMAT", "THE TEAM" etc
   section_type     TEXT DEFAULT 'content',      -- hero | stats | content | talent | ask | cta
-  heading          TEXT,                        -- Extracted or AI-written heading
-  body             TEXT,                        -- Body copy for this section
+  heading          TEXT,
+  body             TEXT,
   stats_json       TEXT,                        -- JSON array [{label, value}] for stats sections
   created_at       INTEGER NOT NULL
 );
