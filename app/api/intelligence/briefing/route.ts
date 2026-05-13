@@ -1,11 +1,15 @@
 /**
  * GET /api/intelligence/briefing
- * Called by: Daily Briefing panel on dashboard
- * Auth: none
- * Response: { data: BriefingItem[], window: 'today' | '7days', sources: string[], total: number, skip_count: number }
+ * Called by: Daily Briefing panel on the dashboard
+ * Auth: spm_session cookie (route is auth-gated via the (internal) layout)
+ * Query params:
+ *   days=N           — look back N days (1-14, default 1). Clamped to range.
+ *   include_skip=1   — include tier-3 scripted/irrelevant items (default: 0)
+ * Response: { data: BriefingItem[], window: { days: number; sinceMs: number },
+ *             sources: string[], total: number, skip_count: number }
  *
- * Aggregates all actionable trade_articles — greenlits, cancellations,
- * exec moves, and mandate statements — sorted relevance-first.
+ * Aggregates actionable trade_articles (greenlits, cancellations, exec moves,
+ * mandate statements) over the requested window, sorted relevance-first.
  *
  * Sort order:
  *   1. Tier 1-direct items (MYE's exact lane) — top
@@ -13,10 +17,6 @@
  *   3. Tier 2-adjacent items
  *   4. Tier 3-skip (hidden by default — scripted drama, wrong formats)
  *   Within tier: scraped_at DESC (newest first)
- *
- * Query params:
- *   include_skip=1   — include tier-3 scripted/irrelevant items (default: 0)
- *   days=7           — look back N days (default: tries 1, falls back to 7)
  */
 
 import { NextResponse } from 'next/server';
@@ -58,9 +58,14 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const includeSkip = searchParams.get('include_skip') === '1';
 
+    // Parse and clamp the user-supplied window. The dropdown controls this
+    // explicitly, so there is no auto-fallback — if nothing matches for the
+    // chosen window, we return an empty array and let the UI inform the user.
+    const rawDays = parseInt(searchParams.get('days') ?? '1', 10);
+    const days = Number.isFinite(rawDays) ? Math.min(14, Math.max(1, rawDays)) : 1;
+
     const now = Date.now();
-    const oneDayAgo  = now - 24 * 60 * 60 * 1000;
-    const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const sinceMs = now - days * 24 * 60 * 60 * 1000;
 
     // Exec moves and mandate statements are always shown regardless of content tier.
     // For content items (greenlit/cancelled/other), hide tier-3 by default.
@@ -91,22 +96,16 @@ export async function GET(request: Request) {
       LIMIT 300
     `;
 
-    // Try 24-hour window first; fall back to 7 days if empty
-    let rows = await query<BriefingItem>(base, [oneDayAgo]);
-    let window: 'today' | '7days' = 'today';
+    const rows = await query<BriefingItem>(base, [sinceMs]);
 
-    if (rows.length === 0) {
-      rows = await query<BriefingItem>(base, [sevenDaysAgo]);
-      window = '7days';
-    }
-
-    // Count how many tier-3 skip items exist in same window (for UI badge)
+    // Count tier-3 skip items in the same window (for the "Not relevant" toggle badge).
+    // Uses sinceMs so the badge count always matches what the data query covers.
     const skipCountRows = await query<{ cnt: number }>(
       `SELECT COUNT(*) AS cnt FROM trade_articles
        WHERE item_type IN ('greenlit', 'cancelled', 'other')
          AND relevance_tier = '3-skip'
          AND scraped_at >= ?`,
-      [window === 'today' ? oneDayAgo : sevenDaysAgo]
+      [sinceMs]
     );
     const skip_count = skipCountRows[0]?.cnt ?? 0;
 
@@ -115,7 +114,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       data: rows,
-      window,
+      window: { days, sinceMs },
       sources,
       total: rows.length,
       skip_count,
