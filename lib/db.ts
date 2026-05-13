@@ -10,7 +10,14 @@
 // See docs/postgres-migration.md for the full SQL portability cheatsheet and
 // the list of patterns the placeholder translator does NOT fix.
 
-import { Pool, type QueryResult } from 'pg';
+import { Pool, types as pgTypes, type QueryResult } from 'pg';
+
+// pg returns BIGINT (OID 20) as a string by default to avoid Number precision
+// loss past 2^53. But ms-epoch timestamps (~1.78T in 2026) are well under
+// Number.MAX_SAFE_INTEGER (~9.007T), and every caller passes them to
+// `new Date(...)` which only accepts numbers. Without this parser, `new Date()`
+// throws "Invalid time value" during React hydration. Parse BIGINT as Number.
+pgTypes.setTypeParser(20, (val) => (val === null ? null : Number(val)));
 
 // ── Connection pool (lazy singleton) ─────────────────────────────────────────
 
