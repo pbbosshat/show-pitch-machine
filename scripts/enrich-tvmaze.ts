@@ -68,7 +68,7 @@ export async function markOurShows(dryRun: boolean): Promise<void> {
   const prefix = dryRun ? 'DRY RUN: ' : '';
   const now = Date.now();
 
-  const siteShows = query<SiteShowRow>('SELECT title FROM site_shows ORDER BY title ASC');
+  const siteShows = await query<SiteShowRow>('SELECT title FROM site_shows ORDER BY title ASC');
 
   let matched = 0;
   const noMatch: string[] = [];
@@ -77,7 +77,7 @@ export async function markOurShows(dryRun: boolean): Promise<void> {
     const lowerTitle = title.toLowerCase().trim();
 
     // Try exact normalized match first
-    const exact = queryOne<{ id: string }>(
+    const exact = await queryOne<{ id: string }>(
       'SELECT id FROM shows WHERE LOWER(TRIM(title)) = LOWER(TRIM(?))',
       [title]
     );
@@ -85,14 +85,14 @@ export async function markOurShows(dryRun: boolean): Promise<void> {
     if (exact) {
       // Exact match found — mark as our show
       if (!dryRun) {
-        run('UPDATE shows SET is_our_show = 1, updated_at = ? WHERE id = ?', [now, exact.id]);
+        await run('UPDATE shows SET is_our_show = 1, updated_at = ? WHERE id = ?', [now, exact.id]);
       }
       matched++;
       continue;
     }
 
     // Fall back to contains match — finds e.g. "Ghost Adventures: Aftershocks" when site_shows has "Ghost Adventures"
-    const containsResults = query<{ id: string }>(
+    const containsResults = await query<{ id: string }>(
       'SELECT id FROM shows WHERE LOWER(title) LIKE ?',
       [`%${lowerTitle}%`]
     );
@@ -101,7 +101,7 @@ export async function markOurShows(dryRun: boolean): Promise<void> {
       // Update all partial matches (e.g. all Ghost Adventures spinoffs)
       if (!dryRun) {
         for (const row of containsResults) {
-          run('UPDATE shows SET is_our_show = 1, updated_at = ? WHERE id = ?', [now, row.id]);
+          await run('UPDATE shows SET is_our_show = 1, updated_at = ? WHERE id = ?', [now, row.id]);
         }
       }
       matched++;
@@ -133,8 +133,8 @@ export async function enrichTVMaze(dryRun: boolean, allShows: boolean): Promise<
 
   // Decide which shows to process — all or only those without a tvmaze_id
   const shows = allShows
-    ? query<ShowRow>('SELECT id, title, tvmaze_id FROM shows ORDER BY title ASC')
-    : query<ShowRow>('SELECT id, title, tvmaze_id FROM shows WHERE tvmaze_id IS NULL ORDER BY title ASC');
+    ? await query<ShowRow>('SELECT id, title, tvmaze_id FROM shows ORDER BY title ASC')
+    : await query<ShowRow>('SELECT id, title, tvmaze_id FROM shows WHERE tvmaze_id IS NULL ORDER BY title ASC');
 
   console.log(`${prefix}TVMaze enrichment: processing ${shows.length} show(s)...`);
 
@@ -201,7 +201,7 @@ export async function enrichTVMaze(dryRun: boolean, allShows: boolean): Promise<
       const now = Date.now();
 
       if (!dryRun) {
-        run(
+        await run(
           `UPDATE shows
              SET tvmaze_id = ?, schedule = ?, total_seasons = ?,
                  air_status = ?, off_air_date = ?, updated_at = ?
@@ -293,7 +293,7 @@ export async function upsertPWShows(
     const lowerTitle = normTitle(title);
 
     // Check if this title already exists (any network — PW titles have NULL network)
-    const existing = queryOne<{ id: string }>(
+    const existing = await queryOne<{ id: string }>(
       'SELECT id FROM shows WHERE LOWER(TRIM(title)) = ?',
       [lowerTitle]
     );
@@ -308,7 +308,7 @@ export async function upsertPWShows(
     if (!dryRun) {
       // INSERT OR IGNORE handles the edge case where a concurrent insert slips through
       // the check above (safe for single-process scripts but good defensive practice).
-      const result = run(
+      const result = await run(
         `INSERT OR IGNORE INTO shows
            (id, title, title_normalized, source, air_status, data_source, created_at, updated_at)
          VALUES (?, ?, ?, 'production_weekly', 'on_air', 'trade', ?, ?)`,
@@ -337,7 +337,7 @@ export async function upsertPWShows(
   if (newIds.length > 0 && !dryRun) {
     console.log(`${prefix}TVMaze: enriching ${newIds.length} new PW show(s)...`);
 
-    const newShows = query<ShowRow>(
+    const newShows = await query<ShowRow>(
       `SELECT id, title, tvmaze_id FROM shows WHERE id IN (${newIds.map(() => '?').join(',')})`,
       newIds
     );
@@ -379,7 +379,7 @@ export async function upsertPWShows(
 
         const offAirDate = detail.ended ? Date.parse(detail.ended) : null;
 
-        run(
+        await run(
           `UPDATE shows
              SET tvmaze_id = ?, schedule = ?, total_seasons = ?,
                  air_status = ?, off_air_date = ?, updated_at = ?
@@ -428,7 +428,7 @@ async function runPWIntegration(dryRun: boolean): Promise<void> {
 
 async function main(): Promise<void> {
   // Initialize the DB (runs all pending migrations) before any queries
-  initDb();
+  await initDb();
 
   const args = process.argv.slice(2);
   const dryRun         = args.includes('--dry-run');
