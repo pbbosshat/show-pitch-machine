@@ -17,13 +17,21 @@
 //   JWT="jwt eyJ..." node scripts/backfill-vimeo-to-drive.js [--scope=all|linked|unlisted] [--limit=N] [--dry-run]
 //
 // Required env:
-//   JWT                              — fresh Vimeo OAuth/JWT token (~30 min TTL).
-//                                      Re-capture via scripts/get-vimeo-jwt.js.
-//   GOOGLE_SERVICE_ACCOUNT_KEY_PATH  — path to service_account.json (DWD into
-//                                      admin@myentprod.com). Defaults to
-//                                      C:/Users/pb/.claude/google/service_account.json.
-//   DRIVE_SIZZLE_FOLDER_ID           — optional; skips folder lookup each run.
-//   DATABASE_PATH                    — optional; defaults to ./data/db.sqlite.
+//   JWT                  — fresh Vimeo OAuth/JWT token (~30 min TTL).
+//                          Capture from a Chrome DevTools network request on
+//                          vimeo.com/manage/videos (Authorization header).
+//   MYE_TOKEN_PATH       — path to OAuth token for admin@myentprod.com.
+//                          Defaults to C:/Users/pb/.claude/google/mye_token.json.
+//   MYE_CREDENTIALS_PATH — OAuth client credentials (installed app).
+//                          Defaults to C:/Users/pb/.claude/google/credentials.json.
+//   DRIVE_SIZZLE_FOLDER_ID — optional; skips folder lookup each run.
+//   DATABASE_PATH        — optional; defaults to ./data/db.sqlite.
+//
+// Auth: uses the existing admin@myentprod.com OAuth token (refresh_token in
+// the JSON) rather than service account DWD. The andrew-email-reader service
+// account only has gmail.readonly scope on myentprod.com — adding Drive scope
+// would require an admin-console change, so we use the OAuth path that the
+// rest of the MYE Google tooling already uses.
 
 const https = require('node:https');
 const fs    = require('node:fs');
@@ -36,12 +44,11 @@ const { google } = require('googleapis');
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const JWT     = process.env.JWT;
-const KEY     = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH
-                || 'C:/Users/pb/.claude/google/service_account.json';
-const DB_PATH = process.env.DATABASE_PATH
-                || path.join(process.cwd(), 'data', 'db.sqlite');
-const TMP_DIR = process.env.BACKFILL_TMP || path.join(os.tmpdir(), 'vimeo-backfill');
+const JWT         = process.env.JWT;
+const TOKEN_PATH  = process.env.MYE_TOKEN_PATH       || 'C:/Users/pb/.claude/google/mye_token.json';
+const CREDS_PATH  = process.env.MYE_CREDENTIALS_PATH || 'C:/Users/pb/.claude/google/credentials.json';
+const DB_PATH     = process.env.DATABASE_PATH        || path.join(process.cwd(), 'data', 'db.sqlite');
+const TMP_DIR     = process.env.BACKFILL_TMP         || path.join(os.tmpdir(), 'vimeo-backfill');
 
 // Per-row timeout for the Vimeo download itself; total per-row budget is
 // roughly DOWNLOAD_TIMEOUT_MS + DRIVE_TIMEOUT_MS.
@@ -61,26 +68,34 @@ const LIMIT   = args.limit ? Number(args.limit) : Infinity;
 const DRY_RUN = !!args['dry-run'];
 
 if (!JWT) {
-  console.error('ERROR: Set JWT env var. Capture via scripts/get-vimeo-jwt.js.');
+  console.error('ERROR: Set JWT env var. Capture from a Chrome DevTools request on vimeo.com.');
   process.exit(1);
 }
-if (!fs.existsSync(KEY)) {
-  console.error(`ERROR: Service account key not found at ${KEY}`);
+if (!fs.existsSync(TOKEN_PATH)) {
+  console.error(`ERROR: OAuth token not found at ${TOKEN_PATH}`);
+  process.exit(1);
+}
+if (!fs.existsSync(CREDS_PATH)) {
+  console.error(`ERROR: OAuth credentials not found at ${CREDS_PATH}`);
   process.exit(1);
 }
 
 fs.mkdirSync(TMP_DIR, { recursive: true });
 
-// ── Drive setup (DWD into admin@myentprod.com) ────────────────────────────────
+// ── Drive setup (OAuth for admin@myentprod.com) ───────────────────────────────
+//
+// Returns an OAuth2 client primed with the saved refresh_token. googleapis
+// automatically refreshes the access token when needed, so a single auth
+// instance works for the full multi-hour backfill run.
 
 function getDriveAuth() {
-  const json = JSON.parse(fs.readFileSync(KEY, 'utf-8'));
-  return new google.auth.JWT({
-    email:   json.client_email,
-    key:     json.private_key,
-    scopes:  ['https://www.googleapis.com/auth/drive'],
-    subject: 'admin@myentprod.com', // Drive quota + folder ownership lives here
-  });
+  const token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf-8'));
+  const creds = JSON.parse(fs.readFileSync(CREDS_PATH, 'utf-8'));
+  const c = creds.installed || creds.web;
+  if (!c) throw new Error('credentials.json missing "installed" or "web" block');
+  const oauth = new google.auth.OAuth2(c.client_id, c.client_secret, c.redirect_uris?.[0]);
+  oauth.setCredentials(token);
+  return oauth;
 }
 
 async function resolveFolderId(drive) {

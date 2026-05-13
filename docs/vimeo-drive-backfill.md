@@ -71,10 +71,24 @@ node scripts/backfill-vimeo-to-drive.js \
 
 | Var | Default | Notes |
 |---|---|---|
-| `JWT` | (required) | Vimeo OAuth/JWT, expires ~30 min. Re-capture via `scripts/get-vimeo-jwt.js`. |
-| `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` | `C:/Users/pb/.claude/google/service_account.json` | Service account that DWDs into `admin@myentprod.com`. |
+| `JWT` | (required) | Vimeo OAuth/JWT, expires ~30 min. Capture from a Chrome DevTools network request on `vimeo.com/manage/videos`. |
+| `MYE_TOKEN_PATH` | `C:/Users/pb/.claude/google/mye_token.json` | OAuth token for `admin@myentprod.com` (has `refresh_token`, auto-refreshes). |
+| `MYE_CREDENTIALS_PATH` | `C:/Users/pb/.claude/google/credentials.json` | OAuth client credentials (installed app). |
 | `DRIVE_SIZZLE_FOLDER_ID` | (looked up) | Skip folder lookup by setting this once. |
 | `DATABASE_PATH` | `./data/db.sqlite` | |
+
+### Why OAuth and not the service account
+
+The `andrew-email-reader` service account only has `gmail.readonly` DWD scope on
+`myentprod.com`. Adding Drive scope would require an admin-console change in
+the Workspace, so the backfill uses the same OAuth path as the rest of the MYE
+Google tooling (`mye_token.json` from the `mye-google` skill).
+
+### Drive capacity
+
+`admin@myentprod.com` is on a 20 TB plan. As of 2026-05-13 it had ~427 GB used,
+~20 TB free. The full 425-video backfill is estimated at ~140 GB at 8 Mbps,
+worst-case ~215 GB at 12 Mbps — comfortably under 2% of available space.
 
 ### Resumability
 
