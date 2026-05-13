@@ -69,7 +69,7 @@ export async function GET(
     const { id: deckId } = await params;
 
     // Verify the parent deck exists before returning sub-resources
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -80,7 +80,7 @@ export async function GET(
 
     // Fetch all deck_buyers rows with their contact + company info joined in.
     // LEFT JOIN on buyer_contacts so we still return a row when contact_id is NULL.
-    const rows = query<DeckBuyerRow & {
+    const rows = await query<DeckBuyerRow & {
       contact_id: string | null;
       contact_name: string | null;
       contact_email: string | null;
@@ -110,8 +110,10 @@ export async function GET(
       [deckId]
     );
 
-    // For each buyer, fetch any emails linked to this deck + that contact
-    const buyers: DeckBuyerWithDetails[] = rows.map((row) => {
+    // For each buyer, fetch any emails linked to this deck + that contact.
+    // Sequential awaits are fine here — typical decks have <20 buyers.
+    const buyers: DeckBuyerWithDetails[] = [];
+    for (const row of rows) {
       const contact: ContactRow | null = row.contact_id
         ? {
             id:           row.contact_id,
@@ -124,14 +126,14 @@ export async function GET(
         : null;
 
       // Emails linked to this deck with this specific contact
-      const emails = query<EmailRow>(
+      const emails = await query<EmailRow>(
         `SELECT id, gmail_thread_id, subject, sender, received_at, grok_signal
            FROM package_emails
           WHERE deck_id = ? AND buyer_contact_id = ?`,
         [deckId, row.buyer_contact_id]
       );
 
-      return {
+      buyers.push({
         id:               row.id,
         deck_id:          row.deck_id,
         buyer_contact_id: row.buyer_contact_id,
@@ -141,8 +143,8 @@ export async function GET(
         created_at:       row.created_at,
         contact,
         emails,
-      };
-    });
+      });
+    }
 
     return NextResponse.json({ data: buyers });
   } catch (err) {
@@ -158,7 +160,7 @@ export async function POST(
     const { id: deckId } = await params;
 
     // Verify the parent deck exists
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -174,7 +176,7 @@ export async function POST(
     }
 
     // Verify the contact exists so we don't create orphan deck_buyers rows
-    const contact = queryOne<ContactRow & { company_name: string | null }>(
+    const contact = await queryOne<ContactRow & { company_name: string | null }>(
       `SELECT bc.id, bc.name, bc.email, bc.title, bc.company_id, co.name AS company_name
          FROM buyer_contacts bc
          LEFT JOIN buyer_companies co ON co.id = bc.company_id
@@ -203,7 +205,7 @@ export async function POST(
       ]
     );
 
-    const newRow = queryOne<DeckBuyerRow>(
+    const newRow = await queryOne<DeckBuyerRow>(
       `SELECT * FROM deck_buyers WHERE id = ?`,
       [id]
     );

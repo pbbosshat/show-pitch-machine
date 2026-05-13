@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     // min_deals goes into HAVING so it applies after GROUP BY aggregation
     values.push(minDeals);
 
-    const rows = query<TriangulationRaw>(
+    const rows = await query<TriangulationRaw>(
       `SELECT
         bc.id                           AS buyer_id,
         bc.name                         AS buyer_name,

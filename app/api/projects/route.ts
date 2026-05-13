@@ -70,8 +70,8 @@ export async function GET(request: NextRequest) {
 
     const whereClause = conditions.join(' AND ');
 
-    // Raw rows from the DB — sizzle_count comes back as a number from SQLite COUNT()
-    const rawRows = query<ProjectSummary & { sizzle_count: number }>(
+    // Raw rows from the DB — sizzle_count comes back as a number from Postgres COUNT()
+    const rawRows = await query<ProjectSummary & { sizzle_count: number }>(
       `SELECT
         ip.id,
         ip.title,

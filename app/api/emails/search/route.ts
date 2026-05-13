@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
     const where = conditions.join(' AND ');
 
     // COUNT query uses the same WHERE so the client knows how many pages there are
-    const countRow = queryOne<{ total: number }>(
+    const countRow = await queryOne<{ total: number }>(
       `SELECT COUNT(*) AS total FROM package_emails WHERE ${where}`,
       params
     );
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     const total = countRow?.total ?? 0;
 
     // Main SELECT — append limit/offset as positional params after the WHERE params
-    const results = query<EmailRow>(
+    const results = await query<EmailRow>(
       `SELECT id, gmail_thread_id, subject, sender, received_at, grok_signal
          FROM package_emails
         WHERE ${where}

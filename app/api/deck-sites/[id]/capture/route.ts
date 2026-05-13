@@ -27,7 +27,7 @@ export async function POST(
   try {
     const { id } = await params;
 
-    const deck = queryOne<DeckSiteRow>(
+    const deck = await queryOne<DeckSiteRow>(
       `SELECT id, canva_url FROM deck_sites WHERE id = ?`,
       [id]
     );
@@ -51,7 +51,7 @@ export async function POST(
     // Persist the URL override back to the deck record if a new one was supplied
     if (body.canva_url && body.canva_url !== deck.canva_url) {
       const now = Date.now() / 1000 | 0;
-      run(
+      await run(
         `UPDATE deck_sites SET canva_url = ?, updated_at = ? WHERE id = ?`,
         [canvaUrl, now, id]
       );

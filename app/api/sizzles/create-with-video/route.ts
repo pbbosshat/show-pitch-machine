@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Verify the project exists and grab its title for the cached `title` col ─
-    const project = queryOne<{ id: string; title: string }>(
+    const project = await queryOne<{ id: string; title: string }>(
       'SELECT id, title FROM ip_catalog WHERE id = ?',
       [ipCatalogId]
     );
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
     // ── Insert the sizzle row up-front so we have a stable id for thumbnail filename
     //    and so downstream queries see this sizzle even if upload fails halfway. ──
     const sizzleId = randomUUID();
-    run(
+    await run(
       `INSERT INTO sizzle_reels
          (id, ip_catalog_id, title, platform, vimeo_password, notes, sheet_source, raw_value)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Persist video + thumbnail back to the sizzle row ─────────────────────
-    run(
+    await run(
       `UPDATE sizzle_reels
        SET vimeo_url = ?, platform = 'drive', drive_file_id = ?, thumbnail_url = ?
        WHERE id = ?`,

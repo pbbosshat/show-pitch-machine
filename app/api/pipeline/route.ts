@@ -42,7 +42,7 @@ interface PipelineRow {
 
 export async function GET() {
   try {
-    const rows = query<PipelineRow>(
+    const rows = await query<PipelineRow>(
       `SELECT
         pkg.id,
         pkg.name,

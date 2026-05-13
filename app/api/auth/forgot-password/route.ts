@@ -9,6 +9,7 @@ import { queryOne } from '@/lib/db';
 import { createResetToken, ensureAuthSchema } from '@/lib/auth';
 
 export async function POST(request: Request) {
+  // ensureAuthSchema is a sync legacy call in lib/auth.ts — it will be migrated separately
   ensureAuthSchema();
 
   const body = await request.json().catch(() => ({}));
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 });
   }
 
-  const user = queryOne<{ id: string }>(
+  const user = await queryOne<{ id: string }>(
     'SELECT id FROM team_users WHERE lower(email) = lower(?)',
     [email.trim()]
   );

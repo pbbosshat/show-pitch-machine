@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     // LEFT JOIN project_email_threads so we get email activity context per sizzle.
     // ORDER BY: sizzles with a URL float to the top (CASE gives 0 for has-url, 1 for no-url),
     // then alphabetically by project title so the inventory is easy to scan.
-    const rows = query<SizzleAsset>(
+    const rows = await query<SizzleAsset>(
       `SELECT
         sr.id,
         sr.ip_catalog_id,

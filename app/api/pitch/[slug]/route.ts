@@ -95,7 +95,7 @@ export async function GET(
     const { slug } = await params;
 
     // Single big join to get portal + package + ip + buyer + company in one roundtrip
-    const row = queryOne<PortalRow>(
+    const row = await queryOne<PortalRow>(
       `SELECT
         pp.id         AS portal_id,
         pp.slug,
@@ -150,7 +150,7 @@ export async function GET(
     }
 
     // Fetch talent attached to the package
-    const talent = query<TalentRow>(
+    const talent = await query<TalentRow>(
       `SELECT
         t.id   AS talent_id,
         t.name,
@@ -164,7 +164,7 @@ export async function GET(
     );
 
     // Fetch content partners attached to the package
-    const partners = query<PartnerRow>(
+    const partners = await query<PartnerRow>(
       `SELECT
         cp.id   AS partner_id,
         cp.name,
@@ -187,7 +187,7 @@ export async function GET(
           // Use json_each for portability; alternatively we could do N individual queries
           // but SQLite json_each is more efficient for small arrays
           const placeholders = ids.map(() => '?').join(', ');
-          compShows = query<ShowRow>(
+          compShows = await query<ShowRow>(
             `SELECT id, title, network, genre, format, episode_count,
                     greenlit_date, production_company, location_type
              FROM shows

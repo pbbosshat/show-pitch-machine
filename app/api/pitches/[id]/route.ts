@@ -236,7 +236,7 @@ export async function GET(
     const { id } = await params;
 
     // Step 1: Fetch the core package row joined to IP and buyer in one roundtrip
-    const row = queryOne<PackageIpBuyerRow>(
+    const row = await queryOne<PackageIpBuyerRow>(
       `SELECT
         pkg.id                    AS pkg_id,
         pkg.name                  AS pkg_name,
@@ -300,7 +300,7 @@ export async function GET(
     // We fetch both sets then merge in TypeScript. 'package' source wins on dupe.
 
     const ipTalent = ipId
-      ? query<TalentRow & { source: 'ip' }>(
+      ? await query<TalentRow & { source: 'ip' }>(
           `SELECT t.id, t.name, t.primary_role, t.mye_relationship,
                   t.talent_tier, t.genre_fit, 'ip' AS source
            FROM ip_talent it
@@ -310,7 +310,7 @@ export async function GET(
         )
       : [];
 
-    const packageTalent = query<TalentRow & { source: 'package' }>(
+    const packageTalent = await query<TalentRow & { source: 'package' }>(
       `SELECT t.id, t.name, t.primary_role, t.mye_relationship,
               t.talent_tier, t.genre_fit, 'package' AS source
        FROM package_talent pt
@@ -332,7 +332,7 @@ export async function GET(
 
     // Step 3: Sizzle reels for this IP
     const sizzles = ipId
-      ? query<SizzleRow>(
+      ? await query<SizzleRow>(
           `SELECT id, title, vimeo_url, vimeo_password, platform,
                   raw_value, notes
            FROM sizzle_reels
@@ -343,7 +343,7 @@ export async function GET(
 
     // Step 4: Pitch decks and materials for this IP
     const decks = ipId
-      ? query<DeckRow>(
+      ? await query<DeckRow>(
           `SELECT id, material_type, deck_url, raw_value, notes
            FROM pitch_decks
            WHERE ip_catalog_id = ?`,
@@ -357,7 +357,7 @@ export async function GET(
       const compIds = parseJsonStringArray(row.comp_show_ids);
       if (compIds.length > 0) {
         const placeholders = compIds.map(() => '?').join(', ');
-        compShows = query<CompShowRow>(
+        compShows = await query<CompShowRow>(
           `SELECT id, title, network, genre, format, episode_count, premiere_date
            FROM shows
            WHERE id IN (${placeholders})`,
@@ -368,7 +368,7 @@ export async function GET(
 
     // Step 6: Project-level email threads (linked to the IP, not a specific package)
     const rawProjectThreads = ipId
-      ? query<ProjectThreadRow>(
+      ? await query<ProjectThreadRow>(
           `SELECT id, thread_id, subject, first_message_date, last_message_date,
                   message_count, snippet, direction, participants
            FROM project_email_threads
@@ -385,7 +385,7 @@ export async function GET(
     }));
 
     // Step 7: Package-level email signals (most recent 20)
-    const packageEmails = query<PackageEmailRow>(
+    const packageEmails = await query<PackageEmailRow>(
       `SELECT id, gmail_thread_id, subject, sender, received_at,
               grok_signal, stage_moved_to
        FROM package_emails
@@ -397,7 +397,7 @@ export async function GET(
 
     // Step 8: Historical pitches of this IP to any buyer (all time)
     const pitchHistory = ipId
-      ? query<PitchHistoryRow>(
+      ? await query<PitchHistoryRow>(
           `SELECT
             p.id,
             co.name  AS buyer_company_name,
@@ -419,7 +419,7 @@ export async function GET(
 
     // Step 9: Other active packages for the same IP (exclude this package)
     const otherPitches = ipId
-      ? query<OtherPitchRow>(
+      ? await query<OtherPitchRow>(
           `SELECT
             pkg.id,
             pkg.name,
@@ -442,7 +442,7 @@ export async function GET(
     //   a) pitches table WHERE outcome='pass'
     //   b) ip_catalog.sheet_passed comma-split
     const passedPitches = ipId
-      ? query<{ company_name: string | null }>(
+      ? await query<{ company_name: string | null }>(
           `SELECT co.name AS company_name
            FROM pitches p
            LEFT JOIN buyer_companies co ON co.id = p.buyer_company_id
@@ -476,7 +476,7 @@ export async function GET(
 
     // Step 11: Dev tasks linked to this IP
     const devTasks = ipId
-      ? query<DevTaskRow>(
+      ? await query<DevTaskRow>(
           `SELECT id, task_description, assigned_to, deadline, section, status
            FROM dev_tasks
            WHERE ip_catalog_id = ?

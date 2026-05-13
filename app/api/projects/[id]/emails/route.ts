@@ -70,7 +70,7 @@ export async function GET(
     const offset = Math.max(0, parseInt(offsetStr) || 0);
 
     // Verify project exists
-    const project = queryOne<ProjectEmailRow>(
+    const project = await queryOne<ProjectEmailRow>(
       'SELECT id, title FROM ip_catalog WHERE id = ?',
       [id]
     );
@@ -80,14 +80,14 @@ export async function GET(
     }
 
     // Get total thread count for pagination
-    const countRow = queryOne<{ count: number }>(
+    const countRow = await queryOne<{ count: number }>(
       'SELECT COUNT(*) as count FROM project_email_threads WHERE ip_catalog_id = ?',
       [id]
     );
     const total = countRow?.count || 0;
 
     // Fetch email threads with limit/offset
-    const rawThreads = query<EmailThreadRow>(
+    const rawThreads = await query<EmailThreadRow>(
       `SELECT
         id,
         thread_id,
@@ -114,7 +114,7 @@ export async function GET(
     }));
 
     // Get date range across all threads for this project
-    const dateRange = queryOne<{
+    const dateRange = await queryOne<{
       first_message_date: string | null;
       last_message_date: string | null;
     }>(

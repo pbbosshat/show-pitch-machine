@@ -87,8 +87,8 @@ export async function GET(request: NextRequest) {
       ${where}
     `;
 
-    const rows  = query<VimeoVideo>(sql, [...params, perPage, offset]);
-    const count = queryOne<{ n: number }>(countSql, params);
+    const rows  = await query<VimeoVideo>(sql, [...params, perPage, offset]);
+    const count = await queryOne<{ n: number }>(countSql, params);
 
     return NextResponse.json({
       data:  JSON.parse(JSON.stringify(rows)),

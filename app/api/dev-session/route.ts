@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const email = searchParams.get('email') || 'patrickbryant@gototeam.com';
   const redirect = searchParams.get('redirect') || '/decks';
 
-  const user = queryOne<{ id: string }>('SELECT id FROM team_users WHERE lower(email) = lower(?)', [email]);
+  const user = await queryOne<{ id: string }>('SELECT id FROM team_users WHERE lower(email) = lower(?)', [email]);
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
   const token = createSession(user.id);

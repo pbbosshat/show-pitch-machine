@@ -44,7 +44,7 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid time parameter' }, { status: 400 });
   }
 
-  const sizzle = queryOne<SizzleRow>(
+  const sizzle = await queryOne<SizzleRow>(
     'SELECT id, vimeo_url FROM sizzle_reels WHERE id = ?',
     [id]
   );
@@ -137,7 +137,7 @@ export async function POST(
     fs.writeFileSync(path.join(thumbDir, filename), screenshotBuffer);
 
     const thumbnailUrl = `/sizzle-thumbs/${filename}`;
-    run('UPDATE sizzle_reels SET thumbnail_url = ? WHERE id = ?', [thumbnailUrl, id]);
+    await run('UPDATE sizzle_reels SET thumbnail_url = ? WHERE id = ?', [thumbnailUrl, id]);
 
     return NextResponse.json({ thumbnail_url: thumbnailUrl });
   } catch (err) {

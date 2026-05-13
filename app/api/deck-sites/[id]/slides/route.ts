@@ -48,7 +48,7 @@ export async function GET(
     const { id } = await params;
 
     // Verify the parent deck exists before returning slides
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [id]
     );
@@ -57,7 +57,7 @@ export async function GET(
       return NextResponse.json({ error: 'Deck site not found' }, { status: 404 });
     }
 
-    const slides = query<DeckSlide>(
+    const slides = await query<DeckSlide>(
       `SELECT * FROM deck_slides WHERE deck_site_id = ? ORDER BY slide_order ASC`,
       [id]
     );
@@ -76,7 +76,7 @@ export async function POST(
     const { id } = await params;
 
     // Verify the parent deck exists
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [id]
     );
@@ -100,7 +100,7 @@ export async function POST(
     }
 
     // Check if a slide already exists for this deck + order (upsert logic)
-    const existing = queryOne<DeckSlide>(
+    const existing = await queryOne<DeckSlide>(
       `SELECT * FROM deck_slides WHERE deck_site_id = ? AND slide_order = ?`,
       [id, slideOrder]
     );
