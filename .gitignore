@@ -55,3 +55,6 @@ show-pitch.db
 # one-off Railway deployment scripts (contain hardcoded tokens)
 railway-*.js
 data/vimeo-backfill-tmp/
+
+# Claude Code agent worktrees
+.claude/worktrees/
