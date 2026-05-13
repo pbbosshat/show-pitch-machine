@@ -44,11 +44,16 @@ const { google } = require('googleapis');
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const JWT         = process.env.JWT;
+// JWT can be passed in OR auto-captured via capture-vimeo-jwt.js. The auto path
+// is preferred for multi-hour runs because Vimeo session JWTs expire ~30 min
+// after capture; the script re-captures whenever the API returns 401.
+let JWT           = process.env.JWT || null;
+const CDP_URL     = process.env.CDP_URL              || 'http://localhost:9222';
 const TOKEN_PATH  = process.env.MYE_TOKEN_PATH       || 'C:/Users/pb/.claude/google/mye_token.json';
 const CREDS_PATH  = process.env.MYE_CREDENTIALS_PATH || 'C:/Users/pb/.claude/google/credentials.json';
 const DB_PATH     = process.env.DATABASE_PATH        || path.join(process.cwd(), 'data', 'db.sqlite');
 const TMP_DIR     = process.env.BACKFILL_TMP         || path.join(os.tmpdir(), 'vimeo-backfill');
+const CAPTURE_JWT = path.join(__dirname, 'capture-vimeo-jwt.js');
 
 // Per-row timeout for the Vimeo download itself; total per-row budget is
 // roughly DOWNLOAD_TIMEOUT_MS + DRIVE_TIMEOUT_MS.
@@ -67,10 +72,10 @@ const SCOPE   = args.scope || 'all';     // all | linked | unlisted
 const LIMIT   = args.limit ? Number(args.limit) : Infinity;
 const DRY_RUN = !!args['dry-run'];
 
-if (!JWT) {
-  console.error('ERROR: Set JWT env var. Capture from a Chrome DevTools request on vimeo.com.');
-  process.exit(1);
-}
+// JWT is optional at startup — if absent, captureFreshJwt() runs before the
+// first API call. This means an unattended `node backfill-vimeo-to-drive.js`
+// works as long as a logged-in Chrome is reachable on CDP_URL.
+
 if (!fs.existsSync(TOKEN_PATH)) {
   console.error(`ERROR: OAuth token not found at ${TOKEN_PATH}`);
   process.exit(1);
@@ -115,29 +120,56 @@ async function resolveFolderId(drive) {
 
 // ── Vimeo helpers ─────────────────────────────────────────────────────────────
 
-// Fetch the per-video metadata block including the (signed, time-limited)
-// download links. Must be called immediately before downloading — links expire.
-function getVideoDownloads(clipId) {
-  const url = `https://api.vimeo.com/videos/${clipId}?fields=download`;
+// Spawn capture-vimeo-jwt.js to get a fresh session JWT. Used at startup
+// (when JWT env wasn't provided) and whenever the live JWT returns 401.
+function captureFreshJwt() {
+  const { spawnSync } = require('node:child_process');
+  console.log('  [auth] capturing fresh JWT via Chrome CDP...');
+  const r = spawnSync(process.execPath, [CAPTURE_JWT, `--cdp=${CDP_URL}`], {
+    encoding: 'utf-8', timeout: 60_000,
+  });
+  if (r.status !== 0) {
+    throw new Error(`capture-vimeo-jwt.js exited ${r.status}: ${r.stderr.trim().slice(0, 300)}`);
+  }
+  const jwt = r.stdout.trim();
+  if (!/^jwt /i.test(jwt)) throw new Error(`unexpected JWT format: ${jwt.slice(0, 60)}`);
+  console.log(`  [auth] got fresh JWT (${jwt.length} bytes)`);
+  return jwt;
+}
+
+// Raw Vimeo API call with the current JWT. Returns { status, body }.
+function vimeoApiGet(path) {
+  const url = `https://api.vimeo.com${path}`;
   return new Promise((resolve, reject) => {
     const req = https.get(url, {
-      headers: {
-        Authorization: JWT,
-        Accept: 'application/vnd.vimeo.*+json;version=3.4',
-      },
+      headers: { Authorization: JWT, Accept: 'application/vnd.vimeo.*+json;version=3.4' },
     }, res => {
       let raw = '';
       res.on('data', c => raw += c);
       res.on('end', () => {
-        if (res.statusCode !== 200) {
-          return reject(new Error(`Vimeo API ${res.statusCode}: ${raw.slice(0, 200)}`));
-        }
-        try { resolve(JSON.parse(raw)); } catch (e) { reject(e); }
+        try { resolve({ status: res.statusCode, body: raw ? JSON.parse(raw) : null }); }
+        catch { resolve({ status: res.statusCode, body: raw }); }
       });
     });
     req.on('error', reject);
     req.setTimeout(30_000, () => { req.destroy(); reject(new Error('Vimeo API timeout')); });
   });
+}
+
+// Fetch the per-video metadata block including the (signed, time-limited)
+// download links. Must be called immediately before downloading — links expire.
+// On 401, transparently re-captures JWT and retries once.
+async function getVideoDownloads(clipId) {
+  if (!JWT) JWT = captureFreshJwt();
+  let res = await vimeoApiGet(`/videos/${clipId}?fields=download`);
+  if (res.status === 401) {
+    JWT = captureFreshJwt();
+    res = await vimeoApiGet(`/videos/${clipId}?fields=download`);
+  }
+  if (res.status !== 200) {
+    throw new Error(`Vimeo API ${res.status}: ${JSON.stringify(res.body).slice(0, 200)}`);
+  }
+  return res.body;
 }
 
 // Pick the highest-quality renditions, preferring the original source upload
@@ -295,11 +327,12 @@ async function main() {
     `UPDATE vimeo_library SET backfill_status='failed', backfill_error=? WHERE id=?`
   );
 
-  let done = 0, failed = 0, skipped = 0;
+  let done = 0, failed = 0, skipped = 0, processed = 0;
   const t0 = Date.now();
 
   for (const row of rows) {
-    const tag = `[${++done + failed + skipped}/${rows.length}] ${row.clip_id}`;
+    processed++;
+    const tag = `[${processed}/${rows.length}] ${row.clip_id}`;
     console.log(`\n${tag} ${row.title}`);
 
     lockStmt.run(row.id);
@@ -353,10 +386,10 @@ async function main() {
     }
 
     // Quick progress summary every 10 rows
-    if ((done + failed + skipped) % 10 === 0) {
+    if (processed % 10 === 0) {
       const elapsed = (Date.now() - t0) / 1000;
-      const rate = (done + failed + skipped) / elapsed;
-      const remain = (rows.length - (done + failed + skipped)) / rate;
+      const rate = processed / elapsed;
+      const remain = (rows.length - processed) / rate;
       console.log(`  --- ${done} done · ${failed} failed · ${skipped} skipped · ~${Math.round(remain / 60)} min remaining`);
     }
   }
