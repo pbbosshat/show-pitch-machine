@@ -44,6 +44,7 @@ const PUBLIC_PREFIXES = [
   '/api/available/',      // deck password verify endpoint — must be callable without a session
   '/api/contact',         // POST is public (form submission); GET enforces auth inside the handler
   '/api/admin/db-restore', // protected by ADMIN_RESTORE_SECRET header, not session cookie
+  '/api/admin/backfill-deck-drive', // protected by ADMIN_RESTORE_SECRET header, not session cookie
   '/api/viqi',            // protected by VIQI_PROXY_SECRET header, not session cookie
   '/api/ingest/',         // Bang pushes classified articles here via INGEST_API_KEY (no session)
 ];
