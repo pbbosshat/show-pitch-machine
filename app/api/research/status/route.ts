@@ -47,19 +47,19 @@ interface BuyerResearchRun {
 
 export async function GET() {
   // Last 10 runs, newest first — enough to see recent history without overwhelming the UI
-  const runs = query<BuyerResearchRun>(
+  const runs = await query<BuyerResearchRun>(
     `SELECT * FROM buyer_research_runs ORDER BY created_at DESC LIMIT 10`
   );
 
   // Total touch rows — proxy for "how much email data have we processed"
-  const touchRow = queryOne<{ cnt: number }>(
+  const touchRow = await queryOne<{ cnt: number }>(
     `SELECT COUNT(*) AS cnt FROM buyer_contact_touches`
   );
   const totalTouches = touchRow?.cnt ?? 0;
 
   // Buyers enriched = distinct buyer_contacts who appear in at least one touch row.
   // More meaningful than counting all buyer_contacts (many come from sheet imports).
-  const enrichedRow = queryOne<{ cnt: number }>(
+  const enrichedRow = await queryOne<{ cnt: number }>(
     `SELECT COUNT(DISTINCT bc.id) AS cnt
      FROM buyer_contacts bc
      INNER JOIN buyer_contact_touches bct

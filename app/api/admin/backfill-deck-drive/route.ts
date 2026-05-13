@@ -78,9 +78,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  initDb();
+  await initDb();
 
-  const decks = query<DeckRow>(
+  const decks = await query<DeckRow>(
     `SELECT id, slug, vimeo_url, sizzle_history, drive_file_id FROM deck_sites`
   );
 
@@ -98,15 +98,17 @@ export async function POST(req: NextRequest) {
 
     let driveId: string | null = null;
     for (const cid of candidates) {
-      const row = query<LibRow>(
+      // Query one clip at a time so we can short-circuit on first match
+      const rows = await query<LibRow>(
         `SELECT drive_file_id FROM vimeo_library WHERE clip_id = ? AND drive_file_id IS NOT NULL LIMIT 1`,
         [cid]
-      )[0];
+      );
+      const row = rows[0];
       if (row?.drive_file_id) { driveId = row.drive_file_id; break; }
     }
 
     if (driveId) {
-      run(`UPDATE deck_sites SET drive_file_id = ? WHERE id = ?`, [driveId, deck.id]);
+      await run(`UPDATE deck_sites SET drive_file_id = ? WHERE id = ?`, [driveId, deck.id]);
       updated++;
     } else {
       missing++;

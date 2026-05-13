@@ -29,7 +29,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const rows = query<BuyerStat>(
+    const rows = await query<BuyerStat>(
       `SELECT
         bc.id           AS buyer_id,
         bc.name         AS buyer_name,

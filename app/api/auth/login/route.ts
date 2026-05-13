@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
-    const user = queryOne<UserRow>(
+    const user = await queryOne<UserRow>(
       'SELECT id, name, email, role, password_hash FROM team_users WHERE lower(email) = lower(?)',
       [email.trim()]
     );

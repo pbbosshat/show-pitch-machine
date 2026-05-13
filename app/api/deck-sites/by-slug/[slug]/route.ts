@@ -65,7 +65,7 @@ export async function GET(
     const { slug } = await params;
 
     // Look up deck site by slug — slug is UNIQUE in the schema
-    const site = queryOne<DeckSite>(
+    const site = await queryOne<DeckSite>(
       `SELECT * FROM deck_sites WHERE slug = ?`,
       [slug]
     );
@@ -75,7 +75,7 @@ export async function GET(
     }
 
     // Fetch all slides for this deck in presentation order
-    const slides = query<DeckSlide>(
+    const slides = await query<DeckSlide>(
       `SELECT * FROM deck_slides WHERE deck_site_id = ? ORDER BY slide_order ASC`,
       [site.id]
     );

@@ -30,7 +30,7 @@ export async function GET() {
   try {
     // Left-join on a subquery that selects only the latest run per source —
     // avoids a GROUP BY on the full table which can be slow with many run rows.
-    const rows = query<StatusRow>(`
+    const rows = await query<StatusRow>(`
       SELECT
         sss.source,
         sss.display_name,

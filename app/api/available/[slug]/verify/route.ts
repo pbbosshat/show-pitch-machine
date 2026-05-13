@@ -23,7 +23,7 @@ export async function POST(
   const { slug } = await params;
 
   // Look up only active titles; inactive slugs behave as not found.
-  const row = queryOne<AvailableRow>(
+  const row = await queryOne<AvailableRow>(
     "SELECT id, gate_password AS password FROM deck_sites WHERE slug = ? AND is_active = 1 AND status = 'published'",
     [slug]
   );

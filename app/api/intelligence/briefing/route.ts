@@ -92,16 +92,16 @@ export async function GET(request: Request) {
     `;
 
     // Try 24-hour window first; fall back to 7 days if empty
-    let rows = query<BriefingItem>(base, [oneDayAgo]);
+    let rows = await query<BriefingItem>(base, [oneDayAgo]);
     let window: 'today' | '7days' = 'today';
 
     if (rows.length === 0) {
-      rows = query<BriefingItem>(base, [sevenDaysAgo]);
+      rows = await query<BriefingItem>(base, [sevenDaysAgo]);
       window = '7days';
     }
 
     // Count how many tier-3 skip items exist in same window (for UI badge)
-    const skipCountRows = query<{ cnt: number }>(
+    const skipCountRows = await query<{ cnt: number }>(
       `SELECT COUNT(*) AS cnt FROM trade_articles
        WHERE item_type IN ('greenlit', 'cancelled', 'other')
          AND relevance_tier = '3-skip'

@@ -31,7 +31,7 @@ export async function GET() {
     todayStart.setHours(0, 0, 0, 0);
     const todayMs = todayStart.getTime();
 
-    const stats = queryOne<StatusQuery>(
+    const stats = await queryOne<StatusQuery>(
       `SELECT
         COUNT(CASE WHEN processed_at >= ? THEN 1 END) AS emails_processed_today,
         (SELECT subject FROM package_emails ORDER BY received_at DESC LIMIT 1) AS last_email_subject,

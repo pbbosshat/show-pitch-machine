@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     const enriched: Record<string, ArticleEnrichment> = {};
 
     for (const id of ids) {
-      const row = queryOne<RawArticle>(
+      const row = await queryOne<RawArticle>(
         `SELECT headline, body, item_type, brief, production_company, buyer_name, buyer_company
          FROM trade_articles WHERE id = ?`,
         [id],
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       // Call LLM and cache result
       const result = await enrichArticle(row.headline, row.body, row.item_type);
 
-      run(
+      await run(
         `UPDATE trade_articles
          SET brief = ?, production_company = ?, buyer_name = ?, buyer_company = ?
          WHERE id = ?`,

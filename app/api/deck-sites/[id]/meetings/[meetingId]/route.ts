@@ -52,7 +52,7 @@ export async function PATCH(
     const { id: deckId, meetingId } = await params;
 
     // Verify the parent deck exists
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -62,7 +62,7 @@ export async function PATCH(
     }
 
     // Verify the meeting belongs to this deck before allowing edits
-    const existing = queryOne<{ id: string }>(
+    const existing = await queryOne<{ id: string }>(
       `SELECT id FROM deck_meetings WHERE id = ? AND deck_id = ?`,
       [meetingId, deckId]
     );
@@ -92,13 +92,13 @@ export async function PATCH(
     values.push(meetingId);
     values.push(deckId);
 
-    run(
+    await run(
       `UPDATE deck_meetings SET ${setClauses.join(', ')} WHERE id = ? AND deck_id = ?`,
       values
     );
 
     // Re-fetch with joined contact so the response shape matches the GET list endpoint
-    const row = queryOne<DeckMeetingRow & {
+    const row = await queryOne<DeckMeetingRow & {
       contact_id: string | null;
       contact_name: string | null;
       contact_title: string | null;
@@ -149,7 +149,7 @@ export async function DELETE(
     const { id: deckId, meetingId } = await params;
 
     // Verify the parent deck exists
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -159,7 +159,7 @@ export async function DELETE(
     }
 
     // Delete only if the meeting belongs to this deck (cross-deck safety guard)
-    const result = run(
+    const result = await run(
       `DELETE FROM deck_meetings WHERE id = ? AND deck_id = ?`,
       [meetingId, deckId]
     );

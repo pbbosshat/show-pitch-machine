@@ -31,7 +31,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const rows = query<DealWithContext>(
+    const rows = await query<DealWithContext>(
       `SELECT
         d.*,
         bc.name  AS buyer_name,
@@ -61,7 +61,7 @@ export async function POST(
     const body = await request.json();
 
     // Look up the prodco name so we can denormalize it into the deal row
-    const prodco = queryOne<ProductionCompany>(
+    const prodco = await queryOne<ProductionCompany>(
       'SELECT name FROM production_companies WHERE id = ?',
       [prodcoId]
     );
@@ -72,7 +72,7 @@ export async function POST(
     const dealId = crypto.randomUUID();
     const now = Date.now();
 
-    run(
+    await run(
       `INSERT INTO deals
         (id, show_id, show_title, network_id, network_name, buyer_id, buyer_name,
          prodco_id, prodco_name, deal_type, genre, format, deal_date,
