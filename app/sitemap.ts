@@ -20,27 +20,27 @@ const BASE_URL = 'https://www.myentertainment.tv';
 interface SlugRow { slug: string }
 
 // Safely query the DB — return empty array instead of crashing the sitemap on schema errors
-function safeQuery<T>(sql: string): T[] {
+async function safeQuery<T>(sql: string): Promise<T[]> {
   try {
-    return query<T>(sql);
+    return await query<T>(sql);
   } catch {
     return [];
   }
 }
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Pull all non-archived show slugs from the CMS table
-  const showRows = safeQuery<SlugRow>(
+  const showRows = await safeQuery<SlugRow>(
     "SELECT slug FROM site_shows WHERE status != 'archived' ORDER BY sort_order ASC, title ASC"
   );
 
   // Pull all genre slugs — the table is small and stable (6 genres seeded in 002_marketing.sql)
-  const genreRows = safeQuery<SlugRow>(
+  const genreRows = await safeQuery<SlugRow>(
     'SELECT slug FROM site_genres ORDER BY sort_order ASC'
   );
 
   // Pull any press release slugs that exist in the DB
-  const pressRows = safeQuery<SlugRow>(
+  const pressRows = await safeQuery<SlugRow>(
     'SELECT slug FROM press_releases ORDER BY published_at DESC LIMIT 100'
   );
 

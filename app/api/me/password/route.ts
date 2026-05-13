@@ -7,10 +7,10 @@ import { getSessionUser, ensureAuthSchema, verifyPassword, createPasswordHash, S
 import { queryOne, run } from '@/lib/db';
 
 export async function PATCH(request: NextRequest) {
-  ensureAuthSchema();
+  await ensureAuthSchema();
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  const sessionUser = token ? getSessionUser(token) : null;
+  const sessionUser = token ? await getSessionUser(token) : null;
   if (!sessionUser) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
