@@ -1,6 +1,16 @@
-// GET /api/marketing/content — get all site content key-value pairs
-// PATCH /api/marketing/content — update a single content key
-// Caller: Marketing CMS content editor page
+/**
+ * GET   /api/marketing/content
+ * PATCH /api/marketing/content
+ * Called by: Marketing CMS content editor page (browser, admin session)
+ * Auth: spm_session cookie (marketing layout enforces auth)
+ * PATCH body: { key: string, value: string }
+ * GET response: { data: SiteContentRow[] }
+ * PATCH response: { ok: true }
+ *
+ * Manages the site_content key-value store — homepage copy, GA4 property ID,
+ * and other configurable text that editors need to update without a deploy.
+ * PATCH is an upsert: creates the key if it doesn't exist.
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { query, run } from '@/lib/db';
 

@@ -1,4 +1,13 @@
-// PUT /api/marketing/genres/[id] — update a genre's name, description, and sort order
+/**
+ * PUT /api/marketing/genres/[id]
+ * Called by: Marketing CMS genres page (browser, admin session)
+ * Auth: spm_session cookie (marketing layout enforces auth)
+ * Body: { name: string, description: string }
+ * Response: { success: true, slug: string } | { error: string }
+ *
+ * Updates a genre's display name, slug (auto-derived from name), and description.
+ * Returns the regenerated slug so the caller can update its local state.
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { run, queryOne } from '@/lib/db';
 

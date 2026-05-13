@@ -1,8 +1,14 @@
-// GET /api/marketing/analytics
-// Returns GA4 metrics for the configured property (site.ga4_id in site_content).
-// Caller: /marketing dashboard server component
-// Auth: uses server-side OAuth token from token.json (analytics.readonly scope)
-// Response: { data: GASummary } | { data: null, reason: string }
+/**
+ * GET /api/marketing/analytics
+ * Called by: /marketing dashboard server component
+ * Auth: server-side OAuth token from token.json (analytics.readonly scope) — no user auth required
+ * Response: { data: GASummary } | { data: null, reason: 'no_property_id' | 'fetch_failed' }
+ *
+ * Returns GA4 metrics for the configured property. Property ID is read from
+ * site_content (key: site.ga4_id) with fallback to GA4_PROPERTY_ID env var.
+ * Returns { data: null } with a reason code rather than an error so the dashboard
+ * degrades gracefully when GA credentials are not configured.
+ */
 
 import { NextResponse } from 'next/server';
 import { queryOne } from '@/lib/db';

@@ -1,6 +1,17 @@
-// GET  /api/marketing/shows/[id] — fetch a single site_show by id
-// PUT  /api/marketing/shows/[id] — update all editable fields on a site_show
-// Caller: MarketingShowsClient (admin CMS), public /shows page server component
+/**
+ * GET /api/marketing/shows/[id]
+ * PUT /api/marketing/shows/[id]
+ * Called by: MarketingShowsClient (admin CMS browser session); public /shows page server component
+ * Auth: spm_session cookie (marketing layout enforces auth)
+ * PUT body: { title, tagline?, description?, genre?, network?, seasons?, episode_count?,
+ *             status?, image_url?, is_featured?, sort_order?, imdb_url?, production_hours? }
+ * GET response: { data: SiteShow }
+ * PUT response: { success: true, slug: string }
+ *
+ * Single-show CRUD. PUT regenerates the slug from the new title so the public
+ * URL stays consistent with the display name. Returns the new slug so the
+ * client can update navigation state without a refetch.
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { queryOne, run } from '@/lib/db';
 
