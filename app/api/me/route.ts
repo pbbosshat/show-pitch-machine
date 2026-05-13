@@ -7,14 +7,14 @@ import { getSessionUser, ensureAuthSchema, SESSION_COOKIE } from '@/lib/auth';
 import { run } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
-  ensureAuthSchema();
+  await ensureAuthSchema();
   const token = request.cookies.get(SESSION_COOKIE)?.value;
 
   if (!token) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const user = getSessionUser(token);
+  const user = await getSessionUser(token);
   if (!user) {
     return NextResponse.json({ error: 'Session expired or invalid' }, { status: 401 });
   }
@@ -23,9 +23,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  ensureAuthSchema();
+  await ensureAuthSchema();
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  const sessionUser = token ? getSessionUser(token) : null;
+  const sessionUser = token ? await getSessionUser(token) : null;
   if (!sessionUser) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }

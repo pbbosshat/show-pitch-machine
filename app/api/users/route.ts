@@ -85,9 +85,9 @@ function inviteEmailHtml(inviteeName: string, inviterName: string, setupUrl: str
 }
 
 export async function GET(request: NextRequest) {
-  ensureAuthSchema();
+  await ensureAuthSchema();
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  const caller = token ? getSessionUser(token) : null;
+  const caller = token ? await getSessionUser(token) : null;
   if (!caller || !isPrivileged(caller.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
@@ -112,9 +112,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  ensureAuthSchema();
+  await ensureAuthSchema();
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  const caller = token ? getSessionUser(token) : null;
+  const caller = token ? await getSessionUser(token) : null;
   if (!caller || !isPrivileged(caller.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     [userId, name, email, role, Date.now()]
   );
 
-  const inviteToken = createInviteToken(userId);
+  const inviteToken = await createInviteToken(userId);
   const origin = new URL(request.url).origin;
   const setupUrl = `${origin}/setup-account?token=${inviteToken}`;
 

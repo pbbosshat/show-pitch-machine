@@ -18,10 +18,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  ensureAuthSchema();
+  await ensureAuthSchema();
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  const caller = token ? getSessionUser(token) : null;
+  const caller = token ? await getSessionUser(token) : null;
   if (!caller || !isPrivileged(caller.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

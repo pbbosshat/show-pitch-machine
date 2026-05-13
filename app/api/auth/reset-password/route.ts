@@ -7,7 +7,7 @@ import { validateResetToken, clearResetToken, createPasswordHash, ensureAuthSche
 import { run } from '@/lib/db';
 
 export async function POST(request: Request) {
-  ensureAuthSchema();
+  await ensureAuthSchema();
 
   const body = await request.json().catch(() => ({}));
   const { token, newPassword } = body as { token?: string; newPassword?: string };
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
   }
 
-  const user = validateResetToken(token);
+  const user = await validateResetToken(token);
   if (!user) {
     return NextResponse.json({ error: 'Reset link is invalid or has expired' }, { status: 400 });
   }
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     'UPDATE team_users SET password_hash = ?, updated_at = ? WHERE id = ?',
     [createPasswordHash(newPassword), Date.now(), user.id]
   );
-  clearResetToken(user.id);
+  await clearResetToken(user.id);
 
   return NextResponse.json({ ok: true });
 }

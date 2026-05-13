@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const user = await queryOne<{ id: string }>('SELECT id FROM team_users WHERE lower(email) = lower(?)', [email]);
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-  const token = createSession(user.id);
+  const token = await createSession(user.id);
   // Use x-forwarded-host so the redirect goes back through Caddy (mye.local),
   // not the raw Next.js port (localhost:3000) which doesn't have SSL.
   const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'mye.local';

@@ -17,7 +17,7 @@ interface UserRow {
 
 export async function POST(request: NextRequest) {
   try {
-    ensureAuthSchema();
+    await ensureAuthSchema();
 
     const body = await request.json().catch(() => ({}));
     const { email, password } = body as Record<string, string>;
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
-    const token = createSession(user.id);
+    const token = await createSession(user.id);
     const response = NextResponse.json({
       ok: true,
       user: { id: user.id, name: user.name, email: user.email, role: user.role },

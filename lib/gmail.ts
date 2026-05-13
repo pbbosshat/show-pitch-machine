@@ -204,7 +204,7 @@ export async function getPipelineMessages(sinceDate?: Date): Promise<GmailMessag
   const messages = listRes.data.messages ?? [];
   if (messages.length === 0) return [];
 
-  const ingested = getIngestedThreadIds();
+  const ingested = await getIngestedThreadIds();
 
   const results: GmailMessage[] = [];
   for (const m of messages) {

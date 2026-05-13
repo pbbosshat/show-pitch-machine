@@ -17,7 +17,7 @@ import {
 import { run } from '@/lib/db';
 
 export async function POST(request: Request) {
-  ensureAuthSchema();
+  await ensureAuthSchema();
 
   const body = await request.json().catch(() => ({})) as {
     token?: string;
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
   }
 
-  const user = validateInviteToken(token);
+  const user = await validateInviteToken(token);
   if (!user) {
     return NextResponse.json({ error: 'Invite link is invalid or has expired' }, { status: 400 });
   }
@@ -45,10 +45,10 @@ export async function POST(request: Request) {
     'UPDATE team_users SET name = ?, password_hash = ?, updated_at = ? WHERE id = ?',
     [name, createPasswordHash(password), Date.now(), user.id]
   );
-  clearInviteToken(user.id);
+  await clearInviteToken(user.id);
 
   // Issue a session so the user lands directly on the dashboard
-  const sessionToken = createSession(user.id);
+  const sessionToken = await createSession(user.id);
   const res = NextResponse.json({ ok: true });
   res.cookies.set(SESSION_COOKIE, sessionToken, {
     httpOnly: true,
