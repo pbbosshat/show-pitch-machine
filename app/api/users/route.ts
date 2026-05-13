@@ -1,10 +1,28 @@
-// GET  /api/users — list all team members (owner/admin only)
-// POST /api/users — invite a new team member by email (owner/admin only)
-//
-// POST body: { email: string; name?: string; role?: 'owner'|'admin'|'exec' }
-// Creates a pending user record, generates a 72-hour invite token, and sends
-// a setup email via Gmail service account. The new user follows the link to
-// /setup-account?token=... to choose their name + password.
+/**
+ * GET /api/users
+ * Called by: Team management page in admin UI (browser, authenticated)
+ * Auth: spm_session cookie — owner or admin role required; returns 403 otherwise
+ * Response: { data: UserRow[] } — all team members with has_password and
+ *   pending_invite computed fields so the UI can show invite status
+ *
+ * Only owner/admin roles may list team members to prevent exec users from
+ * harvesting colleague email addresses.
+ */
+
+/**
+ * POST /api/users
+ * Called by: Invite-user form in admin UI (browser, authenticated owner/admin)
+ * Auth: spm_session cookie — owner or admin role required; returns 403 otherwise
+ * Body: { email: string; name?: string; role?: 'owner'|'admin'|'exec' }
+ * Response: { data: { id, name, email, role } } at 201 on success;
+ *   { data, warning, setupUrl } at 201 when email delivery fails (so admin can
+ *   share the setup link manually); { error } with 400/409 on validation failure
+ *
+ * Creates a pending user record, generates a 72-hour invite token, and emails
+ * the /setup-account?token=... link via Gmail service account. Role defaults to
+ * 'exec' when omitted or unrecognised. The invite email failing does NOT fail
+ * the request — the setupUrl is returned so the admin can share it another way.
+ */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'node:crypto';

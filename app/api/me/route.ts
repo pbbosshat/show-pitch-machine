@@ -1,6 +1,24 @@
-// GET /api/me — returns the current authenticated user from the session cookie.
-// PATCH /api/me — updates the current user's name. Body: { name: string }
-// Returns 401 if no valid session exists.
+/**
+ * GET /api/me
+ * Called by: App shell / nav bar on initial load (browser)
+ * Auth: spm_session cookie required — returns 401 if missing or expired
+ * Response: { data: { id, name, email, role } }
+ *
+ * Lightweight "who am I?" endpoint used to hydrate the client-side auth state
+ * after a page load. Returns the full session user shape so the UI can gate
+ * features on role without a separate profile fetch.
+ */
+
+/**
+ * PATCH /api/me
+ * Called by: Profile settings page (browser, authenticated)
+ * Auth: spm_session cookie required — returns 401 if missing or expired
+ * Body: { name: string }
+ * Response: { ok: true }
+ *
+ * Updates only the display name for the currently signed-in user. Password
+ * changes go through PATCH /api/me/password instead.
+ */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser, ensureAuthSchema, SESSION_COOKIE } from '@/lib/auth';

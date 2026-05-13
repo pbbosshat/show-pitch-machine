@@ -1,9 +1,15 @@
-// POST /api/auth/setup-account — consume a 72-hour invite token, set name + password,
-// and auto-log the user in by issuing a session cookie.
-//
-// Body: { token: string; name?: string; password: string }
-// On success: sets spm_session cookie + returns { ok: true }
-// On failure: returns { error } with 4xx status.
+/**
+ * POST /api/auth/setup-account
+ * Called by: Account setup form at /setup-account?token=... (browser, unauthenticated)
+ * Auth: none — authenticated by the one-time 72-hour invite token in the request body
+ * Body: { token: string; name?: string; password: string }
+ * Response: { ok: true } + sets httpOnly spm_session cookie on success;
+ *           { error } with 400/401 on bad token or validation failure
+ *
+ * Consumes the invite token (clears it to prevent reuse), sets the user's name
+ * and password, then immediately issues a session so the user lands on the
+ * dashboard without a separate login step.
+ */
 
 import { NextResponse } from 'next/server';
 import {

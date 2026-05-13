@@ -1,5 +1,16 @@
-// DEV ONLY — creates a session for local testing without a password.
-// Only active when NODE_ENV !== 'production'. Remove before deploying.
+/**
+ * GET /api/dev-session
+ * Called by: Local development only — browser shortcut or test script
+ * Auth: none — disabled in production (returns 404 when NODE_ENV === 'production')
+ * Query params: email (default: patrickbryant@gototeam.com), redirect (default: /decks)
+ * Response: HTTP redirect to `redirect` with spm_session cookie set
+ *
+ * Creates a real session for the specified user without requiring a password —
+ * eliminates the login round-trip during local development. Hard-gated by
+ * NODE_ENV so it cannot be activated on Railway even if the route file ships.
+ * Uses x-forwarded-host to redirect through Caddy (mye.local) rather than
+ * the raw Next.js port, keeping the session cookie's domain correct.
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { createSession, SESSION_COOKIE } from '@/lib/auth';
 import { queryOne } from '@/lib/db';

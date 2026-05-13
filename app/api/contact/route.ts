@@ -1,8 +1,29 @@
-// GET  /api/contact — list all contact leads (auth required)
-// POST /api/contact — submit a contact lead (public; accepts JSON or HTML form post)
-//
-// GET response:  { data: Lead[] }
-// POST response: { data: Lead } with status 201, or redirect to /contact?submitted=true for form posts
+/**
+ * GET /api/contact
+ * Called by: Leads dashboard page in admin UI (browser, authenticated)
+ * Auth: spm_session cookie required — returns 401 if missing or expired
+ * Response: { data: Lead[] } — all contact leads, newest-first, with show_title
+ *   joined from deck_sites when available_title_id is set
+ *
+ * Returns PII (name, email, company). Auth check MUST be awaited — getSessionUser
+ * is async and a non-awaited call returns a truthy Promise regardless of session
+ * validity, making this endpoint publicly readable.
+ */
+
+/**
+ * POST /api/contact
+ * Called by: Public contact form on myentertainment.tv (browser, unauthenticated);
+ *   also callable directly by bots or API consumers via JSON
+ * Auth: none — intentionally public
+ * Body (JSON): { first_name, last_name, email, message?, company?, available_title_id? }
+ * Body (form): same fields as application/x-www-form-urlencoded
+ * Response: { data: Lead } at 201, or HTTP redirect to /contact?submitted=true
+ *   for form posts (to support browsers with no JS)
+ *
+ * Persists the lead, then fires a notification email to leads_email (from
+ * site_settings) in fire-and-forget mode — mail failure must not block the
+ * 201 response visible to the submitter.
+ */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'node:crypto';
@@ -109,7 +130,10 @@ function leadNotificationHtml(lead: Lead, showTitle?: string): string {
 
 export async function GET(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  const caller = token ? getSessionUser(token) : null;
+  // Must await — getSessionUser returns Promise<SessionUser | null>.
+  // Without await, caller is a non-null Promise (always truthy), so !caller
+  // never fires and all PII leads are exposed to any request with any cookie.
+  const caller = token ? await getSessionUser(token) : null;
   if (!caller) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
