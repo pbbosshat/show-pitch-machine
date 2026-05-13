@@ -1,6 +1,15 @@
 /**
- * PATCH  /api/show-videos/[id] — update video_type, sort_order, or notes
- * DELETE /api/show-videos/[id] — unlink a video from a show
+ * PATCH  /api/show-videos/[id]
+ * DELETE /api/show-videos/[id]
+ * Called by: Vimeo Library admin page (browser, admin session)
+ * Auth: spm_session cookie (admin session required)
+ * PATCH body: { video_type?, sort_order?, notes? } — at least one field required
+ * PATCH response: updated show_videos row
+ * DELETE response: { deleted: true }
+ *
+ * PATCH does a partial update — only supplied fields are changed. Returns 400
+ * if no fields are provided. DELETE unlinks the video from the show without
+ * removing the vimeo_library row.
  */
 
 import { NextRequest, NextResponse } from 'next/server';

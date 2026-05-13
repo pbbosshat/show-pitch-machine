@@ -1,11 +1,18 @@
-// GET /api/marketing/shows — list public show listings
-// POST /api/marketing/shows — create a new show
-// Caller: Marketing CMS admin, public site pages
-// Auth: protected by marketing layout — no per-route auth check needed
-// GET response: { data: SiteShow[], total: number }
-// POST body: { title, tagline?, description?, genre?, network?, seasons?, episode_count?,
-//              status?, image_url?, is_featured?, sort_order? }
-// POST response: { id } with status 201
+/**
+ * GET  /api/marketing/shows
+ * POST /api/marketing/shows
+ * Called by: Marketing CMS admin page (browser, admin session); public site pages
+ * Auth: spm_session cookie (marketing layout enforces auth)
+ * GET query params: genre?, featured?, limit?
+ * POST body: { title, tagline?, description?, genre?, network?, seasons?, episode_count?,
+ *              status?, image_url?, is_featured?, sort_order? }
+ * GET response: { data: SiteShow[], total: number }
+ * POST response: { id } with status 201
+ *
+ * Manages site_shows — the marketing catalog of shows displayed on the public
+ * site. Slug is auto-derived from title on create. GET supports optional filters
+ * for genre, featured flag, and row limit.
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { query, run } from '@/lib/db';
 import { randomUUID } from 'node:crypto';

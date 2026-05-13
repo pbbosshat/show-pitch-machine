@@ -1,9 +1,15 @@
 /**
- * GET  /api/show-videos?ip_catalog_id=X   — list all videos linked to a show
- * POST /api/show-videos                    — link a video to a show
+ * GET  /api/show-videos?ip_catalog_id=X
+ * POST /api/show-videos
+ * Called by: Vimeo Library admin page (browser, admin session)
+ * Auth: spm_session cookie (admin session required)
+ * POST body: { vimeo_library_id, ip_catalog_id, video_type?, sort_order?, notes? }
+ * GET response: show_videos rows joined with vimeo_library metadata
+ * POST response: the created show_videos row with status 201
  *
- * Body for POST: { vimeo_library_id, ip_catalog_id, video_type?, sort_order?, notes? }
- * Response: the created show_videos row
+ * Manages show_videos — the join table between ip_catalog (shows) and
+ * vimeo_library (clips). GET requires ip_catalog_id query param. POST verifies
+ * both FK targets exist before inserting. Returns 409 on duplicate link.
  */
 
 import { NextRequest, NextResponse } from 'next/server';

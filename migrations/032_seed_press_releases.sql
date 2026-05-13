@@ -2,6 +2,12 @@
 -- Seed all 83 press releases from the previous Webflow site so
 -- /press-releases/{slug} URLs continue to resolve after the DNS cutover.
 --
+-- WHY DELETE+INSERT instead of upsert: the canonical 83-row set is the
+-- authoritative truth — any manually edited rows would be silently overwritten
+-- by an upsert anyway, so DELETE+INSERT makes that intent explicit. The
+-- schema_migrations tracker ensures this file runs exactly once on first apply,
+-- making the DELETE a no-op in practice on a fresh DB that hasn't diverged.
+--
 -- Idempotent: deletes any prior press_releases rows from any Webflow-source
 -- snapshot (some early local DBs labeled source as "MyEntertainment", later
 -- snapshots as "myentertainment.tv") and re-seeds the canonical 83 rows.

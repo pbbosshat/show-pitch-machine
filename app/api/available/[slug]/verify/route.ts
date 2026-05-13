@@ -1,12 +1,16 @@
-// POST /api/available/[slug]/verify
-// Public endpoint — checks whether a visitor's password matches the one set on an available title.
-//
-// Caller: public Available Title package page (no auth required).
-// Request body: { password: string }
-// Response:
-//   200 { ok: true }                       — correct password (or no password set)
-//   200 { ok: false, error: string }       — wrong password
-//   404 { error: 'Not found' }             — slug not found or title inactive
+/**
+ * POST /api/available/[slug]/verify
+ * Called by: public Available Title package page (buyer-facing, no auth required)
+ * Auth: none — public endpoint
+ * Body: { password: string }
+ * Response:
+ *   200 { ok: true }                  — correct password, or title has no password set
+ *   200 { ok: false, error: string }  — wrong password
+ *   404 { error: 'Not found' }        — slug not found or title inactive/unpublished
+ *
+ * Gate check for password-protected buyer-facing title pages. Inactive titles
+ * return 404 rather than 401 to avoid leaking that a slug exists.
+ */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { queryOne } from '@/lib/db';

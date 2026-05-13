@@ -11,10 +11,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-# NODE_OPTIONS=--experimental-sqlite was set when the app ran on node:sqlite.
-# After the Postgres migration the app uses node-postgres (`pg`); no flag needed.
-# The SQLite seed-migration script still uses node:sqlite, but it runs on a
-# developer machine (not inside this container), so the flag does not belong here.
 
 COPY package*.json ./
 RUN npm ci

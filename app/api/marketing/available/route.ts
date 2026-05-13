@@ -1,5 +1,17 @@
-// GET /api/marketing/available — list active decks for the catalog
-// POST /api/marketing/available — add a new deck/available title
+/**
+ * GET  /api/marketing/available
+ * POST /api/marketing/available
+ * Called by: Marketing CMS admin page (browser, admin session)
+ * Auth: spm_session cookie (marketing layout enforces auth)
+ * POST body: { title, slug?, genre?, rights_type?, markets?, seasons?, episode_count?,
+ *              runtime_mins?, description?, contact_email?, is_active?, sort_order?,
+ *              image_url?, vimeo_url?, password?, site_show_id?, status?, visibility? }
+ * GET response: { data: DeckSite[], total: number }
+ * POST response: { id } with status 201
+ *
+ * Manages the deck_sites table — each row is a buyer-facing available-title page
+ * (slug → /available/[slug]). Active rows appear in the public catalog.
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { query, run } from '@/lib/db';
 import { randomUUID } from 'node:crypto';

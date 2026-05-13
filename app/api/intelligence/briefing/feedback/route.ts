@@ -1,5 +1,9 @@
 /**
- * /api/intelligence/briefing/feedback
+ * POST   /api/intelligence/briefing/feedback
+ * DELETE /api/intelligence/briefing/feedback
+ * GET    /api/intelligence/briefing/feedback
+ * Called by: Intelligence briefing page (browser session, admin-authenticated)
+ * Auth: spm_session cookie (admin session required)
  *
  * POST — record user feedback on a briefing item (one record per article; upsert on re-flag)
  *   Body: { article_id: string, reason: string, headline?: string, source?: string }
@@ -13,6 +17,8 @@
  *   Response: { items: FeedbackRow[], summary: { reason: string, count: number }[] }
  *
  * Valid reasons: not_relevant | scripted | wrong_genre | in_pipeline | duplicate
+ * Feedback rows drive the intelligence filter-tuning workflow — flagged articles
+ * surface in the review panel so the relevance classifier can be updated.
  */
 
 import { NextResponse } from 'next/server';

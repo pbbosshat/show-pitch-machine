@@ -1,5 +1,15 @@
-// GET /api/marketing/press — list press releases
-// POST /api/marketing/press — create press release
+/**
+ * GET  /api/marketing/press
+ * POST /api/marketing/press
+ * Called by: Marketing CMS press page (browser, admin session)
+ * Auth: spm_session cookie (marketing layout enforces auth)
+ * POST body: { headline, excerpt?, body?, source?, source_url?, published_at?, is_featured? }
+ * GET response: { data: PressRelease[], total: number }
+ * POST response: { id } with status 201
+ *
+ * Manages the press_releases table. Slug is auto-derived from headline on create.
+ * Rows feed the public /press-releases page and individual /press-releases/[slug] pages.
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { query, run } from '@/lib/db';
 import { randomUUID } from 'node:crypto';

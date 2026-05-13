@@ -8,7 +8,7 @@
  *     show_videos?: ShowVideoRow[],     // join rows tying ip_catalog ↔ vimeo_library
  *   }
  *
- * Upserts scraped Vimeo metadata + show links into the production SQLite DB.
+ * Upserts scraped Vimeo metadata + show links into Postgres.
  * The Vimeo Library page reads directly from vimeo_library + show_videos, so
  * this is what populates the live /vimeo-library view after a local scrape.
  *
@@ -17,7 +17,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { run, queryOne } from '@/lib/db';
+import { queryOne, run } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 
 interface VimeoVideoRow {
@@ -82,7 +82,14 @@ export async function POST(request: NextRequest) {
   for (const v of videos) {
     if (!v.clip_id || !v.url || !v.title) continue;
 
-    const result = await run(
+    // Use RETURNING (xmax = 0) AS inserted to distinguish a real INSERT from
+    // an ON CONFLICT UPDATE. In Postgres, xmax = 0 means no prior row version
+    // exists (fresh INSERT); ON CONFLICT UPDATE sets xmax to the old row's
+    // transaction id (non-zero). This is the same pattern used by the articles
+    // route — see app/api/ingest/articles/route.ts for the rationale.
+    // The old `if (!v.id) videosInserted++` heuristic was wrong because Bang
+    // always sends v.id, so it always reported 0 new videos.
+    const row = await queryOne<{ inserted: boolean }>(
       `INSERT INTO vimeo_library
          (id, clip_id, hash, url, title, duration_sec, privacy,
           has_password, last_modified, drive_file_id, drive_url,
@@ -100,7 +107,8 @@ export async function POST(request: NextRequest) {
          drive_url       = COALESCE(excluded.drive_url,       vimeo_library.drive_url),
          backfill_status = COALESCE(excluded.backfill_status, vimeo_library.backfill_status),
          backfilled_at   = COALESCE(excluded.backfilled_at,   vimeo_library.backfilled_at),
-         size_bytes      = COALESCE(excluded.size_bytes,      vimeo_library.size_bytes)`,
+         size_bytes      = COALESCE(excluded.size_bytes,      vimeo_library.size_bytes)
+       RETURNING (xmax = 0) AS inserted`,
       [
         v.id ?? uuidv4(),
         v.clip_id,
@@ -119,8 +127,10 @@ export async function POST(request: NextRequest) {
       ]
     );
 
-    if (result.changes > 0) {
-      if (!v.id) videosInserted++; else videosUpdated++;
+    if (row?.inserted) {
+      videosInserted++;
+    } else {
+      videosUpdated++;
     }
   }
 

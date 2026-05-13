@@ -1,5 +1,16 @@
-// GET /api/marketing/genres — list site genres with show counts and show titles
-// PATCH /api/marketing/genres — bulk update sort_order for drag-and-drop reordering
+/**
+ * GET   /api/marketing/genres
+ * PATCH /api/marketing/genres
+ * Called by: Marketing CMS genres page (browser, admin session)
+ * Auth: spm_session cookie (marketing layout enforces auth)
+ * PATCH body: { orders: { id: string, sort_order: number }[] }
+ * GET response: { data: GenreWithCount[], total: number }
+ * PATCH response: { success: true }
+ *
+ * Manages the site_genres table. GET returns genres with their current show
+ * count and titles (joined from site_shows). PATCH accepts a bulk sort_order
+ * array to support drag-and-drop reordering from the CMS.
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { query, run } from '@/lib/db';
 

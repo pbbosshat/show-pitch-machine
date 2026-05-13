@@ -3,6 +3,14 @@
 -- tab can display external buying activity scores alongside live relationship
 -- scores computed from deals, packages, and touches.
 --
+-- WHY the intel seed values are hardcoded here (rather than in a separate seed
+-- script): buyer_companies rows are stable enough for LIKE-based name matching
+-- to work reliably for this one-shot backfill. A named migration guarantees
+-- the seed runs exactly once in dependency order — the data would otherwise
+-- land before the columns existed. Future intel updates should go through a
+-- standalone script writing to these columns directly, NOT via additional
+-- migrations (migrations are for schema changes, not routine data updates).
+--
 -- Postgres conversions: just `ADD COLUMN IF NOT EXISTS`; the UPDATE clauses
 -- have no SQLite-specific syntax.
 

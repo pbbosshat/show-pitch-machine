@@ -1,35 +1,14 @@
 // Database singleton — Railway Postgres via node-postgres (pg).
 //
-// History: the app shipped on node:sqlite with a single file under data/db.sqlite.
-// That file was baked into the Docker image at build time and lived on the container's
-// ephemeral disk, so every Railway redeploy wiped daily Bang syncs back to the May 4
-// seed snapshot. The fix is Postgres — the Railway addon is already provisioned and
-// the MCP server has been talking to it successfully since launch.
-//
 // ── Contract for callers (read this before writing query code) ───────────────
 // • Every helper is ASYNC. The pg driver has no sync API. Each call site MUST `await`.
-// • SQL placeholders use `?` exactly like the old node:sqlite API. This module
-//   rewrites them to Postgres-native `$1, $2, …` positionally inside the helpers.
-//   Callers can keep their existing `?` placeholders unchanged.
+// • SQL placeholders use `?`. This module rewrites them to Postgres-native `$1, $2, …`
+//   positionally inside the helpers — callers write `?` everywhere.
 // • `run()` returns `{ changes, lastInsertRowid }`. `lastInsertRowid` is only
-//   populated when the caller's SQL includes `RETURNING id` (Postgres has no
-//   implicit last-insert-id concept). Otherwise it is 0.
-// • `getDb()` still exists and returns the underlying `pg.Pool`. Callers that
-//   used `db.prepare(...)` against node:sqlite must be rewritten to use `query`,
-//   `queryOne`, or `run` instead — there is no sync prepared-statement API.
+//   populated when the caller's SQL includes `RETURNING id`. Otherwise it is 0.
 //
-// ── SQL portability the translator does NOT fix (Phase 1B must rewrite) ──────
-// • `INSERT OR IGNORE`        → `INSERT … ON CONFLICT DO NOTHING`
-// • `INSERT OR REPLACE`       → `INSERT … ON CONFLICT (cols) DO UPDATE SET …`
-// • `datetime('now')`         → `NOW()`
-// • `unixepoch()`             → `EXTRACT(EPOCH FROM NOW())::INTEGER`
-// • `unixepoch() * 1000`      → `(EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT`
-// • `strftime('%s','now')`    → `EXTRACT(EPOCH FROM NOW())::INTEGER`
-// • `randomblob(N)` / `hex()` → use `gen_random_uuid()` or generate IDs in JS
-// • FTS5 `MATCH`              → `search_vector @@ plainto_tsquery('english', ?)`
-// • SQLite `rowid`            → no equivalent; join on `id` instead
-// • Boolean coercion: 0/1 INTEGER columns stay numeric — pg returns numbers,
-//   not booleans, for those columns by design (we kept the type as INTEGER).
+// See docs/postgres-migration.md for the full SQL portability cheatsheet and
+// the list of patterns the placeholder translator does NOT fix.
 
 import { Pool, type QueryResult } from 'pg';
 
@@ -46,9 +25,9 @@ let _pool: Pool | null = null;
  * `${{Postgres.DATABASE_URL}}`. Local dev: copy DATABASE_URL from Railway or
  * point at a local Postgres.
  *
- * Exported because a handful of callsites (auth bootstrap, dev tooling) used
- * to call the old `getDb()` directly. Most code should go through query/
- * queryOne/run instead — those carry the `?` → `$N` placeholder translation.
+ * Most call sites should use query/queryOne/run — those carry the `?` → `$N`
+ * placeholder translation. getDb() is exported for the rare caller that needs
+ * direct pool access (auth bootstrap, dev tooling).
  */
 export function getDb(): Pool {
   if (_pool) return _pool;
@@ -101,23 +80,18 @@ export function getDb(): Pool {
 
 // ── Placeholder translator ───────────────────────────────────────────────────
 
-// Why this exists: the SQLite version of this module used `?` for every binding,
-// and there are hundreds of call sites across `app/`, `lib/`, and `scripts/`.
-// Forcing every call site to switch to `$1, $2, …` simultaneously would be a
-// huge diff and a huge merge-conflict surface. Translating inside the helpers
-// keeps the surface of Phase 1A small and lets Phase 1B touch routes one at a time.
+// Why this exists: call sites across app/, lib/, and scripts/ all use `?`
+// for parameter binding. Translating inside the helpers means callers never
+// need to learn Postgres-native `$N` numbering.
 //
-// Limits (document these in postgres-migration.md too):
+// Limits (full list in docs/postgres-migration.md):
 //   • Only literal `?` outside single-quoted string literals is rewritten.
 //     A `?` inside `'…?…'` is preserved verbatim.
-//   • Does NOT handle SQLite-style numeric placeholders (`?1`, `?2`) — we never
-//     used them in this codebase.
 //   • Does NOT handle PostgreSQL's `?` JSON operators (e.g. `jsonb ? key`).
-//     We don't use them currently. If we adopt JSONB ops later, escape with
-//     a literal `$1`-style placeholder instead and stop using `?` for binding
-//     in that statement.
-//   • Comments `--` and `/* … */` are NOT stripped — they could in theory
-//     contain `?` and would get rewritten. None of our SQL has `?` in comments.
+//     If we adopt JSONB ops, use `$1`-style placeholders directly in that
+//     statement instead of `?` for binding.
+//   • Comments `--` and `/* … */` are NOT stripped — a `?` inside a comment
+//     would be incorrectly counted. None of our SQL has `?` in comments.
 function translatePlaceholders(sql: string): string {
   let out = '';
   let i = 0;
