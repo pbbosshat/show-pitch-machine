@@ -25,7 +25,8 @@ type SourceFilter = Set<string>; // empty = show all
 
 interface BriefingResponse {
   data: BriefingItem[];
-  window: 'today' | '7days';
+  // Object shape matches the updated API contract — days chosen + epoch boundary
+  window: { days: number; sinceMs: number };
   sources: string[];
   total: number;
   skip_count: number;
@@ -267,6 +268,109 @@ function SourceDropdown({
                     {counts[src]}
                   </span>
                 )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Days Dropdown ────────────────────────────────────────────────────────────
+
+// Options the user can choose from. 1 = "Today" (the default / reset state).
+const DAYS_OPTIONS: { value: number; label: string }[] = [
+  { value: 1,  label: 'Today' },
+  { value: 2,  label: 'Last 2 days' },
+  { value: 3,  label: 'Last 3 days' },
+  { value: 7,  label: 'Last 7 days' },
+  { value: 14, label: 'Last 14 days' },
+];
+
+function DaysDropdown({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close when the user clicks outside the dropdown
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  // Accent background signals the user has deviated from the "Today" default
+  const isDefault = value === 1;
+  const currentLabel = DAYS_OPTIONS.find((o) => o.value === value)?.label ?? 'Today';
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold tracking-wide uppercase transition-colors"
+        style={{
+          background: !isDefault ? 'var(--accent)' : 'var(--bg-elevated)',
+          color: !isDefault ? '#fff' : 'var(--text-secondary)',
+          border: !isDefault ? '1px solid var(--accent)' : '1px solid var(--border-subtle)',
+          cursor: 'pointer',
+        }}
+      >
+        {currentLabel}
+        <svg
+          width="10" height="6" viewBox="0 0 10 6" fill="currentColor"
+          style={{ opacity: 0.7, transform: open ? 'rotate(180deg)' : undefined, transition: 'transform 0.15s' }}
+        >
+          <path d="M0 0l5 6 5-6z" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          className="absolute left-0 z-50 mt-1 rounded-lg border shadow-xl"
+          style={{
+            top: '100%',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            minWidth: '140px',
+          }}
+        >
+          {DAYS_OPTIONS.map((opt) => {
+            const selected = opt.value === value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => { onChange(opt.value); setOpen(false); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors text-left"
+                style={{
+                  color: selected ? 'var(--accent)' : 'var(--text-primary)',
+                  background: selected ? 'var(--bg-elevated)' : 'transparent',
+                  fontWeight: selected ? 600 : 400,
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = selected ? 'var(--bg-elevated)' : 'transparent'; }}
+              >
+                {/* Radio-style dot: filled when selected */}
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    border: selected ? '2px solid var(--accent)' : '2px solid var(--border-strong)',
+                    background: selected ? 'var(--accent)' : 'transparent',
+                    flexShrink: 0,
+                  }}
+                />
+                {opt.label}
               </button>
             );
           })}
@@ -543,6 +647,25 @@ export default function DailyBriefing() {
   const [hideNotRelevant, setHideNotRelevant] = useState(true);
   const [showFlagged, setShowFlagged] = useState(false);
 
+  // User-controlled look-back window. Persisted to localStorage so the selection
+  // survives page refreshes without needing a server-side preference store.
+  const [daysBack, setDaysBack] = useState<number>(1);
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem('briefing-days');
+      if (v) {
+        const n = parseInt(v, 10);
+        // Guard against stale out-of-range values in storage
+        if (n >= 1 && n <= 14) setDaysBack(n);
+      }
+    } catch { /* localStorage blocked in some embedded/private contexts — default stays */ }
+  }, []);
+
+  function handleDaysChange(n: number) {
+    setDaysBack(n);
+    try { localStorage.setItem('briefing-days', String(n)); } catch {}
+  }
+
   // In-session feedback map: article_id → reason. Persists across SWR refreshes.
   const [feedbackMap, setFeedbackMap] = useState<Map<string, FeedbackReason>>(new Map());
   // Enrichment overlay: article_id → live enrichment result (merged on top of DB values)
@@ -559,7 +682,8 @@ export default function DailyBriefing() {
     });
   }, []);
 
-  const apiUrl = `/api/intelligence/briefing${hideNotRelevant ? '' : '?include_skip=1'}`;
+  // daysBack drives the window; include_skip is additive on top of it
+  const apiUrl = `/api/intelligence/briefing?days=${daysBack}${hideNotRelevant ? '' : '&include_skip=1'}`;
 
   const { data, isLoading, error } = useSWR<BriefingResponse>(apiUrl, fetcher, {
     refreshInterval: 60_000,
@@ -568,7 +692,6 @@ export default function DailyBriefing() {
   const allItems = data?.data ?? [];
   const sources   = data?.sources ?? [];
   const skipCount = data?.skip_count ?? 0;
-  const window    = data?.window;
 
   // Count articles per source from the current API response (respects not-relevant toggle)
   const sourceCounts = useMemo(() => {
@@ -646,14 +769,6 @@ export default function DailyBriefing() {
           >
             Intelligence
           </h2>
-          {window === '7days' && (
-            <span
-              className="text-[11px] px-2 py-0.5 rounded"
-              style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
-            >
-              No scrapes today — showing last 7 days
-            </span>
-          )}
           {filtered.length > 0 && (
             <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
               {filtered.length} item{filtered.length !== 1 ? 's' : ''}
@@ -710,11 +825,14 @@ export default function DailyBriefing() {
         </div>
       </div>
 
-      {/* Filter bar */}
+      {/* Filter bar: type pills → days dropdown → divider → source dropdown */}
       <div className="flex items-center gap-2 flex-wrap">
         {TYPE_FILTERS.map(({ key, label }) => (
           <Pill key={key} label={label} active={typeFilter === key} onClick={() => setTypeFilter(key)} />
         ))}
+
+        {/* Date-range selector — user controls the look-back window explicitly */}
+        <DaysDropdown value={daysBack} onChange={handleDaysChange} />
 
         {sources.length > 0 && (
           <>
