@@ -43,9 +43,10 @@ interface SiteShow {
   sort_order: number;
 }
 
-function getShows(): SiteShow[] {
+// Async because query() returns a Promise in Postgres mode
+async function getShows(): Promise<SiteShow[]> {
   try {
-    const rows = query<SiteShow>(
+    const rows = await query<SiteShow>(
       "SELECT id, title, slug, image_url, imdb_url, status, sort_order FROM site_shows WHERE status != 'archived' ORDER BY sort_order ASC, title ASC LIMIT 200"
     );
     return JSON.parse(JSON.stringify(rows));
@@ -112,8 +113,8 @@ const breadcrumbSchema = {
   ],
 };
 
-export default function ShowsPage() {
-  const shows = getShows();
+export default async function ShowsPage() {
+  const shows = await getShows();
 
   return (
     <>

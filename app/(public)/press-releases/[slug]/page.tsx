@@ -96,7 +96,7 @@ function sanitizeBody(html: string | null): string {
  */
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
   try {
-    const rows = query<{ slug: string }>(
+    const rows = await query<{ slug: string }>(
       'SELECT slug FROM press_releases ORDER BY published_at DESC'
     );
     return rows.map((r) => ({ slug: r.slug }));
@@ -122,7 +122,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
 
-  const pr = queryOne<PressRelease>(
+  const pr = await queryOne<PressRelease>(
     'SELECT * FROM press_releases WHERE slug = ?',
     [slug]
   );
@@ -175,7 +175,7 @@ export default async function PressReleasePage({
   const { slug } = await params;
 
   // Primary lookup — notFound() triggers Next.js 404 response
-  const pr = queryOne<PressRelease>(
+  const pr = await queryOne<PressRelease>(
     'SELECT * FROM press_releases WHERE slug = ?',
     [slug]
   );
@@ -184,8 +184,7 @@ export default async function PressReleasePage({
 
   // Fetch 9 most-recent press releases, excluding the current article,
   // for the "related press releases" grid shown at the bottom of every detail page.
-  // This matches the Webflow design which shows 9 items in a 3-column grid.
-  const related = query<Pick<PressRelease, 'slug' | 'headline' | 'excerpt' | 'published_at'>>(
+  const related = await query<Pick<PressRelease, 'slug' | 'headline' | 'excerpt' | 'published_at'>>(
     `SELECT slug, headline, excerpt, published_at
      FROM press_releases
      WHERE slug != ?

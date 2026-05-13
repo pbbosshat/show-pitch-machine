@@ -30,7 +30,7 @@ export async function POST(
   const { slug } = await params;
 
   // Look up the deck by slug to get its gate password
-  const site = queryOne<DeckSite>(
+  const site = await queryOne<DeckSite>(
     `SELECT id, gate_password, visibility FROM deck_sites WHERE slug = ?`,
     [slug]
   );

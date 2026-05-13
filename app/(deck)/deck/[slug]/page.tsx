@@ -8,7 +8,7 @@
 //   internal → anyone can view (network-level restriction handled elsewhere)
 //   gated    → requires cookie deck-auth-{id} matching gate_password
 //
-// Data: reads directly from SQLite via query/queryOne (server component — no fetch round-trip).
+// Data: reads directly from Postgres via query/queryOne (server component — no fetch round-trip).
 
 import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
@@ -80,15 +80,17 @@ export default async function DeckPortalPage({
   const { gate_error } = await searchParams;
 
   // --- DB lookup (server component — direct access, no HTTP round-trip) ---
-  const site = queryOne<DeckSite>(
+  const siteRow = await queryOne<DeckSite>(
     `SELECT * FROM deck_sites WHERE slug = ?`,
     [slug]
   );
 
-  if (!site) notFound();
+  // notFound() throws internally but TS doesn't narrow undefined away — use explicit guard
+  if (!siteRow) notFound();
+  const site = siteRow!;
 
   // Slides in presentation order
-  const slides = query<DeckSlide>(
+  const slides = await query<DeckSlide>(
     `SELECT * FROM deck_slides WHERE deck_site_id = ? ORDER BY slide_order ASC`,
     [site.id]
   );

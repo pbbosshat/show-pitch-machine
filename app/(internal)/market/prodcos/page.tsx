@@ -8,8 +8,9 @@ import { query } from '@/lib/db';
 import type { ProductionCompany } from '@/types';
 
 export default async function ProdcosPage() {
-  // Spread into plain objects — SQLite returns null-prototype rows that Next.js can't serialize for Client Components
-  const prodcos = query<ProductionCompany>('SELECT * FROM production_companies ORDER BY name ASC').map(p => ({ ...p }));
+  // query() is async in Postgres mode — await it, then map to plain objects for RSC serialization
+  const prodcosRaw = await query<ProductionCompany>('SELECT * FROM production_companies ORDER BY name ASC');
+  const prodcos = prodcosRaw.map((p) => ({ ...p }));
 
   return (
     <div className="p-6 space-y-5">

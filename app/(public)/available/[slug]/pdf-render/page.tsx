@@ -29,8 +29,9 @@ export default async function AvailablePDFRenderPage(
 ) {
   const { slug } = await params;
 
-  initDb();
-  const rows = query<AvailableRow>(
+  // initDb and query are async in Postgres mode — must be awaited
+  await initDb();
+  const rows = await query<AvailableRow>(
     `SELECT id, title, slug, rights_type, genre, seasons, episode_count,
             runtime_mins, markets, description, contact_email, image_url, vimeo_url
      FROM deck_sites

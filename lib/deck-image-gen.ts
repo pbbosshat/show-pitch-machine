@@ -108,7 +108,7 @@ export async function generateSlideImages(
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   // ── Fetch deck metadata ─────────────────────────────────────────────────
-  const site = queryOne<DeckSite>(
+  const site = await queryOne<DeckSite>(
     'SELECT id, title FROM deck_sites WHERE id = ?',
     [deckId]
   );
@@ -121,7 +121,7 @@ export async function generateSlideImages(
   if (slideIds && slideIds.length > 0) {
     // Parameterised IN clause — build one ? per id
     const placeholders = slideIds.map(() => '?').join(', ');
-    slides = query<DeckSlide>(
+    slides = await query<DeckSlide>(
       `SELECT id, deck_site_id, slide_order, slide_image_path,
               section_label, heading, body
          FROM deck_slides
@@ -131,7 +131,7 @@ export async function generateSlideImages(
       [deckId, ...slideIds]
     );
   } else {
-    slides = query<DeckSlide>(
+    slides = await query<DeckSlide>(
       `SELECT id, deck_site_id, slide_order, slide_image_path,
               section_label, heading, body
          FROM deck_slides
@@ -193,7 +193,7 @@ export async function generateSlideImages(
       const dbAiPath = `/deck-assets/${deckId}/ai/slide_${slide.slide_order}.png`;
 
       // ── Persist to DB ─────────────────────────────────────────────────
-      run(
+      await run(
         'UPDATE deck_slides SET ai_image_path = ?, ai_prompt = ? WHERE id = ?',
         [dbAiPath, cinematicPrompt, slide.id]
       );

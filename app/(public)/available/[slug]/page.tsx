@@ -117,9 +117,10 @@ export interface SafeTitle {
 }
 
 // Fetch row helper — used by both generateMetadata and the page itself.
-function fetchRow(slug: string): AvailableRow | null {
-  initDb();
-  const rows = query<AvailableRow>(
+// Async because initDb() and query() are now Postgres-backed Promises.
+async function fetchRow(slug: string): Promise<AvailableRow | null> {
+  await initDb();
+  const rows = await query<AvailableRow>(
     `SELECT id, title, slug, rights_type, genre, seasons, episode_count,
             runtime_mins, markets, description, contact_email,
             image_url, vimeo_url, drive_file_id, gate_password AS password
@@ -135,7 +136,7 @@ export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> }
 ): Promise<Metadata> {
   const { slug } = await params;
-  const row = fetchRow(slug);
+  const row = await fetchRow(slug);
 
   if (!row) {
     return { title: 'Show Not Found | MyEntertainment' };
@@ -170,7 +171,7 @@ export default async function AvailablePackagePage(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const row = fetchRow(slug);
+  const row = await fetchRow(slug);
 
   if (!row) notFound();
 
@@ -178,7 +179,8 @@ export default async function AvailablePackagePage(
   // so they can preview pages from the backend without needing the password.
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get(SESSION_COOKIE)?.value ?? '';
-  const isAdmin = !!getSessionUser(sessionToken);
+  // getSessionUser is now async — must be awaited
+  const isAdmin = !!(await getSessionUser(sessionToken));
 
   // Strip the raw password — never send it to the browser.
   // has_password is false when no password is set OR when the viewer is an admin.

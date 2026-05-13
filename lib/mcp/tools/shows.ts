@@ -1,8 +1,12 @@
 // MCP tool handlers for show/market data queries.
-// Uses FTS5 for full-text search on shows and direct SQL for market order lookups.
-// FTS5 is faster and more relevant than LIKE queries for multi-word title searches.
+//
+// Full-text search uses Postgres tsvector/tsquery on the pre-built search_vector
+// GIN-indexed column (shows.search_vector). This replaces the SQLite FTS5 virtual
+// table + rowid JOIN pattern that no longer exists in the Postgres schema.
+//
+// Phase 1B: rewrote FTS5 → tsvector, dropped SQLite fallback shim, made async.
 
-import { query, getDb } from '../../db';
+import { query } from '../../db';
 import type { Show, MarketOrder } from '../../../types';
 
 interface ShowSearchFilters {
@@ -13,48 +17,48 @@ interface ShowSearchFilters {
   location_type?: string;
 }
 
-// FTS5-powered show search — supports partial title, genre, network, talent queries
-export function searchShows(
+/**
+ * Full-text search over the shows table using the pre-built search_vector column.
+ *
+ * search_vector is a GIN-indexed tsvector built from title + genre + network + talent.
+ * plainto_tsquery parses the caller's free-form query into a tsquery — it's lenient
+ * with punctuation and quote characters, so callers don't need to escape input.
+ *
+ * Caller: MCP tool 'search_shows' via lib/mcp/server.ts
+ * Auth: none — trust boundary is the MCP server
+ *
+ * @param searchQuery  Free-form text (title, genre, network, talent name)
+ * @param filters      Optional column-equality filters
+ * @returns Matching shows ordered by ts_rank relevance, max 25
+ */
+export async function searchShows(
   searchQuery: string,
   filters?: ShowSearchFilters
-): Show[] {
-  const db = getDb();
-
-  // FTS5 uses a JOIN pattern: match rowids from virtual table, fetch full rows
-  // This avoids duplicating columns between the fts and main table
+): Promise<Show[]> {
+  // Build the WHERE clause — start with the tsvector search condition.
+  // The search_vector column lives directly on shows; no join to a virtual table.
   let sql = `
-    SELECT s.*
+    SELECT s.*,
+           ts_rank(s.search_vector, plainto_tsquery('english', ?)) AS rank
     FROM shows s
-    JOIN shows_fts sf ON sf.rowid = s.rowid
-    WHERE shows_fts MATCH ?
+    WHERE s.search_vector @@ plainto_tsquery('english', ?)
   `;
-  const params: unknown[] = [searchQuery];
+  // plainto_tsquery is used twice: once for ORDER BY rank, once for WHERE.
+  // We pass the same query value twice so the ? translator maps them to $1, $2.
+  const params: unknown[] = [searchQuery, searchQuery];
 
-  // Append column filters as exact-match WHERE clauses on the main table
-  if (filters?.genre) { sql += ' AND s.genre = ?'; params.push(filters.genre); }
-  if (filters?.network) { sql += ' AND s.network = ?'; params.push(filters.network); }
-  if (filters?.status) { sql += ' AND s.status = ?'; params.push(filters.status); }
-  if (filters?.format) { sql += ' AND s.format = ?'; params.push(filters.format); }
+  // Append exact-match column filters (genre, network, etc.)
+  if (filters?.genre)         { sql += ' AND s.genre = ?';         params.push(filters.genre); }
+  if (filters?.network)       { sql += ' AND s.network = ?';       params.push(filters.network); }
+  if (filters?.status)        { sql += ' AND s.status = ?';        params.push(filters.status); }
+  if (filters?.format)        { sql += ' AND s.format = ?';        params.push(filters.format); }
   if (filters?.location_type) { sql += ' AND s.location_type = ?'; params.push(filters.location_type); }
 
-  // FTS5 ranks by BM25 relevance by default; limit to 25 to keep responses scannable
-  sql += ' ORDER BY rank LIMIT 25';
+  // ts_rank: higher = more relevant. Cap at 25 to keep MCP responses scannable.
+  sql += ' ORDER BY rank DESC LIMIT 25';
 
-  try {
-    return query<Show>(sql, params);
-  } catch {
-    // FTS5 MATCH throws on invalid syntax (e.g. bare quotes) — fall back to LIKE
-    const fallbackSql = `
-      SELECT s.*
-      FROM shows s
-      WHERE s.title LIKE ?
-         OR s.genre LIKE ?
-         OR s.network LIKE ?
-      LIMIT 25
-    `;
-    const likeParam = `%${searchQuery}%`;
-    return query<Show>(fallbackSql, [likeParam, likeParam, likeParam]);
-  }
+  // Surface DB errors as-is — the MCP server wraps tool calls in its own handler
+  return query<Show>(sql, params);
 }
 
 interface MarketOrderFilters {
@@ -65,8 +69,16 @@ interface MarketOrderFilters {
   buyer_company_id?: string;
 }
 
-// Market order query — what's been ordered recently by whom, filtered by buyer/genre/format
-export function getMarketOrders(filters?: MarketOrderFilters): Array<MarketOrder & { company_name: string | null }> {
+/**
+ * Return recent market orders, optionally filtered by buyer/genre/format/date.
+ *
+ * Caller: MCP tool 'get_market_orders'
+ * Auth: none
+ * Returns: market_orders rows joined to buyer_companies.name for display
+ */
+export async function getMarketOrders(
+  filters?: MarketOrderFilters
+): Promise<Array<MarketOrder & { company_name: string | null }>> {
   let sql = `
     SELECT mo.*, bc.name AS company_name
     FROM market_orders mo
@@ -75,12 +87,14 @@ export function getMarketOrders(filters?: MarketOrderFilters): Array<MarketOrder
   `;
   const params: unknown[] = [];
 
-  if (filters?.network) { sql += ' AND mo.network = ?'; params.push(filters.network); }
-  if (filters?.genre) { sql += ' AND mo.genre = ?'; params.push(filters.genre); }
-  if (filters?.format) { sql += ' AND mo.format = ?'; params.push(filters.format); }
-  if (filters?.since_date) { sql += ' AND mo.order_date >= ?'; params.push(filters.since_date); }
+  // Dynamic filter clauses — only the provided keys are appended
+  if (filters?.network)          { sql += ' AND mo.network = ?';          params.push(filters.network); }
+  if (filters?.genre)            { sql += ' AND mo.genre = ?';            params.push(filters.genre); }
+  if (filters?.format)           { sql += ' AND mo.format = ?';           params.push(filters.format); }
+  if (filters?.since_date)       { sql += ' AND mo.order_date >= ?';      params.push(filters.since_date); }
   if (filters?.buyer_company_id) { sql += ' AND mo.buyer_company_id = ?'; params.push(filters.buyer_company_id); }
 
+  // Most-recent orders first; NULLS LAST keeps orders without a date at the bottom
   sql += ' ORDER BY mo.order_date DESC NULLS LAST LIMIT 50';
 
   return query<MarketOrder & { company_name: string | null }>(sql, params);

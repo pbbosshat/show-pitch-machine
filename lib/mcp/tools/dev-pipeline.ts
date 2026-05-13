@@ -8,6 +8,8 @@
 //     archived, passes, brainstorms.
 //   • project_email_threads links Gmail threads to ip_catalog rows (many-to-many).
 //   • story_scout rows link to projects via project_banner (free-text, LIKE match).
+//
+// Phase 1B: made all exported functions async, added await to query/queryOne calls.
 
 import { query, queryOne } from '../../db';
 
@@ -180,16 +182,16 @@ function formatPipelineRow(row: PipelineRow): string {
  * sheet_source and formatted for quick pipeline review.
  *
  * Caller (MCP): Claude via the show-pitch-machine MCP server.
- * Auth: none — local SQLite, trust boundary is the machine.
+ * Auth: none — Postgres, trust boundary is the Railway internal network.
  *
  * Optional filters:
  *   sheet_source — restrict to one sheet tab (e.g. "priorities")
  *   status       — filter by ip_catalog.status
  */
-export function getDevelopmentPipeline(filters: {
+export async function getDevelopmentPipeline(filters: {
   sheet_source?: string;
   status?: string;
-} = {}): string {
+} = {}): Promise<string> {
   // Build the WHERE clause dynamically based on optional filters
   const conditions: string[] = ['ip.sheet_row_key IS NOT NULL'];
   const params: unknown[] = [];
@@ -205,7 +207,7 @@ export function getDevelopmentPipeline(filters: {
 
   const whereClause = conditions.join(' AND ');
 
-  const rows = query<PipelineRow>(
+  const rows = await query<PipelineRow>(
     `SELECT
        ip.id, ip.title, ip.status, ip.sheet_source, ip.sheet_status,
        ip.sheet_point_person, ip.sheet_target_nets, ip.sheet_pitched_to,
@@ -261,15 +263,15 @@ export function getDevelopmentPipeline(filters: {
  * Accepts a partial title (LIKE search) so callers don't need to know the exact title.
  *
  * Caller (MCP): Claude via the show-pitch-machine MCP server.
- * Auth: none — local SQLite.
+ * Auth: none — Postgres, trust boundary is the Railway internal network.
  *
  * @param projectName - Partial or full project title to search for (case-insensitive)
  */
-export function getProjectTimeline(projectName: string): string {
+export async function getProjectTimeline(projectName: string): Promise<string> {
   // Wrap with % for substring LIKE match; UPPER() ensures case-insensitive search
   const likePattern = `%${projectName}%`;
 
-  const project = queryOne<IpCatalogFull>(
+  const project = await queryOne<IpCatalogFull>(
     `SELECT * FROM ip_catalog
      WHERE sheet_row_key IS NOT NULL
        AND UPPER(title) LIKE UPPER(?)
@@ -285,13 +287,13 @@ export function getProjectTimeline(projectName: string): string {
   }
 
   // ── Sizzle reels for this project ──────────────────────────────────────────
-  const sizzles = query<SizzleReelRow>(
+  const sizzles = await query<SizzleReelRow>(
     `SELECT * FROM sizzle_reels WHERE ip_catalog_id = ?`,
     [project.id]
   );
 
   // ── Email threads — full history sorted newest first ────────────────────────
-  const threads = query<EmailThread>(
+  const threads = await query<EmailThread>(
     `SELECT * FROM project_email_threads
      WHERE ip_catalog_id = ?
      ORDER BY first_message_date DESC`,
@@ -300,7 +302,7 @@ export function getProjectTimeline(projectName: string): string {
 
   // ── Story scout rows linked to this project ─────────────────────────────────
   // project_banner is free-text so we use a LIKE match on the project title
-  const scouts = query<StoryScoutRow>(
+  const scouts = await query<StoryScoutRow>(
     `SELECT * FROM story_scout
      WHERE LOWER(project_banner) LIKE LOWER(?)`,
     [likePattern]
@@ -409,10 +411,10 @@ export function getProjectTimeline(projectName: string): string {
  *   2. CONFIRMED EXISTS — sizzles with raw_value set but no vimeo_url yet
  *
  * Caller (MCP): Claude via the show-pitch-machine MCP server.
- * Auth: none — local SQLite.
+ * Auth: none — Postgres, trust boundary is the Railway internal network.
  */
-export function getSizzleInventory(): string {
-  const sizzles = query<SizzleReelRow>(
+export async function getSizzleInventory(): Promise<string> {
+  const sizzles = await query<SizzleReelRow>(
     `SELECT
        sr.*,
        COUNT(pet.id)                AS email_thread_count,

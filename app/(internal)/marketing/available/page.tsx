@@ -9,10 +9,11 @@ import { initDb } from '@/lib/db';
 import AvailableClient from './AvailableClient';
 import type { AvailableTitle } from './AvailableClient';
 
-function getTitles(): AvailableTitle[] {
+// Async because initDb() and query() are now Postgres-backed Promises
+async function getTitles(): Promise<AvailableTitle[]> {
   try {
-    initDb();
-    const rows = query<AvailableTitle>(
+    await initDb();
+    const rows = await query<AvailableTitle>(
       'SELECT *, gate_password AS password FROM deck_sites ORDER BY is_active DESC, sort_order ASC, title ASC LIMIT 200'
     );
     return JSON.parse(JSON.stringify(rows));
@@ -21,8 +22,8 @@ function getTitles(): AvailableTitle[] {
   }
 }
 
-export default function MarketingAvailable() {
-  const titles = getTitles();
+export default async function MarketingAvailable() {
+  const titles = await getTitles();
   return (
     <div className="p-8 max-w-7xl">
       <div className="mb-6">

@@ -43,8 +43,9 @@ interface ShowDeal {
 
 // ─── Data fetching — direct DB queries ───────────────────────────────────────
 
-function fetchShow(id: string): ShowDetail | null {
-  return queryOne<ShowDetail>(
+// Async because queryOne() returns a Promise in Postgres mode
+async function fetchShow(id: string): Promise<ShowDetail | null> {
+  return await queryOne<ShowDetail>(
     `SELECT s.*,
             bc.name  AS network_company_name,
             bc.type  AS network_company_type,
@@ -60,7 +61,7 @@ function fetchShow(id: string): ShowDetail | null {
   ) ?? null;
 }
 
-function fetchBuyers(networkId: string | null): ShowBuyer[] {
+async function fetchBuyers(networkId: string | null): Promise<ShowBuyer[]> {
   if (!networkId) return [];
   return query<ShowBuyer>(
     `SELECT id, name, title, activity_status, orders_last_365_days
@@ -72,7 +73,7 @@ function fetchBuyers(networkId: string | null): ShowBuyer[] {
   );
 }
 
-function fetchDeals(showId: string): ShowDeal[] {
+async function fetchDeals(showId: string): Promise<ShowDeal[]> {
   return query<ShowDeal>(
     `SELECT d.id, d.deal_type, d.deal_date, d.buyer_name, d.prodco_name, d.source, d.source_url
      FROM deals d
@@ -98,7 +99,7 @@ interface ArticleLink {
 // Fetches trade articles linked to this show via entity_article_links.
 // entity_type = 'show' scopes to the show dimension.
 // Capped at 20 most-recent articles.
-function fetchArticles(showId: string): ArticleLink[] {
+async function fetchArticles(showId: string): Promise<ArticleLink[]> {
   return query<ArticleLink>(
     `SELECT ta.id, ta.headline, ta.url, ta.source, ta.item_type, ta.scraped_at,
             eal.auto_applied, eal.applied_field
@@ -111,7 +112,7 @@ function fetchArticles(showId: string): ArticleLink[] {
   );
 }
 
-function fetchSimilar(showId: string, networkId: string | null, genre: string | null): Show[] {
+async function fetchSimilar(showId: string, networkId: string | null, genre: string | null): Promise<Show[]> {
   return query<Show>(
     `SELECT id, title, network, air_status, total_seasons, genre
      FROM shows
@@ -227,14 +228,17 @@ function Stat({ label, value }: { label: string; value: string | number | null |
 
 export default async function ShowDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const show = fetchShow(id);
+  const show = await fetchShow(id);
   if (!show) notFound();
 
   const s = show;
-  const buyers = fetchBuyers(s.network_id ?? null);
-  const deals  = fetchDeals(id);
-  const similar = fetchSimilar(id, s.network_id ?? null, s.genre ?? null);
-  const articles = fetchArticles(id);
+  // Run remaining queries in parallel now that show is available
+  const [buyers, deals, similar, articles] = await Promise.all([
+    fetchBuyers(s.network_id ?? null),
+    fetchDeals(id),
+    fetchSimilar(id, s.network_id ?? null, s.genre ?? null),
+    fetchArticles(id),
+  ]);
   const premiereYear = year(s.premiere_date);
   const offAirYear   = year(s.off_air_date);
 

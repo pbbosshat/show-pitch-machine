@@ -145,18 +145,18 @@ export async function captureCanvaSlides(
       //     ON deck_slides(deck_site_id, slide_order);
       // Until that index exists in migrations, we use SELECT-then-INSERT/UPDATE
       // to avoid relying on the ON CONFLICT clause.
-      const existing = queryOne<DeckSlideRow>(
+      const existing = await queryOne<DeckSlideRow>(
         'SELECT id FROM deck_slides WHERE deck_site_id = ? AND slide_order = ?',
         [deckId, i]
       );
 
       if (existing) {
-        run('UPDATE deck_slides SET slide_image_path = ? WHERE id = ?', [
+        await run('UPDATE deck_slides SET slide_image_path = ? WHERE id = ?', [
           dbImgPath,
           existing.id,
         ]);
       } else {
-        run(
+        await run(
           `INSERT INTO deck_slides
              (id, deck_site_id, slide_order, slide_image_path, created_at)
            VALUES (?, ?, ?, ?, ?)`,
@@ -175,7 +175,7 @@ export async function captureCanvaSlides(
     }
 
     // ── Update deck_sites metadata ─────────────────────────────────────────
-    run(
+    await run(
       'UPDATE deck_sites SET slide_count = ?, updated_at = ? WHERE id = ?',
       [capturedCount, now(), deckId]
     );

@@ -6,27 +6,26 @@ import MarketingShowsClient, { type SiteShow, type DeckLink } from '@/components
 import Link from 'next/link';
 import { query } from '@/lib/db';
 
-function getShows(): SiteShow[] {
+// Async because query() returns a Promise in Postgres mode
+async function getShows(): Promise<SiteShow[]> {
   try {
-    const rows = query<SiteShow>('SELECT * FROM site_shows ORDER BY sort_order ASC, title ASC LIMIT 200');
-    // node:sqlite returns null-prototype objects; JSON round-trip makes them plain for RSC serialization
+    const rows = await query<SiteShow>('SELECT * FROM site_shows ORDER BY sort_order ASC, title ASC LIMIT 200');
     return JSON.parse(JSON.stringify(rows));
   } catch { return []; }
 }
 
-// Fetch all available_titles that are linked to a site_show so we can display deck chips on each card.
-function getDeckLinks(): DeckLink[] {
+// Fetch all available_titles that are linked to a site_show for deck chips on each card.
+async function getDeckLinks(): Promise<DeckLink[]> {
   try {
-    const rows = query<DeckLink>(
+    const rows = await query<DeckLink>(
       'SELECT id, title, slug, site_show_id FROM deck_sites WHERE site_show_id IS NOT NULL'
     );
     return JSON.parse(JSON.stringify(rows));
   } catch { return []; }
 }
 
-export default function MarketingShows() {
-  const shows = getShows();
-  const deckLinks = getDeckLinks();
+export default async function MarketingShows() {
+  const [shows, deckLinks] = await Promise.all([getShows(), getDeckLinks()]);
 
   // Group deck links by site_show_id so each card can look up its linked packages in O(1)
   const decksByShowId: Record<string, DeckLink[]> = {};

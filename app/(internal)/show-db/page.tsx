@@ -10,11 +10,10 @@ import type { Show } from '@/types';
 
 // Fetch all shows ordered so MYE-produced shows appear first, then by most recent greenlit date.
 // This runs server-side at request time (no caching needed — local SQLite is fast).
-function fetchShows(): Show[] {
+// Async because query() returns a Promise in Postgres mode
+async function fetchShows(): Promise<Show[]> {
   try {
-    // node:sqlite rows have null prototypes — JSON roundtrip converts them to plain objects
-    // so Next.js can serialize them across the server→client boundary.
-    const rows = query<Show>(
+    const rows = await query<Show>(
       `SELECT * FROM shows ORDER BY is_our_show DESC, greenlit_date DESC NULLS LAST`
     );
     return JSON.parse(JSON.stringify(rows));
@@ -23,8 +22,8 @@ function fetchShows(): Show[] {
   }
 }
 
-export default function ShowsPage() {
-  const shows = fetchShows();
+export default async function ShowsPage() {
+  const shows = await fetchShows();
   return (
     <div className="p-6 space-y-5">
       {/* ShowDbClient owns all interactivity — search, filters, sort, column selector, edit modal */}

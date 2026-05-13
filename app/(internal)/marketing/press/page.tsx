@@ -6,14 +6,15 @@ import { query } from '@/lib/db';
 
 interface PressRelease { id: string; headline: string; source: string; published_at: number; is_featured: number; }
 
-function getPress(): PressRelease[] {
+// Async because query() returns a Promise in Postgres mode
+async function getPress(): Promise<PressRelease[]> {
   try {
-    return query<PressRelease>('SELECT * FROM press_releases ORDER BY published_at DESC, created_at DESC');
+    return await query<PressRelease>('SELECT * FROM press_releases ORDER BY published_at DESC, created_at DESC');
   } catch { return []; }
 }
 
-export default function MarketingPress() {
-  const releases = getPress();
+export default async function MarketingPress() {
+  const releases = await getPress();
   return (
     <div className="p-8 max-w-4xl">
       <div className="flex items-center justify-between mb-6">

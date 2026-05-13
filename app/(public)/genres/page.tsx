@@ -133,13 +133,14 @@ const breadcrumbSchema = {
   ],
 };
 
-export default function GenresPage() {
-  const genresRaw = query<SiteGenre>(
+export default async function GenresPage() {
+  // Both query calls are awaited — Postgres mode returns Promises
+  const genresRaw = await query<SiteGenre>(
     `SELECT id, name, slug, sort_order FROM site_genres ORDER BY sort_order ASC, name ASC`
   );
   const genres = JSON.parse(JSON.stringify(genresRaw)) as SiteGenre[];
 
-  const showsRaw = query<SiteShow>(
+  const showsRaw = await query<SiteShow>(
     `SELECT title, slug, image_url, imdb_url, genre
      FROM site_shows
      WHERE status = 'active' AND image_url IS NOT NULL
