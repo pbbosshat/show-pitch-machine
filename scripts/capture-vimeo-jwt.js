@@ -103,8 +103,19 @@ class CdpSession {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
+// Close a CDP tab via HTTP. /json/close/<id> only accepts GET in older Chrome
+// builds and PUT in 147+; we try both and silently ignore failures.
+async function closeTab(id) {
+  for (const method of ['GET', 'PUT']) {
+    try { await httpJson(`${CDP_URL}/json/close/${id}`, method); return; } catch {}
+  }
+}
+
 async function main() {
-  // 1. Reach CDP and pick or create a Vimeo tab
+  // 1. Reach CDP. We always open a FRESH tab instead of reusing existing
+  // vimeo.com tabs — the SPA gets into a stuck state after repeated reloads
+  // (empty body, navigation no-ops, no api.vimeo.com calls) and there's no
+  // reliable in-page recovery. A fresh tab always loads cleanly.
   let tabs;
   try { tabs = await listTabs(); }
   catch (e) {
@@ -112,13 +123,8 @@ async function main() {
     process.exit(3);
   }
 
-  let target = tabs.find(t => t.type === 'page' && /vimeo\.com/.test(t.url));
-  if (!target) {
-    log('no vimeo.com tab found, opening one');
-    target = await newTab('https://vimeo.com/manage/videos');
-  } else {
-    log(`reusing tab ${target.id} on ${target.url}`);
-  }
+  log(`opening fresh vimeo.com/manage/videos tab`);
+  const target = await newTab('https://vimeo.com/manage/videos');
 
   // 2. Attach and enable Network domain so we can see Authorization headers
   const cdp = new CdpSession(target.webSocketDebuggerUrl);
@@ -141,29 +147,24 @@ async function main() {
     });
   });
 
-  // 3. Trigger a hard reload to force a fresh batch of api.vimeo.com requests.
-  // For SPAs that navigated client-side, the existing tab's URL may already
-  // match the target — Page.navigate is then a no-op and the network listener
-  // never fires. Page.reload(ignoreCache:true) is the reliable trigger and
-  // works regardless of starting URL.
-  if (!/vimeo\.com\/manage/.test(target.url)) {
-    await cdp.send('Page.navigate', { url: 'https://vimeo.com/manage/videos' });
-    // Give the navigation 1.5s to commit, then reload to be sure the API
-    // request fires even if the navigate landed on a fast cached SSR page.
-    await new Promise(r => setTimeout(r, 1500));
-  }
-  await cdp.send('Page.reload', { ignoreCache: true });
+  // 3. New tab is already navigating to /manage/videos from the newTab call.
+  // No explicit Page.navigate or reload needed — the initial page load fires
+  // 20+ api.vimeo.com requests with the session JWT in the Authorization
+  // header within the first few seconds.
 
   try {
     const jwt = await jwtPromise;
-    // Strip the leading "jwt " — backfill script adds it back via env value.
     // Print the full header so callers can `JWT="$value"` directly.
     process.stdout.write(jwt);
     cdp.close();
+    // Clean up the tab we opened so the user doesn't end up with 100+ open
+    // vimeo tabs after a long backfill. Best-effort — failure is non-fatal.
+    await closeTab(target.id);
     process.exit(0);
   } catch (e) {
     console.error(`ERROR: ${e.message}`);
     cdp.close();
+    await closeTab(target.id);
     process.exit(4);
   }
 }
