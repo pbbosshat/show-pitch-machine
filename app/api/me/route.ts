@@ -37,7 +37,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'name is required' }, { status: 400 });
   }
 
-  run(
+  await run(
     'UPDATE team_users SET name = ?, updated_at = ? WHERE id = ?',
     [name.trim(), Date.now(), sessionUser.id]
   );

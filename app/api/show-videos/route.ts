@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const ipId = new URL(request.url).searchParams.get('ip_catalog_id') || '';
     if (!ipId) return NextResponse.json({ error: 'ip_catalog_id required' }, { status: 400 });
 
-    const rows = query<{
+    const rows = await query<{
       id: string;
       vimeo_library_id: string;
       ip_catalog_id: string;
@@ -52,20 +52,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify both exist
-    const vid = queryOne('SELECT id FROM vimeo_library WHERE id = ?', [vimeo_library_id]);
+    const vid = await queryOne('SELECT id FROM vimeo_library WHERE id = ?', [vimeo_library_id]);
     if (!vid) return NextResponse.json({ error: 'vimeo_library entry not found' }, { status: 404 });
 
-    const show = queryOne('SELECT id FROM ip_catalog WHERE id = ?', [ip_catalog_id]);
+    const show = await queryOne('SELECT id FROM ip_catalog WHERE id = ?', [ip_catalog_id]);
     if (!show) return NextResponse.json({ error: 'ip_catalog entry not found' }, { status: 404 });
 
     const id = crypto.randomUUID();
-    run(
+    await run(
       `INSERT INTO show_videos (id, ip_catalog_id, vimeo_library_id, video_type, sort_order, notes)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [id, ip_catalog_id, vimeo_library_id, video_type, sort_order, notes]
     );
 
-    const row = queryOne('SELECT * FROM show_videos WHERE id = ?', [id]);
+    const row = await queryOne('SELECT * FROM show_videos WHERE id = ?', [id]);
     return NextResponse.json(JSON.parse(JSON.stringify(row)), { status: 201 });
   } catch (err) {
     const msg = (err as Error).message;

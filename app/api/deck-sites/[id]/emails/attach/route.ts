@@ -39,7 +39,7 @@ export async function POST(
     const { id: deckId } = await params;
 
     // Verify the parent deck exists before attaching emails to it
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -55,7 +55,7 @@ export async function POST(
     }
 
     // Verify the email exists before trying to update it
-    const email = queryOne<{ id: string }>(
+    const email = await queryOne<{ id: string }>(
       `SELECT id FROM package_emails WHERE id = ?`,
       [body.emailId]
     );
@@ -66,7 +66,7 @@ export async function POST(
 
     // Link the email to this deck. attachment_source = 'manual' marks it as
     // user-initiated so it is not later overwritten by the AI classifier.
-    run(
+    await run(
       `UPDATE package_emails
           SET deck_id           = ?,
               buyer_contact_id  = ?,
@@ -75,7 +75,7 @@ export async function POST(
       [deckId, body.buyer_contact_id ?? null, body.emailId]
     );
 
-    const updated = queryOne<EmailRow>(
+    const updated = await queryOne<EmailRow>(
       `SELECT * FROM package_emails WHERE id = ?`,
       [body.emailId]
     );

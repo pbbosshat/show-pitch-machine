@@ -55,11 +55,12 @@ interface ScrapedArticle {
   scraped_at: number;
 }
 
-// Persist scraped articles into trade_articles and update scraper tracking tables
-function persistResults(source: string, runId: string, articles: ScrapedArticle[]) {
+// Persist scraped articles into trade_articles and update scraper tracking tables.
+// Async because pg.Pool has no synchronous API.
+async function persistResults(source: string, _runId: string, articles: ScrapedArticle[]) {
   for (const article of articles) {
     // Upsert by URL so re-runs don't create duplicates
-    run(
+    await run(
       `INSERT INTO trade_articles (id, source, url, headline, body, item_type, scraped_at, embedded)
        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
        ON CONFLICT(url) DO UPDATE SET
@@ -72,7 +73,7 @@ function persistResults(source: string, runId: string, articles: ScrapedArticle[
   }
 
   // Update the source status table with latest run stats
-  run(
+  await run(
     `INSERT INTO scraper_source_status (source, last_run_at, last_success_at, last_items, consecutive_failures)
      VALUES (?, ?, ?, ?, 0)
      ON CONFLICT(source) DO UPDATE SET
@@ -84,14 +85,15 @@ function persistResults(source: string, runId: string, articles: ScrapedArticle[
   );
 }
 
-// Mark a scraper run as failed and increment consecutive_failures counter
-function markRunFailed(source: string, runId: string, errMsg: string) {
-  run(
+// Mark a scraper run as failed and increment consecutive_failures counter.
+// Async because pg.Pool has no synchronous API.
+async function markRunFailed(source: string, runId: string, errMsg: string) {
+  await run(
     `UPDATE scraper_runs SET status='error', completed_at=?, error_msg=? WHERE id=?`,
     [Date.now(), errMsg.slice(0, 1000), runId]
   );
 
-  run(
+  await run(
     `INSERT INTO scraper_source_status (source, last_run_at, consecutive_failures)
      VALUES (?, ?, 1)
      ON CONFLICT(source) DO UPDATE SET
@@ -165,7 +167,7 @@ export async function POST(request: NextRequest) {
     for (const source of sources) {
       const id = uuidv4();
       runIds[source] = id;
-      run(
+      await run(
         `INSERT INTO scraper_runs (id, source, started_at, status, items_found) VALUES (?, ?, ?, 'running', 0)`,
         [id, source, Date.now()]
       );
@@ -189,11 +191,11 @@ export async function POST(request: NextRequest) {
           const elapsed = Date.now() - start;
 
           if (error) {
-            markRunFailed(source, runId, error);
+            await markRunFailed(source, runId, error);
             emit({ source, status: 'error', items: 0, error, elapsed });
           } else {
-            persistResults(source, runId, articles);
-            run(
+            await persistResults(source, runId, articles);
+            await run(
               `UPDATE scraper_runs SET status='success', completed_at=?, items_found=? WHERE id=?`,
               [Date.now(), articles.length, runId]
             );
@@ -223,13 +225,14 @@ export async function POST(request: NextRequest) {
   for (const source of sources) {
     const id = uuidv4();
     runIds.push(id);
-    run(
+    await run(
       `INSERT INTO scraper_runs (id, source, started_at, status, items_found) VALUES (?, ?, ?, 'running', 0)`,
       [id, source, Date.now()]
     );
   }
 
-  // Fire scrapers in background — don't await so the HTTP response returns immediately
+  // Fire scrapers in background — don't await so the HTTP response returns immediately.
+  // Background IIFE must also await its db calls since pg.Pool is async.
   (async () => {
     for (let i = 0; i < sources.length; i++) {
       const source = sources[i];
@@ -237,10 +240,10 @@ export async function POST(request: NextRequest) {
       const { articles, error } = await runScraper(source);
 
       if (error) {
-        markRunFailed(source, runId, error);
+        await markRunFailed(source, runId, error);
       } else {
-        persistResults(source, runId, articles);
-        run(
+        await persistResults(source, runId, articles);
+        await run(
           `UPDATE scraper_runs SET status='success', completed_at=?, items_found=? WHERE id=?`,
           [Date.now(), articles.length, runId]
         );

@@ -49,7 +49,7 @@ export async function PUT(
     const { id: deckId, slideId } = await params;
 
     // Verify parent deck exists
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -90,12 +90,12 @@ export async function PUT(
     values.push(slideId);
     values.push(deckId);
 
-    run(
+    await run(
       `UPDATE deck_slides SET ${setClauses.join(', ')} WHERE id = ? AND deck_site_id = ?`,
       values
     );
 
-    const updated = queryOne<DeckSlide>(
+    const updated = await queryOne<DeckSlide>(
       `SELECT * FROM deck_slides WHERE id = ?`,
       [slideId]
     );
@@ -114,7 +114,7 @@ export async function DELETE(
     const { id: deckId, slideId } = await params;
 
     // Verify the parent deck exists before touching child rows
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -124,7 +124,7 @@ export async function DELETE(
     }
 
     // Delete only if the slide belongs to this deck (prevents cross-deck deletion)
-    const result = run(
+    const result = await run(
       `DELETE FROM deck_slides WHERE id = ? AND deck_site_id = ?`,
       [slideId, deckId]
     );
@@ -135,7 +135,7 @@ export async function DELETE(
 
     // Keep deck_sites.slide_count in sync after removing a slide
     const now = Date.now() / 1000 | 0;
-    run(
+    await run(
       `UPDATE deck_sites
           SET slide_count = (SELECT COUNT(*) FROM deck_slides WHERE deck_site_id = ?),
               updated_at  = ?

@@ -46,7 +46,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const row = queryOne<PackageRow>(
+    const row = await queryOne<PackageRow>(
       `SELECT
         pkg.*,
         ip.title  AS ip_title,
@@ -110,7 +110,7 @@ export async function PUT(
     values.push(Date.now());
     values.push(id);
 
-    const result = run(
+    const result = await run(
       `UPDATE packages SET ${fields.join(', ')} WHERE id = ?`,
       values
     );

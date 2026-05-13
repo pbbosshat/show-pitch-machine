@@ -26,7 +26,7 @@ export async function GET(
     const { id } = await params;
 
     // Full show row with joined network company name and both prodco names
-    const row = queryOne<Show & {
+    const row = await queryOne<Show & {
       network_company_name: string | null;
       network_company_type: string | null;
       network_company_tier: string | null;
@@ -53,7 +53,7 @@ export async function GET(
     }
 
     // Active buyer contacts at this show's network — the people who actually commission shows there
-    const buyers = row.network_id ? query<{
+    const buyers = row.network_id ? await query<{
       id: string; name: string; title: string | null;
       activity_status: string; orders_last_365_days: number;
     }>(
@@ -66,7 +66,7 @@ export async function GET(
     ) : [];
 
     // Deal records connecting this show to buyers and prodcos (from trade scraping)
-    const deals = query<{
+    const deals = await query<{
       id: string; deal_type: string | null; deal_date: number | null;
       buyer_name: string | null; prodco_name: string | null; source: string | null; source_url: string | null;
     }>(
@@ -130,7 +130,7 @@ export async function PUT(
     values.push(Date.now());
     values.push(id);
 
-    const result = run(
+    const result = await run(
       `UPDATE shows SET ${fields.join(', ')} WHERE id = ?`,
       values
     );

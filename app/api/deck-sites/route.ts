@@ -64,7 +64,7 @@ function slugify(title: string): string {
 
 export async function GET() {
   try {
-    const rows = query<DeckSite>(
+    const rows = await query<DeckSite>(
       `SELECT * FROM deck_sites ORDER BY created_at DESC`
     );
 
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    run(
+    await run(
       `INSERT INTO deck_sites
          (id, slug, title, subtitle, logline, canva_url, genre, format,
           ep_count, network_target, ep_name, status, visibility, gate_password,
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       ]
     );
 
-    const created = queryOne<DeckSite>(
+    const created = await queryOne<DeckSite>(
       `SELECT * FROM deck_sites WHERE id = ?`,
       [id]
     );

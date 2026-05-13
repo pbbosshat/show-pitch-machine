@@ -21,7 +21,7 @@ export async function PATCH(
     const { id } = await params;
 
     // Confirm the prodco exists before attempting the update
-    const exists = queryOne<{ id: string }>(
+    const exists = await queryOne<{ id: string }>(
       'SELECT id FROM production_companies WHERE id = ?',
       [id]
     );
@@ -40,7 +40,7 @@ export async function PATCH(
       // Empty or missing body is fine — we just use the default verified_by
     }
 
-    const result = run(
+    const result = await run(
       `UPDATE production_companies
        SET is_verified = 1,
            verified_at = ?,

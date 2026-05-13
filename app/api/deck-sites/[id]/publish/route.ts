@@ -38,7 +38,7 @@ export async function POST(
   try {
     const { id } = await params;
 
-    const existing = queryOne<{ id: string }>(
+    const existing = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [id]
     );
@@ -49,12 +49,12 @@ export async function POST(
 
     const now = Date.now() / 1000 | 0;
 
-    run(
+    await run(
       `UPDATE deck_sites SET status = 'published', updated_at = ? WHERE id = ?`,
       [now, id]
     );
 
-    const updated = queryOne<DeckSite>(
+    const updated = await queryOne<DeckSite>(
       `SELECT * FROM deck_sites WHERE id = ?`,
       [id]
     );

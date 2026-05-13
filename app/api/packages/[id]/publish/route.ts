@@ -43,7 +43,7 @@ export async function POST(
   try {
     const { id } = await params;
 
-    const pkg = queryOne<PackageForPublish>(
+    const pkg = await queryOne<PackageForPublish>(
       `SELECT
         pkg.id,
         pkg.status,
@@ -70,14 +70,14 @@ export async function POST(
     const portalId = uuidv4();
     const now = Date.now();
 
-    run(
+    await run(
       `INSERT INTO pitch_portals (id, package_id, slug, sent_at, sent_to, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [portalId, id, slug, now, pkg.buyer_name || null, now]
     );
 
     // Advance pipeline stage to 'sent' and record when we entered it
-    run(
+    await run(
       `UPDATE packages
        SET status = 'sent', pipeline_stage = 'sent', stage_entered_at = ?, days_in_stage = 0, updated_at = ?
        WHERE id = ?`,

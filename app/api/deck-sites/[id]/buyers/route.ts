@@ -189,7 +189,7 @@ export async function POST(
     const now = Date.now() / 1000 | 0;
     const id  = crypto.randomUUID();
 
-    run(
+    await run(
       `INSERT INTO deck_buyers (id, deck_id, buyer_contact_id, sent_at, pipeline_stage, notes, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [

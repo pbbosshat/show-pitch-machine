@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const users = query<{
+  const users = await query<{
     id: string;
     name: string;
     email: string;
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Valid email is required' }, { status: 400 });
   }
 
-  const existing = queryOne<{ id: string }>('SELECT id FROM team_users WHERE email = ?', [email]);
+  const existing = await queryOne<{ id: string }>('SELECT id FROM team_users WHERE email = ?', [email]);
   if (existing) {
     return NextResponse.json({ error: 'A user with that email already exists' }, { status: 409 });
   }
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
   const name = body.name?.trim() || email;
   const userId = randomBytes(16).toString('hex');
 
-  run(
+  await run(
     'INSERT INTO team_users (id, name, email, role, created_at) VALUES (?, ?, ?, ?, ?)',
     [userId, name, email, role, Date.now()]
   );

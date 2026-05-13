@@ -4,7 +4,7 @@
  * Auth: INGEST_API_KEY in Authorization: Bearer header
  * Body: { articles: TradeArticle[] }
  *
- * Upserts classified trade articles into the local SQLite database.
+ * Upserts classified trade articles into Postgres.
  * Bang runs the full scrape + reclassify pipeline locally and pushes
  * the enriched results here so the Intelligence page stays current.
  *
@@ -12,10 +12,15 @@
  * classification columns (relevance_tier, signal_type, etc.) set by
  * Bang's reclassify.ts step. Existing rows are updated on URL conflict
  * so re-pushes are safe (idempotent).
+ *
+ * Counter accuracy: uses RETURNING (xmax = 0) AS inserted so we can
+ * distinguish a true INSERT from an ON CONFLICT UPDATE without relying
+ * on whether Bang sent an id field (Bang always sends ids, so the old
+ * `if (!a.id)` heuristic always reported 0 new — that was the bug).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { run } from '@/lib/db';
+import { queryOne } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 
 interface TradeArticle {
@@ -67,7 +72,13 @@ export async function POST(request: NextRequest) {
   for (const a of articles) {
     if (!a.url) continue;
 
-    const result = run(
+    // Use RETURNING (xmax = 0) AS inserted to distinguish a real INSERT from an
+    // ON CONFLICT UPDATE. In Postgres, xmax = 0 means no prior version exists,
+    // i.e. this was a fresh row. ON CONFLICT UPDATE sets xmax to the old row's
+    // transaction id (non-zero), so the boolean reliably separates insert vs update.
+    // This fixes the bug where Bang always sends a.id, causing the old
+    // `if (!a.id) inserted++` heuristic to always report 0 new articles.
+    const row = await queryOne<{ inserted: boolean }>(
       `INSERT INTO trade_articles
          (id, source, url, headline, body, item_type, format_type,
           relevance_tier, tier_reason, signal_type, scraped_at,
@@ -85,7 +96,8 @@ export async function POST(request: NextRequest) {
          brief            = COALESCE(excluded.brief, trade_articles.brief),
          production_company = COALESCE(excluded.production_company, trade_articles.production_company),
          buyer_name       = COALESCE(excluded.buyer_name, trade_articles.buyer_name),
-         buyer_company    = COALESCE(excluded.buyer_company, trade_articles.buyer_company)`,
+         buyer_company    = COALESCE(excluded.buyer_company, trade_articles.buyer_company)
+       RETURNING (xmax = 0) AS inserted`,
       [
         a.id ?? uuidv4(),
         a.source ?? null,
@@ -105,12 +117,11 @@ export async function POST(request: NextRequest) {
       ]
     );
 
-    // SQLite upsert: changes=1 for insert, changes=1 for update — distinguish via lastInsertRowid
-    // When ON CONFLICT fires, lastInsertRowid is the existing row's rowid (no new insert).
-    // Track by whether the id already existed: if we provided an id and changes=1, it could be either.
-    // Simplest: count changes toward inserted vs updated based on whether we used a generated id.
-    if (result.changes > 0) {
-      if (!a.id) inserted++; else updated++;
+    // Postgres returns xmax = 0 as boolean true for a fresh INSERT
+    if (row?.inserted) {
+      inserted++;
+    } else {
+      updated++;
     }
   }
 

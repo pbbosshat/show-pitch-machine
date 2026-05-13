@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Reset link is invalid or has expired' }, { status: 400 });
   }
 
-  run(
+  await run(
     'UPDATE team_users SET password_hash = ?, updated_at = ? WHERE id = ?',
     [createPasswordHash(newPassword), Date.now(), user.id]
   );

@@ -50,14 +50,16 @@ export async function POST(request: Request) {
       );
     }
 
-    run(
+    // Use EXTRACT(EPOCH...) instead of SQLite's strftime('%s','now') for the
+    // ON CONFLICT update path — keeps created_at consistent with the initial insert.
+    await run(
       `INSERT INTO briefing_feedback (article_id, reason, headline, source)
        VALUES (?, ?, ?, ?)
        ON CONFLICT(article_id) DO UPDATE SET
          reason     = excluded.reason,
          headline   = excluded.headline,
          source     = excluded.source,
-         created_at = CAST(strftime('%s', 'now') AS INTEGER) * 1000`,
+         created_at = (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT`,
       [article_id, reason, headline, source],
     );
 
@@ -76,7 +78,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'article_id is required' }, { status: 400 });
     }
 
-    run('DELETE FROM briefing_feedback WHERE article_id = ?', [article_id]);
+    await run('DELETE FROM briefing_feedback WHERE article_id = ?', [article_id]);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
@@ -85,14 +87,14 @@ export async function DELETE(request: Request) {
 
 export async function GET() {
   try {
-    const items = query<FeedbackRow>(
+    const items = await query<FeedbackRow>(
       `SELECT id, article_id, reason, headline, source, created_at
        FROM briefing_feedback
        ORDER BY created_at DESC
        LIMIT 500`,
     );
 
-    const summary = query<{ reason: string; count: number }>(
+    const summary = await query<{ reason: string; count: number }>(
       `SELECT reason, COUNT(*) AS count
        FROM briefing_feedback
        GROUP BY reason

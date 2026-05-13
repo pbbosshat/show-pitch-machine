@@ -112,7 +112,7 @@ export async function POST(
       // UPDATE — patch whichever fields the caller supplied
       slideId = existing.id;
 
-      run(
+      await run(
         `UPDATE deck_slides
          SET
            slide_image_path = COALESCE(?, slide_image_path),
@@ -140,7 +140,7 @@ export async function POST(
       // INSERT — create a new slide row
       slideId = crypto.randomUUID();
 
-      run(
+      await run(
         `INSERT INTO deck_slides
            (id, deck_site_id, slide_order, slide_image_path, ai_image_path,
             ai_prompt, section_label, section_type, heading, body, stats_json, created_at)
@@ -162,7 +162,7 @@ export async function POST(
       );
 
       // Keep deck_sites.slide_count in sync after inserting a new slide
-      run(
+      await run(
         `UPDATE deck_sites
          SET slide_count = (SELECT COUNT(*) FROM deck_slides WHERE deck_site_id = ?),
              updated_at  = ?
@@ -171,7 +171,7 @@ export async function POST(
       );
     }
 
-    const slide = queryOne<DeckSlide>(
+    const slide = await queryOne<DeckSlide>(
       `SELECT * FROM deck_slides WHERE id = ?`,
       [slideId]
     );

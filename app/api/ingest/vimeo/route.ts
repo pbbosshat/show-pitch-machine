@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
   for (const v of videos) {
     if (!v.clip_id || !v.url || !v.title) continue;
 
-    const result = run(
+    const result = await run(
       `INSERT INTO vimeo_library
          (id, clip_id, hash, url, title, duration_sec, privacy,
           has_password, last_modified, drive_file_id, drive_url,
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
 
     let vimeoLibraryId = sv.vimeo_library_id ?? null;
     if (!vimeoLibraryId && sv.clip_id) {
-      const row = queryOne<{ id: string }>(
+      const row = await queryOne<{ id: string }>(
         'SELECT id FROM vimeo_library WHERE clip_id = ?',
         [sv.clip_id]
       );
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
     }
     if (!vimeoLibraryId) { linksSkipped++; continue; }
 
-    const result = run(
+    const result = await run(
       `INSERT INTO show_videos
          (id, ip_catalog_id, vimeo_library_id, video_type, sort_order, notes)
        VALUES (?, ?, ?, ?, ?, ?)

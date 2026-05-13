@@ -19,12 +19,12 @@ export async function DELETE(
 
   const { id } = await params;
 
-  const existing = queryOne<{ id: string }>('SELECT id FROM contact_leads WHERE id = ?', [id]);
+  const existing = await queryOne<{ id: string }>('SELECT id FROM contact_leads WHERE id = ?', [id]);
   if (!existing) {
     return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
   }
 
-  const { changes } = run('DELETE FROM contact_leads WHERE id = ?', [id]);
+  const { changes } = await run('DELETE FROM contact_leads WHERE id = ?', [id]);
 
   if (changes === 0) {
     return NextResponse.json({ error: 'Lead not found' }, { status: 404 });

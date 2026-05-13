@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
   const name = body.name?.trim() || user.name;
 
-  run(
+  await run(
     'UPDATE team_users SET name = ?, password_hash = ?, updated_at = ? WHERE id = ?',
     [name, createPasswordHash(password), Date.now(), user.id]
   );

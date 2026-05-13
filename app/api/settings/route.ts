@@ -29,14 +29,14 @@ export async function GET(request: NextRequest) {
   const key = searchParams.get('key');
 
   if (key) {
-    const row = queryOne<SettingRow>('SELECT key, value FROM site_settings WHERE key = ?', [key]);
+    const row = await queryOne<SettingRow>('SELECT key, value FROM site_settings WHERE key = ?', [key]);
     if (!row) {
       return NextResponse.json({ error: 'Setting not found' }, { status: 404 });
     }
     return NextResponse.json({ data: { key: row.key, value: row.value } });
   }
 
-  const rows = query<SettingRow>('SELECT key, value FROM site_settings ORDER BY key ASC');
+  const rows = await query<SettingRow>('SELECT key, value FROM site_settings ORDER BY key ASC');
   const data: Record<string, string> = {};
   for (const row of rows) {
     data[row.key] = row.value;
@@ -58,7 +58,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'key and value are required' }, { status: 400 });
   }
 
-  run(
+  await run(
     `INSERT INTO site_settings (key, value, updated_at) VALUES (?, ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
     [key, value, Date.now()]

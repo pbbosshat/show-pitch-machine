@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-    const rows = query<ProductionCompany>(
+    const rows = await query<ProductionCompany>(
       `SELECT * FROM production_companies ${where} ORDER BY name ASC`,
       values
     );
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     const nameNormalized = body.name.trim().toLowerCase();
 
     try {
-      run(
+      await run(
         `INSERT INTO production_companies
           (id, name, name_normalized, ownership_type, parent_company, genres, strategic_tag, notes, website, hq_city, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

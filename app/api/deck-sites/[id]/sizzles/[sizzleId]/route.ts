@@ -44,7 +44,7 @@ export async function PATCH(
     const { id: deckId, sizzleId } = await params;
 
     // Verify the parent deck exists
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -85,12 +85,12 @@ export async function PATCH(
     values.push(sizzleId);
     values.push(deckId);
 
-    run(
+    await run(
       `UPDATE deck_sizzles SET ${setClauses.join(', ')} WHERE id = ? AND deck_id = ?`,
       values
     );
 
-    const updated = queryOne<DeckSizzle>(
+    const updated = await queryOne<DeckSizzle>(
       `SELECT id, deck_id, vimeo_url, title, password, sort_order, created_at
          FROM deck_sizzles WHERE id = ?`,
       [sizzleId]
@@ -110,7 +110,7 @@ export async function DELETE(
     const { id: deckId, sizzleId } = await params;
 
     // Verify the parent deck exists
-    const deck = queryOne<{ id: string }>(
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -120,7 +120,7 @@ export async function DELETE(
     }
 
     // Delete only if the row belongs to this deck (prevents cross-deck deletion)
-    const result = run(
+    const result = await run(
       `DELETE FROM deck_sizzles WHERE id = ? AND deck_id = ?`,
       [sizzleId, deckId]
     );

@@ -1,6 +1,11 @@
 // GET /api/marketing/shows — list public show listings
 // POST /api/marketing/shows — create a new show
 // Caller: Marketing CMS admin, public site pages
+// Auth: protected by marketing layout — no per-route auth check needed
+// GET response: { data: SiteShow[], total: number }
+// POST body: { title, tagline?, description?, genre?, network?, seasons?, episode_count?,
+//              status?, image_url?, is_featured?, sort_order? }
+// POST response: { id } with status 201
 import { NextRequest, NextResponse } from 'next/server';
 import { query, run } from '@/lib/db';
 import { randomUUID } from 'node:crypto';
@@ -19,7 +24,7 @@ export async function GET(req: NextRequest) {
     sql += ' ORDER BY sort_order ASC, title ASC LIMIT ?';
     params.push(limit);
 
-    const data = query(sql, params);
+    const data = await query(sql, params);
     return NextResponse.json({ data, total: data.length });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
@@ -32,7 +37,7 @@ export async function POST(req: NextRequest) {
     const id = randomUUID();
     const now = Math.floor(Date.now() / 1000);
     const slug = body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    run(
+    await run(
       'INSERT INTO site_shows (id, title, slug, tagline, description, genre, network, seasons, episode_count, status, image_url, is_featured, sort_order, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       [id, body.title, slug, body.tagline ?? null, body.description ?? null, body.genre ?? null, body.network ?? null, body.seasons ?? null, body.episode_count ?? null, body.status ?? 'active', body.image_url ?? null, body.is_featured ? 1 : 0, body.sort_order ?? 0, now, now]
     );

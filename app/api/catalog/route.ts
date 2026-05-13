@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    const rows = query<IpCatalog>(
+    const rows = await query<IpCatalog>(
       `SELECT * FROM ip_catalog ${whereClause} ORDER BY title ASC`,
       params
     );

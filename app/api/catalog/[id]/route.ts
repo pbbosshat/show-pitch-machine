@@ -23,7 +23,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const row = queryOne<IpCatalog>(
+    const row = await queryOne<IpCatalog>(
       `SELECT * FROM ip_catalog WHERE id = ?`,
       [id]
     );
@@ -66,7 +66,7 @@ export async function PUT(
     values.push(Date.now());
     values.push(id);
 
-    const result = run(
+    const result = await run(
       `UPDATE ip_catalog SET ${fields.join(', ')} WHERE id = ?`,
       values
     );
