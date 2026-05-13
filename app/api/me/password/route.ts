@@ -1,6 +1,15 @@
-// PATCH /api/me/password — change the current user's password.
-// Requires a valid session cookie. Verifies the current password before updating.
-// Body: { currentPassword?: string; newPassword: string }
+/**
+ * PATCH /api/me/password
+ * Called by: Change-password form on the profile/settings page (browser, authenticated)
+ * Auth: spm_session cookie required — returns 401 if missing or expired
+ * Body: { currentPassword?: string; newPassword: string }
+ * Response: { ok: true } on success; { error } with 400/401 on validation failure
+ *
+ * currentPassword is optional only for users who have never set a password (i.e.
+ * their password_hash is NULL — a new invite-setup path that skips password entry).
+ * For users who already have a password, currentPassword is required and verified
+ * before the new hash is stored.
+ */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser, ensureAuthSchema, verifyPassword, createPasswordHash, SESSION_COOKIE } from '@/lib/auth';

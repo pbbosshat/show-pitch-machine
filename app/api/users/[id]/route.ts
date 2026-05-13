@@ -1,10 +1,15 @@
-// DELETE /api/users/[id] — remove a team member (owner/admin only)
-//
-// Rules enforced server-side:
-//   • Caller must be owner or admin
-//   • Caller cannot remove themselves
-//   • Only an owner can remove another owner (admins cannot)
-// Also deletes all active sessions for the removed user.
+/**
+ * DELETE /api/users/[id]
+ * Called by: Team management table in admin UI (browser, authenticated owner/admin)
+ * Auth: spm_session cookie — owner or admin role required; returns 403 otherwise
+ * Response: { data: { id, name } } on success; { error } with 400/403/404 on
+ *   rule violations (self-removal, admin removing owner, user not found)
+ *
+ * Enforces three rules server-side: caller must be owner/admin; caller cannot
+ * remove themselves; only an owner can remove another owner. The FK CASCADE on
+ * the sessions table handles session cleanup automatically — no separate DELETE
+ * on sessions is needed.
+ */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser, ensureAuthSchema, SESSION_COOKIE } from '@/lib/auth';

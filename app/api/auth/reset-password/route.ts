@@ -1,6 +1,14 @@
-// POST /api/auth/reset-password — set a new password using a valid reset token.
-// Body: { token: string; newPassword: string }
-// Tokens are 6-hour single-use; consumed on success.
+/**
+ * POST /api/auth/reset-password
+ * Called by: Reset-password form linked from the forgot-password email (browser)
+ * Auth: none — authenticated by the one-time reset token in the request body
+ * Body: { token: string; newPassword: string }
+ * Response: { ok: true } on success, { error } with 400 on invalid/expired token
+ *
+ * Validates the 6-hour single-use token, updates the password hash, and
+ * immediately clears the token to prevent reuse. Does NOT issue a session —
+ * the user is redirected to login after a successful reset.
+ */
 
 import { NextResponse } from 'next/server';
 import { validateResetToken, clearResetToken, createPasswordHash, ensureAuthSchema } from '@/lib/auth';

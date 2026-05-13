@@ -1,7 +1,16 @@
-// POST /api/auth/login — authenticate with email + password, set session cookie.
-// Body: { email: string; password: string }
-// On success: sets httpOnly spm_session cookie + returns { ok, user }.
-// On failure: returns { error } with appropriate 4xx status.
+/**
+ * POST /api/auth/login
+ * Called by: Login form (browser); also callable directly by API consumers
+ * Auth: none — validates email + password from request body
+ * Body: { email: string; password: string }
+ * Response: { ok: true, user: { id, name, email, role } } + sets httpOnly
+ *   spm_session cookie on success; { error } with 400/401 on bad credentials
+ *
+ * Returns an identical error message for unknown-email and wrong-password cases
+ * to prevent email enumeration. PBKDF2-SHA512 with 100k iterations — timing
+ * on verifyPassword is constant-time by design (same number of iterations
+ * regardless of whether the salt matches).
+ */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { queryOne } from '@/lib/db';

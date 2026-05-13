@@ -1,10 +1,27 @@
-// GET   /api/settings          — return all settings as Record<string, string> (auth required)
-// GET   /api/settings?key=foo  — return a single setting by key (auth required)
-// PATCH /api/settings          — upsert a setting (auth required)
-//
-// GET response:  { data: Record<string, string> } or { data: { key, value } }
-// PATCH body:    { key: string; value: string }
-// PATCH response: { data: { key, value } }
+/**
+ * GET /api/settings
+ * Called by: Settings page in admin UI (browser, authenticated);
+ *   contact/route.ts reads leads_email at POST time
+ * Auth: spm_session cookie required — returns 401 if missing or expired
+ * Response: { data: Record<string, string> } (all settings) or
+ *           { data: { key, value } } when ?key=<name> is supplied
+ *
+ * requireAuth MUST be async and awaited at every callsite. getSessionUser returns
+ * a Promise — a sync requireAuth would always return a truthy value (the Promise
+ * object itself), bypassing auth and exposing all settings including leads_email.
+ */
+
+/**
+ * PATCH /api/settings
+ * Called by: Settings page in admin UI (browser, authenticated)
+ * Auth: spm_session cookie required — returns 401 if missing or expired
+ * Body: { key: string; value: string }
+ * Response: { data: { key, value } }
+ *
+ * Upserts a single setting. Same auth bypass risk as GET — requireAuth must be
+ * awaited or any request with any cookie can overwrite leads_email and other
+ * site-wide settings.
+ */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne, run } from '@/lib/db';
@@ -15,13 +32,16 @@ interface SettingRow {
   value: string;
 }
 
-function requireAuth(request: NextRequest) {
+// requireAuth must be async because getSessionUser returns Promise<SessionUser | null>.
+// A sync wrapper would return the Promise object itself — always truthy — meaning
+// `if (!await requireAuth(request))` would never fire and auth would be silently skipped.
+async function requireAuth(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  return token ? getSessionUser(token) : null;
+  return token ? await getSessionUser(token) : null;
 }
 
 export async function GET(request: NextRequest) {
-  if (!requireAuth(request)) {
+  if (!await requireAuth(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -46,7 +66,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  if (!requireAuth(request)) {
+  if (!await requireAuth(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

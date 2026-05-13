@@ -1,12 +1,9 @@
 // scripts/migrate-sqlite-to-postgres.ts
 //
-// One-time seed-migration: read every row from the local data/db.sqlite snapshot
-// and copy it into the Railway Postgres database referenced by DATABASE_URL.
-//
-// Why this exists: the SPM app's data was historically stored in a SQLite file
-// baked into the Docker image. Container restarts wiped daily syncs back to
-// the May 4, 2026 snapshot. The fix is Postgres. This script is the one-off
-// bridge that gets the snapshot data into the new home.
+// One-time seed-migration: reads every row from the local data/db.sqlite snapshot
+// and copies it into the Railway Postgres database referenced by DATABASE_URL.
+// Runs initDb() first so the Postgres schema is current before any inserts land.
+// Idempotent — every insert is ON CONFLICT DO NOTHING, so re-running is safe.
 //
 // Usage (run on the developer's machine, NOT inside the Railway container):
 //   1. Ensure DATABASE_URL points at Railway's Postgres (copy from Railway →
@@ -207,8 +204,8 @@ async function main(): Promise<void> {
       let conflicts = 0;
       let errors = 0;
 
-      // One transaction per table — keeps individual row failures from
-      // poisoning the next table, but still gets row-level rollback granularity.
+      // One transaction per table — a table-level commit keeps prior tables safe
+      // even if a later table has a structural issue (e.g. missing FK target).
       await client.query('BEGIN');
       try {
         for (const row of rows) {
@@ -218,23 +215,34 @@ async function main(): Promise<void> {
             // Buffer values are rare in our schema but pg can take them directly.
             return v;
           });
+          // SAVEPOINT per row is mandatory for this one-shot migration script.
+          //
+          // When pg encounters ANY error inside an open transaction it sets the
+          // connection into an aborted state and rejects every subsequent query
+          // until the transaction is rolled back. A full ROLLBACK + BEGIN at row
+          // error would discard every successfully inserted row in that table,
+          // turning a partial success into a complete loss for that table.
+          //
+          // Using a named savepoint instead lets us roll back ONLY the single bad
+          // row and keep all preceding rows — which is the correct behaviour for
+          // a one-shot data migration where we want to persist as much clean data
+          // as possible and surface only the rows that genuinely failed.
+          await client.query('SAVEPOINT row_save');
           try {
             const r = await client.query(sql, params);
             if ((r.rowCount ?? 0) > 0) inserted++;
             else conflicts++;
+            await client.query('RELEASE SAVEPOINT row_save');
           } catch (err) {
+            await client.query('ROLLBACK TO SAVEPOINT row_save');
+            await client.query('RELEASE SAVEPOINT row_save');
             errors++;
-            // Log first 3 row errors per table for diagnosis without spamming.
+            // Log first 3 row errors per table for diagnosis without spamming stdout.
             if (errors <= 3) {
               console.warn(
                 `[migrate] ${tableName}: row error: ${(err as Error).message}`
               );
             }
-            // pg aborts the transaction on any error, so we need to
-            // savepoint per-row if we want to keep going. Implement that
-            // by ROLLBACKing and re-BEGINing — simpler than savepoints.
-            await client.query('ROLLBACK');
-            await client.query('BEGIN');
           }
         }
         await client.query('COMMIT');
