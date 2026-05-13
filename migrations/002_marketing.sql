@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS site_shows (
   is_featured    INTEGER DEFAULT 0,
   sort_order     INTEGER DEFAULT 0,
   imdb_url       TEXT,
-  created_at     INTEGER,
-  updated_at     INTEGER
+  created_at     BIGINT,
+  updated_at     BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS site_genres (
@@ -60,10 +60,10 @@ CREATE TABLE IF NOT EXISTS press_releases (
   body         TEXT,
   source       TEXT,
   source_url   TEXT,
-  published_at INTEGER,
+  published_at BIGINT,
   is_featured  INTEGER DEFAULT 0,
-  created_at   INTEGER,
-  updated_at   INTEGER
+  created_at   BIGINT,
+  updated_at   BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS available_titles (
@@ -81,8 +81,8 @@ CREATE TABLE IF NOT EXISTS available_titles (
   contact_email TEXT DEFAULT 'info@myentertainment.tv',
   is_active     INTEGER DEFAULT 1,
   sort_order    INTEGER DEFAULT 0,
-  created_at    INTEGER,
-  updated_at    INTEGER
+  created_at    BIGINT,
+  updated_at    BIGINT
 );
 
 -- Key-value store for editable site copy (homepage, about, contact sections).
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS site_content (
   value      TEXT NOT NULL,
   -- text | html | json | image_url
   type       TEXT DEFAULT 'text',
-  updated_at INTEGER
+  updated_at BIGINT
 );
 
 -- Seed default content keys so the CMS admin always has something to edit.

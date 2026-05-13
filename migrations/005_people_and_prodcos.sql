@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS production_companies (
   notes            TEXT,
   website          TEXT,
   hq_city          TEXT,
-  created_at       INTEGER,
-  updated_at       INTEGER
+  created_at       BIGINT,
+  updated_at       BIGINT
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_prodco_name ON production_companies(name_normalized);
@@ -38,11 +38,11 @@ CREATE TABLE IF NOT EXISTS deals (
   deal_type    TEXT DEFAULT 'commission',  -- 'commission' | 'co_production' | 'acquisition' | 'format_sale'
   genre        TEXT,
   format       TEXT,
-  deal_date    INTEGER,
+  deal_date    BIGINT,
   source       TEXT,                    -- trade publication where we learned this
   source_url   TEXT,
   notes        TEXT,
-  created_at   INTEGER
+  created_at   BIGINT
 );
 
 CREATE INDEX IF NOT EXISTS idx_deals_buyer   ON deals(buyer_id);
@@ -70,9 +70,9 @@ CREATE TABLE IF NOT EXISTS buyer_employer_history (
   company_type  TEXT,                  -- 'network' | 'streamer' | 'cable' | 'prodco' | 'studio'
   title         TEXT,
   is_buyer_seat INTEGER DEFAULT 0,    -- 1 if title is a dev/programming/acquisitions role
-  start_date    INTEGER,
-  end_date      INTEGER,              -- NULL = current position
-  created_at    INTEGER
+  start_date    BIGINT,
+  end_date      BIGINT,              -- NULL = current position
+  created_at    BIGINT
 );
 
 CREATE INDEX IF NOT EXISTS idx_emp_history_contact ON buyer_employer_history(contact_id);

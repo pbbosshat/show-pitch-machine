@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS buyer_research_runs (
   id              TEXT    PRIMARY KEY,
   source_user     TEXT    NOT NULL,
   source_file     TEXT,
-  started_at      INTEGER,
-  completed_at    INTEGER,
+  started_at      BIGINT,
+  completed_at    BIGINT,
   buyers_seen     INTEGER DEFAULT 0,
   buyers_created  INTEGER DEFAULT 0,
   buyers_updated  INTEGER DEFAULT 0,
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS buyer_research_runs (
   pitches_created INTEGER DEFAULT 0,
   status          TEXT    DEFAULT 'running', -- 'running' | 'done' | 'failed'
   error_msg       TEXT,
-  created_at      INTEGER
+  created_at      BIGINT
 );
 
 CREATE INDEX IF NOT EXISTS idx_research_runs_user
@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS buyer_research (
   extracted_phone   TEXT,
   sig_raw           TEXT,
   source_thread_id  TEXT,
-  processed_at      INTEGER,
-  created_at        INTEGER
+  processed_at      BIGINT,
+  created_at        BIGINT
 );
 
 CREATE INDEX IF NOT EXISTS idx_research_run     ON buyer_research(run_id);
@@ -53,13 +53,13 @@ CREATE TABLE IF NOT EXISTS buyer_contact_touches (
   contact_id        TEXT    REFERENCES buyer_contacts(id),
   contact_email     TEXT    NOT NULL,
   mye_user_email   TEXT    NOT NULL,
-  touch_date        INTEGER NOT NULL,
+  touch_date        BIGINT NOT NULL,
   thread_id         TEXT,
   thread_subject    TEXT,
   message_direction TEXT,
   ip_title          TEXT,
   pitch_outcome     TEXT,
-  created_at        INTEGER
+  created_at        BIGINT
 );
 
 CREATE INDEX IF NOT EXISTS idx_touches_contact       ON buyer_contact_touches(contact_id);

@@ -10,13 +10,13 @@ CREATE TABLE IF NOT EXISTS contact_leads (
   last_name  TEXT NOT NULL,
   email      TEXT NOT NULL,
   message    TEXT,
-  created_at INTEGER NOT NULL
+  created_at BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS site_settings (
   key        TEXT PRIMARY KEY,
   value      TEXT NOT NULL,
-  updated_at INTEGER NOT NULL
+  updated_at BIGINT NOT NULL
 );
 
 -- Seed the default lead notification email.

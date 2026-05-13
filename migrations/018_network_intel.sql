@@ -19,7 +19,7 @@ ALTER TABLE buyer_companies ADD COLUMN IF NOT EXISTS budget_signal    TEXT;
 ALTER TABLE buyer_companies ADD COLUMN IF NOT EXISTS key_buyer        TEXT;
 ALTER TABLE buyer_companies ADD COLUMN IF NOT EXISTS genre_mandate    TEXT;
 ALTER TABLE buyer_companies ADD COLUMN IF NOT EXISTS intel_notes      TEXT;
-ALTER TABLE buyer_companies ADD COLUMN IF NOT EXISTS intel_updated_at INTEGER;
+ALTER TABLE buyer_companies ADD COLUMN IF NOT EXISTS intel_updated_at BIGINT;
 
 -- ── Seed known networks by name (May 2026 research) ──────────────────────────
 

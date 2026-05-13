@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS prodco_contacts (
   outreach_status TEXT,
   is_owner        INTEGER DEFAULT 1,
   notes           TEXT,
-  created_at      INTEGER
+  created_at      BIGINT
 );
 
 CREATE INDEX IF NOT EXISTS idx_prodco_contacts_prodco ON prodco_contacts(prodco_id);
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS prodco_email_threads (
   thread_id   TEXT NOT NULL,
   subject     TEXT,
   snippet     TEXT,
-  last_date   INTEGER,
+  last_date   BIGINT,
   PRIMARY KEY (prodco_id, thread_id)
 );
 

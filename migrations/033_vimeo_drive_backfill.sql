@@ -15,6 +15,6 @@ ALTER TABLE vimeo_library ADD COLUMN IF NOT EXISTS drive_url       TEXT;
 ALTER TABLE vimeo_library ADD COLUMN IF NOT EXISTS backfill_status TEXT;
 ALTER TABLE vimeo_library ADD COLUMN IF NOT EXISTS backfilled_at   TEXT;
 ALTER TABLE vimeo_library ADD COLUMN IF NOT EXISTS backfill_error  TEXT;
-ALTER TABLE vimeo_library ADD COLUMN IF NOT EXISTS size_bytes      INTEGER;
+ALTER TABLE vimeo_library ADD COLUMN IF NOT EXISTS size_bytes      BIGINT;
 
 CREATE INDEX IF NOT EXISTS idx_vimeo_library_backfill ON vimeo_library(backfill_status);
