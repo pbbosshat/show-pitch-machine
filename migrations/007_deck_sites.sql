@@ -20,8 +20,8 @@ CREATE TABLE IF NOT EXISTS deck_sites (
   visibility      TEXT NOT NULL DEFAULT 'internal',  -- public | internal | gated
   gate_password   TEXT,                         -- Only used when visibility = gated
   slide_count     INTEGER DEFAULT 0,
-  created_at      INTEGER NOT NULL,
-  updated_at      INTEGER NOT NULL
+  created_at      BIGINT NOT NULL,
+  updated_at      BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS deck_slides (
@@ -36,5 +36,5 @@ CREATE TABLE IF NOT EXISTS deck_slides (
   heading          TEXT,
   body             TEXT,
   stats_json       TEXT,                        -- JSON array [{label, value}] for stats sections
-  created_at       INTEGER NOT NULL
+  created_at       BIGINT NOT NULL
 );

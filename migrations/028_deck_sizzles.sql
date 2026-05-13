@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS deck_sizzles (
   title      TEXT,
   password   TEXT,
   sort_order INTEGER DEFAULT 0,
-  created_at INTEGER
+  created_at BIGINT
 );
 
 CREATE INDEX IF NOT EXISTS idx_deck_sizzles_deck ON deck_sizzles(deck_id);

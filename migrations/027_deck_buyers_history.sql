@@ -8,10 +8,10 @@ CREATE TABLE IF NOT EXISTS deck_buyers (
   id               TEXT    PRIMARY KEY,
   deck_id          TEXT    NOT NULL REFERENCES deck_sites(id) ON DELETE CASCADE,
   buyer_contact_id TEXT    REFERENCES buyer_contacts(id),
-  sent_at          INTEGER,
+  sent_at          BIGINT,
   pipeline_stage   TEXT    DEFAULT 'sent',
   notes            TEXT,
-  created_at       INTEGER
+  created_at       BIGINT
 );
 
 CREATE INDEX IF NOT EXISTS idx_deck_buyers_deck    ON deck_buyers(deck_id);
@@ -23,11 +23,11 @@ CREATE TABLE IF NOT EXISTS deck_meetings (
   id               TEXT    PRIMARY KEY,
   deck_id          TEXT    NOT NULL REFERENCES deck_sites(id) ON DELETE CASCADE,
   buyer_contact_id TEXT    REFERENCES buyer_contacts(id),
-  meeting_date     INTEGER,
+  meeting_date     BIGINT,
   meeting_type     TEXT    DEFAULT 'call',
   notes            TEXT,
   outcome          TEXT,
-  created_at       INTEGER
+  created_at       BIGINT
 );
 
 CREATE INDEX IF NOT EXISTS idx_deck_meetings_deck    ON deck_meetings(deck_id);

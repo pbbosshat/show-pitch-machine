@@ -31,4 +31,4 @@ CREATE INDEX IF NOT EXISTS idx_eal_entity  ON entity_article_links(entity_type, 
 CREATE INDEX IF NOT EXISTS idx_eal_article ON entity_article_links(article_id);
 
 -- ── Extend trade_articles ─────────────────────────────────────────────────────
-ALTER TABLE trade_articles ADD COLUMN IF NOT EXISTS processed_at INTEGER DEFAULT NULL;
+ALTER TABLE trade_articles ADD COLUMN IF NOT EXISTS processed_at BIGINT DEFAULT NULL;

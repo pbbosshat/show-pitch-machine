@@ -6,11 +6,9 @@
 --   • SQLite booleans stored as INTEGER 0/1 are left as INTEGER for value
 --     compatibility with all existing query code; a future migration can
 --     promote them to BOOLEAN once callers are audited.
---   • All ms-epoch timestamp columns stay INTEGER. Postgres INTEGER tops out
---     at 2^31, which becomes a problem for ms-epoch in year 2038 — but every
---     existing column is already declared INTEGER in the SQLite schema so
---     keeping the type matches data shape from the seed migration. A separate
---     migration can widen to BIGINT later.
+--   • All ms-epoch timestamp columns are typed BIGINT. Postgres INTEGER is
+--     strict 32-bit (max ~2.1B) but Date.now() returns ~1.77T in 2026.
+--     Migration 035 ALTERs tables created before this fix was applied.
 --   • SQLite `CREATE VIRTUAL TABLE shows_fts USING fts5(…)` is replaced with
 --     a `search_vector tsvector GENERATED ALWAYS AS (…) STORED` column plus a
 --     GIN index on `shows`. Callers that used `shows_fts MATCH ?` must
@@ -21,7 +19,7 @@ CREATE TABLE IF NOT EXISTS team_users (
   name       TEXT NOT NULL,
   email      TEXT NOT NULL UNIQUE,
   role       TEXT,
-  created_at INTEGER
+  created_at BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS buyer_companies (
@@ -31,8 +29,8 @@ CREATE TABLE IF NOT EXISTS buyer_companies (
   tier        TEXT,
   hq_city     TEXT,
   notes       TEXT,
-  created_at  INTEGER,
-  updated_at  INTEGER
+  created_at  BIGINT,
+  updated_at  BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS buyer_contacts (
@@ -44,18 +42,18 @@ CREATE TABLE IF NOT EXISTS buyer_contacts (
   mandate_statement        TEXT,
   mandate_source           TEXT,
   mandate_source_url       TEXT,
-  mandate_date             INTEGER,
-  last_greenlit_date       INTEGER,
+  mandate_date             BIGINT,
+  last_greenlit_date       BIGINT,
   orders_last_90_days      INTEGER DEFAULT 0,
   orders_last_365_days     INTEGER DEFAULT 0,
   activity_status          TEXT DEFAULT 'unknown',
-  last_mye_contact_date    INTEGER,
+  last_mye_contact_date    BIGINT,
   last_mye_contact_outcome TEXT,
   mye_pitch_count          INTEGER DEFAULT 0,
   company_history          TEXT,
   notes                    TEXT,
-  created_at               INTEGER,
-  updated_at               INTEGER,
+  created_at               BIGINT,
+  updated_at               BIGINT,
   pitch_exclude            INTEGER DEFAULT 0
 );
 
@@ -65,8 +63,8 @@ CREATE TABLE IF NOT EXISTS mandate_updates (
   statement   TEXT NOT NULL,
   source      TEXT,
   source_url  TEXT,
-  stated_date INTEGER,
-  scraped_at  INTEGER
+  stated_date BIGINT,
+  scraped_at  BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS ip_catalog (
@@ -79,12 +77,12 @@ CREATE TABLE IF NOT EXISTS ip_catalog (
   episode_count INTEGER,
   status        TEXT,
   rights_status TEXT,
-  rights_expiry INTEGER,
+  rights_expiry BIGINT,
   seasons_count INTEGER,
   is_library    INTEGER DEFAULT 0,
   notes         TEXT,
-  created_at    INTEGER,
-  updated_at    INTEGER
+  created_at    BIGINT,
+  updated_at    BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS talent (
@@ -92,7 +90,7 @@ CREATE TABLE IF NOT EXISTS talent (
   name             TEXT NOT NULL,
   primary_role     TEXT,
   mye_relationship TEXT,
-  last_contact     INTEGER,
+  last_contact     BIGINT,
   notes            TEXT
 );
 
@@ -109,7 +107,7 @@ CREATE TABLE IF NOT EXISTS content_partners (
   type               TEXT,
   access_description TEXT,
   genres_unlocked    TEXT,
-  deal_expiry        INTEGER,
+  deal_expiry        BIGINT,
   contact_name       TEXT,
   contact_email      TEXT,
   notes              TEXT
@@ -127,14 +125,14 @@ CREATE TABLE IF NOT EXISTS pitches (
   ip_id            TEXT REFERENCES ip_catalog(id),
   buyer_company_id TEXT REFERENCES buyer_companies(id),
   buyer_contact_id TEXT REFERENCES buyer_contacts(id),
-  pitch_date       INTEGER,
+  pitch_date       BIGINT,
   format_pitched   TEXT,
   outcome          TEXT,
   pass_reason      TEXT,
   pass_reason_cat  TEXT,
   thread_id        TEXT,
   notes            TEXT,
-  created_at       INTEGER
+  created_at       BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS packages (
@@ -145,7 +143,7 @@ CREATE TABLE IF NOT EXISTS packages (
   target_contact_id  TEXT REFERENCES buyer_contacts(id),
   created_by         TEXT,
   pipeline_stage     TEXT DEFAULT 'proposal',
-  stage_entered_at   INTEGER,
+  stage_entered_at   BIGINT,
   days_in_stage      INTEGER DEFAULT 0,
   status             TEXT DEFAULT 'draft',
   narrative          TEXT,
@@ -153,8 +151,8 @@ CREATE TABLE IF NOT EXISTS packages (
   ask_format         TEXT,
   ask_episode_count  INTEGER,
   ask_deal_structure TEXT,
-  created_at         INTEGER,
-  updated_at         INTEGER
+  created_at         BIGINT,
+  updated_at         BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS package_talent (
@@ -175,11 +173,11 @@ CREATE TABLE IF NOT EXISTS package_emails (
   gmail_thread_id TEXT,
   subject         TEXT,
   sender          TEXT,
-  received_at     INTEGER,
+  received_at     BIGINT,
   grok_signal     TEXT,
   grok_raw        TEXT,
   stage_moved_to  TEXT,
-  processed_at    INTEGER
+  processed_at    BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS pitch_portals (
@@ -187,9 +185,9 @@ CREATE TABLE IF NOT EXISTS pitch_portals (
   package_id TEXT REFERENCES packages(id),
   slug       TEXT UNIQUE,
   pdf_path   TEXT,
-  sent_at    INTEGER,
+  sent_at    BIGINT,
   sent_to    TEXT,
-  created_at INTEGER
+  created_at BIGINT
 );
 
 -- ── shows ────────────────────────────────────────────────────────────────────
@@ -220,9 +218,9 @@ CREATE TABLE IF NOT EXISTS shows (
   runtime_mins          INTEGER,
   order_type            TEXT,
   status                TEXT,
-  greenlit_date         INTEGER,
-  production_start      INTEGER,
-  premiere_date         INTEGER,
+  greenlit_date         BIGINT,
+  production_start      BIGINT,
+  premiere_date         BIGINT,
   location_type         TEXT,
   primary_state         TEXT,
   primary_city          TEXT,
@@ -249,8 +247,8 @@ CREATE TABLE IF NOT EXISTS shows (
       COALESCE(location_notes, '')
     )
   ) STORED,
-  created_at INTEGER,
-  updated_at INTEGER
+  created_at BIGINT,
+  updated_at BIGINT
 );
 
 -- Dedup: same title + network combination should only exist once.
@@ -271,7 +269,7 @@ CREATE TABLE IF NOT EXISTS trade_articles (
   headline   TEXT,
   body       TEXT,
   item_type  TEXT,
-  scraped_at INTEGER,
+  scraped_at BIGINT,
   embedded   INTEGER DEFAULT 0,
   search_vector tsvector GENERATED ALWAYS AS (
     to_tsvector('english',
@@ -293,17 +291,17 @@ CREATE TABLE IF NOT EXISTS market_orders (
   genre            TEXT,
   episode_count    INTEGER,
   order_type       TEXT,
-  order_date       INTEGER,
+  order_date       BIGINT,
   source           TEXT,
   source_url       TEXT,
-  created_at       INTEGER
+  created_at       BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS scraper_runs (
   id           TEXT PRIMARY KEY,
   source       TEXT NOT NULL,
-  started_at   INTEGER,
-  completed_at INTEGER,
+  started_at   BIGINT,
+  completed_at BIGINT,
   status       TEXT,
   items_found  INTEGER DEFAULT 0,
   error_msg    TEXT
@@ -313,8 +311,8 @@ CREATE TABLE IF NOT EXISTS scraper_source_status (
   source               TEXT PRIMARY KEY,
   display_name         TEXT,
   enabled              INTEGER DEFAULT 1,
-  last_run_at          INTEGER,
-  last_success_at      INTEGER,
+  last_run_at          BIGINT,
+  last_success_at      BIGINT,
   last_items           INTEGER DEFAULT 0,
   consecutive_failures INTEGER DEFAULT 0
 );
@@ -323,7 +321,7 @@ CREATE TABLE IF NOT EXISTS ingestion_log (
   id          TEXT PRIMARY KEY,
   source_type TEXT,
   source_id   TEXT,
-  ingested_at INTEGER,
+  ingested_at BIGINT,
   chunk_count INTEGER,
   status      TEXT
 );
