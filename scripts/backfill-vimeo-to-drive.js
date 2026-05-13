@@ -188,32 +188,68 @@ function pickBestRendition(downloads) {
 }
 
 // Download to a temp file with redirect following — Vimeo CDN returns 302s.
+// Uses an explicit progress watchdog (bytes-received deadline) instead of
+// relying on Node's req.setTimeout, which has misbehaved on long-running
+// Vimeo downloads (connection stays open with no data and the timer never
+// fires). If no bytes arrive for STALL_TIMEOUT_MS, we abort the row so the
+// backfill keeps moving and the row is retried on the next pass.
+const STALL_TIMEOUT_MS = 60_000;
+
 function downloadToFile(url, destPath, onProgress) {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(destPath);
     let downloaded = 0;
+    let lastByteAt = Date.now();
+    let stallTimer;
+    let activeReq;
+
+    function armStallTimer() {
+      clearTimeout(stallTimer);
+      stallTimer = setTimeout(() => {
+        const idleMs = Date.now() - lastByteAt;
+        if (idleMs >= STALL_TIMEOUT_MS) {
+          try { activeReq?.destroy(); } catch {}
+          try { file.destroy(); } catch {}
+          reject(new Error(`Download stalled: no bytes for ${Math.round(idleMs/1000)}s`));
+        } else {
+          armStallTimer();
+        }
+      }, STALL_TIMEOUT_MS);
+    }
 
     function go(u, hops = 0) {
       if (hops > 5) return reject(new Error('Too many redirects'));
-      const req = https.get(u, res => {
+      activeReq = https.get(u, res => {
         if ([301, 302, 303, 307, 308].includes(res.statusCode)) {
           res.resume();
           return go(res.headers.location, hops + 1);
         }
         if (res.statusCode !== 200) {
           res.resume();
+          clearTimeout(stallTimer);
           return reject(new Error(`Download HTTP ${res.statusCode}`));
         }
         const total = Number(res.headers['content-length']) || 0;
+        armStallTimer();
         res.on('data', chunk => {
           downloaded += chunk.length;
+          lastByteAt = Date.now();
           if (onProgress) onProgress(downloaded, total);
         });
         res.pipe(file);
-        file.on('finish', () => file.close(() => resolve(downloaded)));
+        file.on('finish', () => {
+          clearTimeout(stallTimer);
+          file.close(() => resolve(downloaded));
+        });
       });
-      req.on('error', reject);
-      req.setTimeout(DOWNLOAD_TIMEOUT_MS, () => { req.destroy(); reject(new Error('Download timeout')); });
+      activeReq.on('error', err => { clearTimeout(stallTimer); reject(err); });
+      // Hard ceiling for the whole request — protects against the rare case
+      // where progress trickles in indefinitely (e.g., 1 byte every 59s).
+      activeReq.setTimeout(DOWNLOAD_TIMEOUT_MS, () => {
+        clearTimeout(stallTimer);
+        try { activeReq.destroy(); } catch {}
+        reject(new Error('Download timeout (hard ceiling)'));
+      });
     }
     go(url);
   });
