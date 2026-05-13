@@ -43,21 +43,21 @@ interface PublicTitle {
 
 // Reads all active titles ordered by sort_order then title.
 // Returns an empty array on any DB error so the page still renders gracefully.
-function getTitles(): PublicTitle[] {
+// Async because initDb() and query() are now Postgres-backed Promises.
+async function getTitles(): Promise<PublicTitle[]> {
   try {
-    initDb();
-    const rows = query<PublicTitle>(
+    await initDb();
+    const rows = await query<PublicTitle>(
       'SELECT id, title, slug, image_url, vimeo_url FROM deck_sites WHERE is_active = 1 ORDER BY sort_order ASC, title ASC'
     );
-    // Serialize through JSON to detach from the node:sqlite result proxy
     return JSON.parse(JSON.stringify(rows));
   } catch {
     return [];
   }
 }
 
-export default function AvailablePage() {
-  const titles = getTitles();
+export default async function AvailablePage() {
+  const titles = await getTitles();
 
   return (
     // Webflow: body bg #000 — inherited from layout

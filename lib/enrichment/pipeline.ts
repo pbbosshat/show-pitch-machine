@@ -269,9 +269,10 @@ async function extractSignatureViaHaiku(
 /**
  * Build a Map<domain, {id, name}> from buyer_companies for quick FK lookups.
  * Matches canonical company names via exact match first, then first-word fuzzy.
+ * Async because query() is now a Postgres-backed Promise.
  */
-function buildDomainMap(): Map<string, { id: string; name: string }> {
-  const companies = query<{ id: string; name: string }>('SELECT id, name FROM buyer_companies');
+async function buildDomainMap(): Promise<Map<string, { id: string; name: string }>> {
+  const companies = await query<{ id: string; name: string }>('SELECT id, name FROM buyer_companies');
 
   const byName = new Map<string, { id: string; name: string }>();
   for (const co of companies) byName.set(co.name.toLowerCase(), co);
@@ -298,9 +299,10 @@ function buildDomainMap(): Map<string, { id: string; name: string }> {
  * Check if a touch row already exists for this thread + contact + date combo.
  * The existing schema has no UNIQUE constraint on buyer_contact_touches, so we
  * check manually before inserting to keep re-runs idempotent.
+ * Async because queryOne() is now a Postgres-backed Promise.
  */
-function touchExists(threadId: string, contactEmail: string, touchDate: number): boolean {
-  const row = queryOne<{ id: string }>(
+async function touchExists(threadId: string, contactEmail: string, touchDate: number): Promise<boolean> {
+  const row = await queryOne<{ id: string }>(
     `SELECT id FROM buyer_contact_touches
      WHERE thread_id = ? AND contact_email = ? AND touch_date = ?`,
     [threadId, contactEmail, touchDate]
@@ -329,8 +331,9 @@ export async function runEnrichmentPipeline(options: PipelineOptions): Promise<v
   if (!existsSync(threadsFile)) throw new Error(`Threads file not found: ${threadsFile}`);
   if (!existsSync(pitchDbFile)) throw new Error(`Pitch DB not found: ${pitchDbFile}`);
 
-  // Ensure all migration tables exist (idempotent)
-  initDb();
+  // Ensure all migration tables exist (idempotent).
+  // initDb() is async in Postgres mode — must be awaited before any queries.
+  await initDb();
 
   const pitchRecords: PitchRecord[] = JSON.parse(readFileSync(pitchDbFile, 'utf-8'));
   const threads: Thread[]           = JSON.parse(readFileSync(threadsFile, 'utf-8'));
@@ -343,7 +346,7 @@ export async function runEnrichmentPipeline(options: PipelineOptions): Promise<v
     if (p.thread_id) pitchMap.set(p.thread_id, p);
   }
 
-  const domainMap = buildDomainMap();
+  const domainMap = await buildDomainMap();
 
   // Counters for the final run record update
   let buyersSeen      = 0;
@@ -396,8 +399,8 @@ export async function runEnrichmentPipeline(options: PipelineOptions): Promise<v
 
       if (!isMYE(senderEmail) && senderEmail.includes('@')) {
         // Inbound: buyer wrote this message
-        if (!touchExists(thread.thread_id, senderEmail, ts)) {
-          run(
+        if (!(await touchExists(thread.thread_id, senderEmail, ts))) {
+          await run(
             `INSERT INTO buyer_contact_touches
                (id, contact_email, mye_user_email, touch_date,
                 thread_id, thread_subject, message_direction,
@@ -414,8 +417,8 @@ export async function runEnrichmentPipeline(options: PipelineOptions): Promise<v
           const recipEmail = extractEmail(part);
           if (!recipEmail.includes('@') || isMYE(recipEmail)) continue;
 
-          if (!touchExists(thread.thread_id, recipEmail, ts)) {
-            run(
+          if (!(await touchExists(thread.thread_id, recipEmail, ts))) {
+            await run(
               `INSERT INTO buyer_contact_touches
                  (id, contact_email, mye_user_email, touch_date,
                   thread_id, thread_subject, message_direction,
@@ -438,13 +441,13 @@ export async function runEnrichmentPipeline(options: PipelineOptions): Promise<v
   for (const candidate of contactCandidates.values()) {
     const companyRow = domainMap.get(candidate.domain);
 
-    const existing = queryOne<{ id: string }>(
+    const existing = await queryOne<{ id: string }>(
       'SELECT id FROM buyer_contacts WHERE LOWER(email) = LOWER(?)',
       [candidate.email]
     );
 
     if (!existing) {
-      run(
+      await run(
         `INSERT INTO buyer_contacts
            (id, name, email, company_id, activity_status, created_at, updated_at)
          VALUES (?, ?, ?, ?, 'unknown', ?, ?)`,
@@ -456,7 +459,7 @@ export async function runEnrichmentPipeline(options: PipelineOptions): Promise<v
   }
 
   // Backfill contact_id on any un-linked touch rows for newly created contacts
-  run(
+  await run(
     `UPDATE buyer_contact_touches
      SET contact_id = (
        SELECT bc.id FROM buyer_contacts bc
@@ -473,7 +476,7 @@ export async function runEnrichmentPipeline(options: PipelineOptions): Promise<v
     const pitch = pitchMap.get(thread.thread_id);
     if (!pitch?.outcome || pitch.outcome === 'unknown') continue;
 
-    const contactRow = queryOne<{ id: string; company_id: string | null }>(
+    const contactRow = await queryOne<{ id: string; company_id: string | null }>(
       'SELECT id, company_id FROM buyer_contacts WHERE LOWER(email) = LOWER(?)',
       [pitch.buyer_email]
     );
@@ -483,13 +486,13 @@ export async function runEnrichmentPipeline(options: PipelineOptions): Promise<v
     const pitchDate = firstMsg ? parseEmailDate(firstMsg.date) : null;
 
     // Guard against duplicate pitches on re-runs (no unique index on pitches table)
-    const existing = queryOne<{ id: string }>(
+    const existing = await queryOne<{ id: string }>(
       'SELECT id FROM pitches WHERE thread_id = ? AND outcome = ? AND buyer_contact_id = ?',
       [thread.thread_id, pitch.outcome, contactRow.id]
     );
 
     if (!existing) {
-      run(
+      await run(
         `INSERT INTO pitches
            (id, buyer_company_id, buyer_contact_id, pitch_date, outcome, thread_id, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -507,7 +510,7 @@ export async function runEnrichmentPipeline(options: PipelineOptions): Promise<v
     if (candidate.touchDates.length === 0) continue;
     const mostRecent = Math.max(...candidate.touchDates);
 
-    run(
+    await run(
       `UPDATE buyer_contacts
        SET last_mye_contact_date = ?,
            mye_pitch_count       = ?,
@@ -526,7 +529,7 @@ export async function runEnrichmentPipeline(options: PipelineOptions): Promise<v
     haikuIdx++;
 
     // Idempotent: skip if already extracted in this run
-    const alreadyDone = queryOne<{ id: string }>(
+    const alreadyDone = await queryOne<{ id: string }>(
       'SELECT id FROM buyer_research WHERE contact_email = ? AND run_id = ?',
       [candidate.email, runId]
     );
@@ -563,18 +566,20 @@ export async function runEnrichmentPipeline(options: PipelineOptions): Promise<v
       : null;
 
     // Resolve contact_id for the research row
-    const contactRow = queryOne<{ id: string }>(
+    const contactRow = await queryOne<{ id: string }>(
       'SELECT id FROM buyer_contacts WHERE LOWER(email) = LOWER(?)',
       [candidate.email]
     );
 
-    run(
-      `INSERT OR IGNORE INTO buyer_research
+    // ON CONFLICT DO NOTHING replaces INSERT OR IGNORE (Postgres syntax)
+    await run(
+      `INSERT INTO buyer_research
          (id, run_id, contact_id, contact_email,
           extracted_name, extracted_title, extracted_company, extracted_phone,
           sig_raw, source_thread_id,
           processed_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT DO NOTHING`,
       [
         randomUUID(), runId,
         contactRow?.id ?? null, candidate.email,
@@ -591,7 +596,7 @@ export async function runEnrichmentPipeline(options: PipelineOptions): Promise<v
     if (extraction) {
       sigsExtracted++;
       // Only fill null fields — preserve manually curated data from sheet imports
-      run(
+      await run(
         `UPDATE buyer_contacts
          SET title    = COALESCE(title, ?),
              phone    = COALESCE(phone, ?),
@@ -608,7 +613,7 @@ export async function runEnrichmentPipeline(options: PipelineOptions): Promise<v
   // Schema uses 'failed' not 'error'; status_user → source_user; buyers_updated counts updates
   const buyersUpdated = buyersSeen - buyersCreated; // contacts that already existed
 
-  run(
+  await run(
     `UPDATE buyer_research_runs
      SET status          = 'done',
          completed_at    = ?,

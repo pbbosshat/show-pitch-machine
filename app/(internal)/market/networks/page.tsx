@@ -11,9 +11,10 @@
 import NetworksClient, { type NetworkListItem } from '@/components/networks/NetworksClient';
 import { query } from '@/lib/db';
 
-function fetchNetworks(): NetworkListItem[] {
+// Async because query() returns a Promise in Postgres mode
+async function fetchNetworks(): Promise<NetworkListItem[]> {
   try {
-    const rows = query<NetworkListItem>(
+    const rows = await query<NetworkListItem>(
       `SELECT
         bc.id, bc.name, bc.type, bc.tier, bc.hq_city, bc.notes,
         bc.parent_id,
@@ -36,8 +37,8 @@ function fetchNetworks(): NetworkListItem[] {
   } catch { return []; }
 }
 
-export default function NetworksPage() {
-  const networks = fetchNetworks();
+export default async function NetworksPage() {
+  const networks = await fetchNetworks();
 
   return (
     <div className="p-6 space-y-5">

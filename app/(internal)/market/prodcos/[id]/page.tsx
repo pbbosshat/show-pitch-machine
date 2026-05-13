@@ -56,7 +56,8 @@ interface ArticleLink {
 // Fetches trade articles linked to this production company via entity_article_links.
 // entity_type = 'production_company' scopes to the prodco dimension.
 // Capped at 20 most-recent articles.
-function fetchArticles(prodcoId: string): ArticleLink[] {
+// Async because query() returns a Promise in Postgres mode
+async function fetchArticles(prodcoId: string): Promise<ArticleLink[]> {
   return query<ArticleLink>(
     `SELECT ta.id, ta.headline, ta.url, ta.source, ta.item_type, ta.scraped_at,
             eal.auto_applied, eal.applied_field
@@ -79,7 +80,8 @@ interface ProdcoDetail extends ProductionCompany {
 export default async function ProdcoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const prodco = queryOne<ProdcoDetail>(
+  // Run the primary lookup first, then parallelize the dependent queries
+  const prodco = await queryOne<ProdcoDetail>(
     `SELECT pc.*,
        (SELECT COUNT(*) FROM deals d WHERE d.prodco_id = pc.id) AS deal_count,
        (SELECT COUNT(*) FROM prodco_contacts pc2 WHERE pc2.prodco_id = pc.id) AS contact_count
@@ -88,33 +90,35 @@ export default async function ProdcoDetailPage({ params }: { params: Promise<{ i
   );
   if (!prodco) notFound();
 
-  const contacts = query<ProdcoContact>(
-    `SELECT * FROM prodco_contacts WHERE prodco_id = ? ORDER BY is_owner DESC, name ASC`,
-    [id]
-  );
-  const buyers = query<ProdcoBuyer>(
-    `SELECT bc.id AS buyer_id, bc.name AS buyer_name, bc.title AS buyer_title,
-            bco.name AS buyer_network,
-            COUNT(d.id) AS deal_count,
-            MAX(d.deal_date) AS last_deal_date
-     FROM deals d
-     JOIN buyer_contacts bc ON bc.id = d.buyer_id
-     LEFT JOIN buyer_companies bco ON bco.id = d.network_id
-     WHERE d.prodco_id = ?
-     GROUP BY bc.id ORDER BY deal_count DESC`,
-    [id]
-  );
-  const deals = query<Deal>(
-    `SELECT * FROM deals WHERE prodco_id = ? ORDER BY deal_date DESC LIMIT 20`,
-    [id]
-  );
+  const [contacts, buyers, deals, articles] = await Promise.all([
+    query<ProdcoContact>(
+      `SELECT * FROM prodco_contacts WHERE prodco_id = ? ORDER BY is_owner DESC, name ASC`,
+      [id]
+    ),
+    query<ProdcoBuyer>(
+      `SELECT bc.id AS buyer_id, bc.name AS buyer_name, bc.title AS buyer_title,
+              bco.name AS buyer_network,
+              COUNT(d.id) AS deal_count,
+              MAX(d.deal_date) AS last_deal_date
+       FROM deals d
+       JOIN buyer_contacts bc ON bc.id = d.buyer_id
+       LEFT JOIN buyer_companies bco ON bco.id = d.network_id
+       WHERE d.prodco_id = ?
+       GROUP BY bc.id ORDER BY deal_count DESC`,
+      [id]
+    ),
+    query<Deal>(
+      `SELECT * FROM deals WHERE prodco_id = ? ORDER BY deal_date DESC LIMIT 20`,
+      [id]
+    ),
+    fetchArticles(id),
+  ]);
 
   const contactList = contacts;
   const buyerList   = buyers;
   const dealList    = deals;
-  const dealCount   = prodco.deal_count ?? 0;
-  const contactCount = prodco.contact_count ?? contactList.length;
-  const articles    = fetchArticles(id);
+  const dealCount   = prodco!.deal_count ?? 0;
+  const contactCount = prodco!.contact_count ?? contactList.length;
 
   const currentShows    = parseJsonArray(prodco.current_shows);
   const currentNetworks = parseJsonArray(prodco.current_networks);

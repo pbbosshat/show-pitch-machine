@@ -7,15 +7,16 @@ import ShowsClient from '@/components/shows/ShowsClient';
 import { query } from '@/lib/db';
 import type { Show } from '@/types';
 
-function fetchShows(): Show[] {
+// Async because query() returns a Promise in Postgres mode
+async function fetchShows(): Promise<Show[]> {
   try {
-    const rows = query<Show>('SELECT * FROM shows ORDER BY greenlit_date DESC NULLS LAST');
+    const rows = await query<Show>('SELECT * FROM shows ORDER BY greenlit_date DESC NULLS LAST');
     return JSON.parse(JSON.stringify(rows));
   } catch { return []; }
 }
 
-export default function ShowsPage() {
-  const shows = fetchShows();
+export default async function ShowsPage() {
+  const shows = await fetchShows();
 
   // Build unique filter values from the shows data
   const networks = [...new Set(shows.map((s) => s.network).filter(Boolean))].sort() as string[];

@@ -17,9 +17,10 @@ interface BuyerRow extends BuyerContact {
   company_tier: string | null;
 }
 
-function fetchBuyers(): BuyerRow[] {
+// Async because query() returns a Promise in Postgres mode
+async function fetchBuyers(): Promise<BuyerRow[]> {
   try {
-    const rows = query<BuyerRow>(
+    const rows = await query<BuyerRow>(
       `SELECT
         bc.*,
         co.name  AS company_name,
@@ -40,8 +41,8 @@ function fetchBuyers(): BuyerRow[] {
   } catch { return []; }
 }
 
-export default function BuyersPage() {
-  const buyers = fetchBuyers();
+export default async function BuyersPage() {
+  const buyers = await fetchBuyers();
   return (
     <div className="p-6 space-y-5">
       <div>

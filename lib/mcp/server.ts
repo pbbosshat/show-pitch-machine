@@ -1,6 +1,10 @@
-// MCP HTTP server — exposes Show Pitch Machine's SQLite data as MCP tools
+// MCP HTTP server — exposes Show Pitch Machine's Postgres data as MCP tools
 // so Claude (via Claude Desktop or claude-code) can query it directly.
 // Runs at localhost:3001 alongside the Next.js app on 3000.
+//
+// Phase 1B: all tool handler callbacks already await async lib functions.
+// The tool handler callbacks were already `async () => { ... }` so the only
+// change needed is removing the synchronous usage assumption in comments.
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -34,7 +38,7 @@ function buildMcpServer(): McpServer {
     'Returns all buyer contacts with activity_status=active, sorted by most recent greenlit date. Use this to identify the best targets for new pitches.',
     {},
     async () => {
-      const buyers = getActiveBuyers();
+      const buyers = await getActiveBuyers();
       return { content: [{ type: 'text', text: JSON.stringify(buyers, null, 2) }] };
     }
   );
@@ -45,7 +49,7 @@ function buildMcpServer(): McpServer {
     'Returns complete profile for a buyer contact: contact record, company, mandate history, and recent pitch history.',
     { contact_id: z.string().describe('Buyer contact ID from buyer_contacts table') },
     async ({ contact_id }) => {
-      const profile = getBuyerProfile(contact_id);
+      const profile = await getBuyerProfile(contact_id);
       return { content: [{ type: 'text', text: JSON.stringify(profile, null, 2) }] };
     }
   );
@@ -56,7 +60,7 @@ function buildMcpServer(): McpServer {
     'Returns a structured intelligence briefing for a buyer: current mandate, recent greenlits, pass patterns, and days since last MYE contact. Use before drafting a pitch.',
     { contact_id: z.string().describe('Buyer contact ID') },
     async ({ contact_id }) => {
-      const intel = getBuyerIntelligence(contact_id);
+      const intel = await getBuyerIntelligence(contact_id);
       return { content: [{ type: 'text', text: JSON.stringify(intel, null, 2) }] };
     }
   );
@@ -73,7 +77,7 @@ function buildMcpServer(): McpServer {
       format: z.string().optional().describe('Filter by format: docuseries, unscripted-series, etc.'),
     },
     async ({ query: q, genre, network, status, format }) => {
-      const shows = searchShows(q, { genre, network, status, format });
+      const shows = await searchShows(q, { genre, network, status, format });
       return { content: [{ type: 'text', text: JSON.stringify(shows, null, 2) }] };
     }
   );
@@ -89,7 +93,7 @@ function buildMcpServer(): McpServer {
       since_date: z.number().optional().describe('Unix timestamp — return only orders after this date'),
     },
     async ({ network, genre, format, since_date }) => {
-      const orders = getMarketOrders({ network, genre, format, since_date });
+      const orders = await getMarketOrders({ network, genre, format, since_date });
       return { content: [{ type: 'text', text: JSON.stringify(orders, null, 2) }] };
     }
   );
@@ -117,7 +121,7 @@ function buildMcpServer(): McpServer {
     'Returns all active packages with pipeline stage, days in stage, buyer name, and IP title. Sorted by stage priority and staleness.',
     {},
     async () => {
-      const pipeline = getPipeline();
+      const pipeline = await getPipeline();
       return { content: [{ type: 'text', text: JSON.stringify(pipeline, null, 2) }] };
     }
   );
@@ -128,7 +132,7 @@ function buildMcpServer(): McpServer {
     'Returns all MYE pitches to a specific buyer contact, with IP titles and outcomes. Use to avoid re-pitching passed shows and identify warm leads.',
     { contact_id: z.string().describe('Buyer contact ID') },
     async ({ contact_id }) => {
-      const history = getPitchHistory(contact_id);
+      const history = await getPitchHistory(contact_id);
       return { content: [{ type: 'text', text: JSON.stringify(history, null, 2) }] };
     }
   );
@@ -139,7 +143,7 @@ function buildMcpServer(): McpServer {
     'Returns full detail for an IP in the catalog: the record, pitch history across all buyers, attached talent, and content partner relationships.',
     { ip_id: z.string().describe('IP catalog entry ID') },
     async ({ ip_id }) => {
-      const detail = getIpDetail(ip_id);
+      const detail = await getIpDetail(ip_id);
       return { content: [{ type: 'text', text: JSON.stringify(detail, null, 2) }] };
     }
   );
@@ -157,7 +161,7 @@ function buildMcpServer(): McpServer {
       ),
     },
     async ({ sheet_source, status }) => {
-      const text = getDevelopmentPipeline({ sheet_source, status });
+      const text = await getDevelopmentPipeline({ sheet_source, status });
       return { content: [{ type: 'text', text }] };
     }
   );
@@ -172,7 +176,7 @@ function buildMcpServer(): McpServer {
       ),
     },
     async ({ project_name }) => {
-      const text = getProjectTimeline(project_name);
+      const text = await getProjectTimeline(project_name);
       return { content: [{ type: 'text', text }] };
     }
   );
@@ -183,7 +187,7 @@ function buildMcpServer(): McpServer {
     'Returns complete sizzle reel inventory: all recorded sizzles grouped by status (with video link vs. confirmed exists but no link yet). Shows Vimeo URLs, passwords, and latest email activity for each reel. Use this to track sizzle production progress and identify what needs video upload next.',
     {},
     async () => {
-      const text = getSizzleInventory();
+      const text = await getSizzleInventory();
       return { content: [{ type: 'text', text }] };
     }
   );

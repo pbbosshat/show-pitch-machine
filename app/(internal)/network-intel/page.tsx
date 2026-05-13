@@ -15,9 +15,10 @@ export const metadata = { title: 'Network Intel — Show Pitch Machine' };
 // A network with 5 greenlits = 15 raw → 10.0 relationship score.
 const REL_SCORE_MAX = 15;
 
-function fetchNetworkIntel(): NetworkIntelRow[] {
+// Async because query() returns a Promise in Postgres mode
+async function fetchNetworkIntel(): Promise<NetworkIntelRow[]> {
   try {
-    const rows = query<{
+    const rows = await query<{
       id: string;
       name: string;
       type: string | null;
@@ -104,8 +105,8 @@ function fetchNetworkIntel(): NetworkIntelRow[] {
   } catch { return []; }
 }
 
-export default function NetworkIntelPage() {
-  const networks = fetchNetworkIntel();
+export default async function NetworkIntelPage() {
+  const networks = await fetchNetworkIntel();
 
   const rated    = networks.filter(n => n.market_score != null);
   const hot      = rated.filter(n => (n.combined_score ?? 0) >= 7);

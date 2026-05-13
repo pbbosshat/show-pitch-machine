@@ -99,9 +99,10 @@ function parseMessage(msg: {
   };
 }
 
-// Check which thread IDs have already been ingested so we skip duplicates
-function getIngestedThreadIds(): Set<string> {
-  const rows = query<{ source_id: string }>(
+// Check which thread IDs have already been ingested so we skip duplicates.
+// Returns a Set<threadId> used to de-duplicate before fetching full message bodies.
+async function getIngestedThreadIds(): Promise<Set<string>> {
+  const rows = await query<{ source_id: string }>(
     "SELECT source_id FROM ingestion_log WHERE source_type = 'gmail'"
   );
   return new Set(rows.map((r) => r.source_id));
@@ -164,7 +165,8 @@ export async function getNewsletterMessages(sinceDate?: Date): Promise<GmailMess
   const messages = listRes.data.messages ?? [];
   if (messages.length === 0) return [];
 
-  const ingested = getIngestedThreadIds();
+  // Await the async DB call before deduplicating
+  const ingested = await getIngestedThreadIds();
 
   const results: GmailMessage[] = [];
   for (const m of messages) {
@@ -255,8 +257,9 @@ const MYE_PIPELINE_MAILBOXES = [
 export async function getMYEPipelineMessages(sinceDate?: Date): Promise<GmailMessage[]> {
   const after = sinceDate ? Math.floor(sinceDate.getTime() / 1000) : undefined;
 
-  // Build -from: exclusions for production-show contacts flagged in the DB
-  const excluded = query<{ email: string }>(
+  // Build -from: exclusions for production-show contacts flagged in the DB.
+  // pitch_exclude = 1 (INTEGER column) — Postgres preserves the 0/1 convention.
+  const excluded = await query<{ email: string }>(
     "SELECT email FROM buyer_contacts WHERE pitch_exclude = 1 AND email IS NOT NULL AND email != ''"
   );
   const exclusionClause = excluded.length > 0
@@ -265,7 +268,8 @@ export async function getMYEPipelineMessages(sinceDate?: Date): Promise<GmailMes
 
   const q = [`(${MYE_BUYER_DOMAIN_FILTER})`, exclusionClause, after ? `after:${after}` : '']
     .filter(Boolean).join(' ');
-  const ingested = getIngestedThreadIds();
+  // Await the async DB call — ingest log query returns a Promise in Postgres mode
+  const ingested = await getIngestedThreadIds();
   const results: GmailMessage[] = [];
 
   for (const mailbox of MYE_PIPELINE_MAILBOXES) {

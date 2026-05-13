@@ -89,9 +89,10 @@ async function fetchEmails(id: string): Promise<EmailsResponse | null> {
   }
 }
 
-function fetchSizzles(id: string): SizzleCardData[] {
+// Async because query() returns a Promise in Postgres mode
+async function fetchSizzles(id: string): Promise<SizzleCardData[]> {
   try {
-    const rows = query<SizzleCardData>(
+    const rows = await query<SizzleCardData>(
       `SELECT
         sr.id,
         sr.ip_catalog_id,
@@ -176,12 +177,12 @@ export default async function ProjectDetailPage({
 }) {
   const { id } = await params;
 
-  // Fetch project metadata and email threads in parallel; sizzles query is synchronous DB
-  const [project, emailsData] = await Promise.all([
+  // Fetch all three in parallel — fetchSizzles is now async too
+  const [project, emailsData, sizzles] = await Promise.all([
     fetchProject(id),
     fetchEmails(id),
+    fetchSizzles(id),
   ]);
-  const sizzles = fetchSizzles(id);
 
   if (!project) notFound();
 

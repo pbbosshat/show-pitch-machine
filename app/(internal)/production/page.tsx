@@ -75,37 +75,38 @@ export default async function ProductionPage() {
     fetchAllShows(),
   ]);
 
-  // Production hours — direct DB (faster than HTTP)
-  const onAirTotal = queryOne<{ total: number }>(
-    "SELECT COALESCE(SUM(production_hours), 0) AS total FROM site_shows WHERE status = 'active'"
-  )?.total ?? 0;
-
-  const pipelineTotal = queryOne<{ total: number }>(
-    `SELECT COALESCE(SUM(ic.production_hours), 0) AS total
-     FROM ip_catalog ic
-     WHERE ic.id IN (
-       SELECT DISTINCT ip_id FROM packages
-       WHERE pipeline_stage NOT IN ('pass') AND status != 'archived' AND ip_id IS NOT NULL
-     )`
-  )?.total ?? 0;
-
-  const onAirShows = query<OnAirShow>(
-    "SELECT title, production_hours FROM site_shows WHERE status = 'active' AND production_hours > 0 ORDER BY production_hours DESC"
-  );
-
-  const activePitches = query<ActivePitch>(
-    `SELECT pkg.id, pkg.name, pkg.pipeline_stage, pkg.days_in_stage,
-            pkg.ask_episode_count, pkg.ask_format,
-            ic.title AS ip_title, ic.production_hours,
-            bc.name  AS buyer_name, co.name AS company_name
-     FROM packages pkg
-     LEFT JOIN ip_catalog ic   ON ic.id = pkg.ip_id
-     LEFT JOIN buyer_contacts bc ON bc.id = pkg.target_contact_id
-     LEFT JOIN buyer_companies co ON co.id = pkg.target_company_id
-     WHERE pkg.pipeline_stage NOT IN ('pass') AND pkg.status != 'archived'
-     ORDER BY pkg.stage_entered_at ASC NULLS LAST
-     LIMIT 30`
-  );
+  // Production hours — direct DB queries (awaited — Postgres returns Promises)
+  const [onAirTotalRow, pipelineTotalRow, onAirShows, activePitches] = await Promise.all([
+    queryOne<{ total: number }>(
+      "SELECT COALESCE(SUM(production_hours), 0) AS total FROM site_shows WHERE status = 'active'"
+    ),
+    queryOne<{ total: number }>(
+      `SELECT COALESCE(SUM(ic.production_hours), 0) AS total
+       FROM ip_catalog ic
+       WHERE ic.id IN (
+         SELECT DISTINCT ip_id FROM packages
+         WHERE pipeline_stage NOT IN ('pass') AND status != 'archived' AND ip_id IS NOT NULL
+       )`
+    ),
+    query<OnAirShow>(
+      "SELECT title, production_hours FROM site_shows WHERE status = 'active' AND production_hours > 0 ORDER BY production_hours DESC"
+    ),
+    query<ActivePitch>(
+      `SELECT pkg.id, pkg.name, pkg.pipeline_stage, pkg.days_in_stage,
+              pkg.ask_episode_count, pkg.ask_format,
+              ic.title AS ip_title, ic.production_hours,
+              bc.name  AS buyer_name, co.name AS company_name
+       FROM packages pkg
+       LEFT JOIN ip_catalog ic   ON ic.id = pkg.ip_id
+       LEFT JOIN buyer_contacts bc ON bc.id = pkg.target_contact_id
+       LEFT JOIN buyer_companies co ON co.id = pkg.target_company_id
+       WHERE pkg.pipeline_stage NOT IN ('pass') AND pkg.status != 'archived'
+       ORDER BY pkg.stage_entered_at ASC NULLS LAST
+       LIMIT 30`
+    ),
+  ]);
+  const onAirTotal    = onAirTotalRow?.total ?? 0;
+  const pipelineTotal = pipelineTotalRow?.total ?? 0;
 
   const stageCounts: Record<string, number> = {};
   const stuckStages = new Set<string>();

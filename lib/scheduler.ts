@@ -50,11 +50,12 @@ export function initScheduler(): void {
   // ── Job 3: days_in_stage incrementer ────────────────────────────────────────
   // Runs every hour and bumps the counter for all packages that have a stage_entered_at.
   // The counter is denormalized for fast dashboard sorting without date arithmetic in SQL.
-  cron.schedule('0 * * * *', () => {
+  cron.schedule('0 * * * *', async () => {
     console.log(`[scheduler] ${timestamp()} — updating days_in_stage`);
     try {
-      // Only increment packages where stage_entered_at is in the past
-      run(
+      // Only increment packages where stage_entered_at is in the past.
+      // CAST(… AS INTEGER) works in both SQLite and Postgres, so no translation needed here.
+      await run(
         `UPDATE packages
             SET days_in_stage = CAST((? - stage_entered_at) / 86400000 AS INTEGER)
           WHERE stage_entered_at IS NOT NULL

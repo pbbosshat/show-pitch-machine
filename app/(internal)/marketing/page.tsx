@@ -214,7 +214,8 @@ function FlowsPanel({ data }: { data: { from: string; to: string; views: number 
 // ── Data fetching ─────────────────────────────────────────────────────────────
 
 async function getGA(): Promise<{ data: GASummary | null; propertyId: string }> {
-  const row = queryOne<{ value: string }>('SELECT value FROM site_content WHERE key = ?', ['site.ga4_id']);
+  // queryOne is now async in Postgres mode — must be awaited
+  const row = await queryOne<{ value: string }>('SELECT value FROM site_content WHERE key = ?', ['site.ga4_id']);
   // DB value wins; GA4_PROPERTY_ID env var is the authoritative fallback (486537975)
   const propertyId = row?.value?.trim() || process.env.GA4_PROPERTY_ID || '';
   if (!propertyId) return { data: null, propertyId: '' };

@@ -13,9 +13,10 @@ import { query } from '@/lib/db';
 
 // ── Data fetch ─────────────────────────────────────────────────────────────────
 
-function fetchSizzles(): SizzleCardData[] {
+// Async because query() returns a Promise in Postgres mode
+async function fetchSizzles(): Promise<SizzleCardData[]> {
   try {
-    const rows = query<SizzleCardData>(
+    const rows = await query<SizzleCardData>(
       `SELECT
         sr.id,
         sr.ip_catalog_id,
@@ -46,8 +47,8 @@ function fetchSizzles(): SizzleCardData[] {
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
-export default function SizzlesPage() {
-  const sizzles = fetchSizzles();
+export default async function SizzlesPage() {
+  const sizzles = await fetchSizzles();
   const withUrl = sizzles.filter((s) => s.vimeo_url);
 
   return (

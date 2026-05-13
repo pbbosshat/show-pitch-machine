@@ -88,9 +88,10 @@ const EDITORIAL_ENTRIES: ListItem[] = [
  * (e.g. a cold Railway deploy before migrations have run).
  * Errors are surfaced to the console so they show up in Railway logs.
  */
-function fetchDbPressReleases(): ListItem[] {
+// Async because query() returns a Promise in Postgres mode
+async function fetchDbPressReleases(): Promise<ListItem[]> {
   try {
-    const rows = query<{
+    const rows = await query<{
       id: string;
       headline: string;
       slug: string;
@@ -133,10 +134,10 @@ function fetchDbPressReleases(): ListItem[] {
 
 // ─── Page component ───────────────────────────────────────────────────────────
 
-export default function PressReleasesPage() {
+export default async function PressReleasesPage() {
   // Merge: 2 pinned editorial entries first, then DB-driven entries below.
   // The editorial entries are guaranteed to appear even when the DB is empty.
-  const dbEntries = fetchDbPressReleases();
+  const dbEntries = await fetchDbPressReleases();
   const allItems: ListItem[] = [...EDITORIAL_ENTRIES, ...dbEntries];
 
   // ── ItemList schema.org JSON-LD ────────────────────────────────────────────

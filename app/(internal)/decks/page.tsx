@@ -11,7 +11,8 @@ import DecksClient from './DecksClient';
 import type { DeckSite } from './DecksClient';
 
 export default async function DecksPage() {
-  const decksRaw = query<DeckSite>(
+  // query() is async in Postgres mode — await before JSON serialization
+  const decksRaw = await query<DeckSite>(
     `SELECT id, slug, title, subtitle, genre, format, ep_count, status, visibility,
             slide_count, is_active, image_url, rights_type, canva_url,
             created_at, updated_at

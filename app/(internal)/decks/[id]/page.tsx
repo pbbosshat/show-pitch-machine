@@ -120,7 +120,7 @@ export default async function DeckDetailPage({
   // Validate tab — default to edit on unknown values
   const activeTab = ['edit', 'buyers', 'history'].includes(tab) ? tab : 'edit';
 
-  const siteRaw = queryOne<DeckSite>(
+  const siteRaw = await queryOne<DeckSite>(
     `SELECT * FROM deck_sites WHERE id = ?`,
     [id]
   );
@@ -135,7 +135,7 @@ export default async function DeckDetailPage({
   // for the other tabs on every page load.
   let slides: DeckSlide[] = [];
   if (activeTab === 'edit') {
-    const slidesRaw = query<DeckSlide>(
+    const slidesRaw = await query<DeckSlide>(
       `SELECT * FROM deck_slides WHERE deck_site_id = ? ORDER BY slide_order ASC`,
       [id]
     );

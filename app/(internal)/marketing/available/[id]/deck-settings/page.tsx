@@ -18,10 +18,11 @@ interface RawDeckRow extends Omit<AvailableTitle, 'sizzle_history'> {
 // sizzle_history is stored as a JSON string in SQLite — parse it here so the
 // client component always receives a typed SizzleEntry[] (not a raw string).
 // Returns null on any DB error or missing row — handled below as 404.
-function getTitle(id: string): AvailableTitle | null {
+// Async because initDb() and queryOne() are now Postgres-backed Promises
+async function getTitle(id: string): Promise<AvailableTitle | null> {
   try {
-    initDb();
-    const row = queryOne<RawDeckRow>('SELECT *, gate_password AS password FROM deck_sites WHERE id = ?', [id]);
+    await initDb();
+    const row = await queryOne<RawDeckRow>('SELECT *, gate_password AS password FROM deck_sites WHERE id = ?', [id]);
     if (!row) return null;
     // Parse sizzle_history JSON; default to empty array if null/malformed
     let sizzleHistory: AvailableTitle['sizzle_history'] = [];
@@ -46,7 +47,7 @@ export default async function DeckSettingsPage(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const title = getTitle(id);
+  const title = await getTitle(id);
 
   // Hard 404 — Next.js renders the nearest not-found.tsx boundary.
   if (!title) notFound();
