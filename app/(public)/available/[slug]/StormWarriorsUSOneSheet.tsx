@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Electric amber — primary (storm energy, lightning)
 const AMBER   = '#F07820';
@@ -210,8 +211,9 @@ export default function StormWarriorsUSOneSheet({ title }: { title: SafeTitle })
     return <PasswordGate onUnlock={() => setUnlocked(true)} />;
   }
 
-  // Live Vimeo sizzle reel — confirmed available for Storm Warriors US — use DB URL if set, fallback to hardcoded
-  const embedUrl: string | null = title.vimeo_url || 'https://player.vimeo.com/video/1058661997?h=d23befd589';
+  // Live Vimeo sizzle reel — confirmed available for Storm Warriors US — use DB URL if set, fallback to hardcoded.
+  // Run DB-stored vimeo.com URLs through vimeoEmbedUrl(); the hardcoded fallback is already an embed URL.
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url, 'https://player.vimeo.com/video/1058661997?h=d23befd589');
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Cold institutional blue — distance, judgment, ice
 const PRIMARY = '#4A6E8A';
@@ -93,7 +94,7 @@ export default function SusanSmithOneSheet({ title }: { title: SafeTitle }) {
   }
 
   // Sizzle reel embed URL — use DB URL if set, fallback to hardcoded
-  const embedUrl: string | null = title.vimeo_url || 'https://player.vimeo.com/video/949340808?h=c2e7a45046';
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url, 'https://player.vimeo.com/video/949340808?h=c2e7a45046');
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>

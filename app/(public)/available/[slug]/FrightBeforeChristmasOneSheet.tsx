@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Christmas red — the holiday horror color, yuletide dread
 const PRIMARY = '#CC2020';
@@ -101,7 +102,7 @@ export default function FrightBeforeChristmasOneSheet({ title }: { title: SafeTi
   }
 
   // Sizzle reel from Vimeo — holiday horror anthology preview — use DB URL if set, fallback to hardcoded
-  const embedUrl: string | null = title.vimeo_url || 'https://player.vimeo.com/video/905374739?h=08175a037f';
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url, 'https://player.vimeo.com/video/905374739?h=08175a037f');
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>

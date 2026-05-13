@@ -359,12 +359,17 @@ const inputStyle: React.CSSProperties = {
 // Main export — DecksClient
 // ---------------------------------------------------------------------------
 
-type FilterTab = 'all' | 'draft' | 'published';
+type FilterTab   = 'all' | 'draft' | 'published';
+type ActiveFilter = 'all' | 'active' | 'inactive';
 
 export default function DecksClient({ initialDecks }: { initialDecks: DeckSite[] }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [filter, setFilter] = useState<FilterTab>('all');
+  // activeFilter — gates rows by deck_sites.is_active. Inactive rows still appear in
+  // the admin but their /available/[slug] public page returns 404, so being able to
+  // isolate them here is how you find decks that need to be flipped on.
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
   const [search, setSearch] = useState('');
   // addDeckOpen — controls the new native "Add Deck" modal (no Canva URL)
   const [addDeckOpen, setAddDeckOpen] = useState(false);
@@ -374,6 +379,8 @@ export default function DecksClient({ initialDecks }: { initialDecks: DeckSite[]
   const draftCount     = initialDecks.filter((d) => d.status === 'draft').length;
   const publishedCount = initialDecks.filter((d) => d.status === 'published').length;
   const totalCount     = initialDecks.length;
+  const activeCount    = initialDecks.filter((d) => d.is_active === 1).length;
+  const inactiveCount  = initialDecks.filter((d) => d.is_active !== 1).length;
 
   const tabs: { id: FilterTab; label: string }[] = [
     { id: 'all',       label: `All (${totalCount})` },
@@ -381,10 +388,18 @@ export default function DecksClient({ initialDecks }: { initialDecks: DeckSite[]
     { id: 'published', label: `Published (${publishedCount})` },
   ];
 
+  const activeTabs: { id: ActiveFilter; label: string }[] = [
+    { id: 'all',      label: `All (${totalCount})` },
+    { id: 'active',   label: `Active (${activeCount})` },
+    { id: 'inactive', label: `Inactive (${inactiveCount})` },
+  ];
+
   const term = search.trim().toLowerCase();
   const filtered = initialDecks.filter((d) => {
     if (filter === 'draft'     && d.status !== 'draft')     return false;
     if (filter === 'published' && d.status !== 'published') return false;
+    if (activeFilter === 'active'   && d.is_active !== 1) return false;
+    if (activeFilter === 'inactive' && d.is_active === 1) return false;
     if (!term) return true;
     return [d.title, d.subtitle, d.genre, d.format, d.ep_count, d.rights_type, d.status, d.visibility, d.slug]
       .filter(Boolean).join(' ').toLowerCase().includes(term);
@@ -441,6 +456,26 @@ export default function DecksClient({ initialDecks }: { initialDecks: DeckSite[]
                 background: filter === tab.id ? 'rgba(204,18,18,0.08)' : 'transparent',
                 color: filter === tab.id ? '#CC1212' : 'var(--text-secondary)',
                 fontSize: 12, fontWeight: filter === tab.id ? 700 : 500,
+                cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms ease',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {/* Active / Inactive filter — separate from status because is_active gates
+            whether the public /available/[slug] page renders or 404s. */}
+        <div style={{ display: 'flex', gap: 4, paddingLeft: 8, borderLeft: '1px solid var(--border-subtle)' }}>
+          {activeTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveFilter(tab.id)}
+              style={{
+                padding: '6px 14px', borderRadius: 6, border: '1px solid',
+                borderColor: activeFilter === tab.id ? '#CC1212' : 'var(--border-subtle)',
+                background: activeFilter === tab.id ? 'rgba(204,18,18,0.08)' : 'transparent',
+                color: activeFilter === tab.id ? '#CC1212' : 'var(--text-secondary)',
+                fontSize: 12, fontWeight: activeFilter === tab.id ? 700 : 500,
                 cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms ease',
               }}
             >

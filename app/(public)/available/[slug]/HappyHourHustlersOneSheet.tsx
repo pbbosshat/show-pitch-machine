@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Bar amber — warm, whiskey-lit, Midwest energy
 const PRIMARY = '#E8940A';
@@ -95,7 +96,7 @@ export default function HappyHourHustlersOneSheet({ title }: { title: SafeTitle 
   }
 
   // Sizzle reel on Vimeo — use DB URL if set, fallback to hardcoded
-  const embedUrl = title.vimeo_url || 'https://player.vimeo.com/video/1077316521?h=929a935412';
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url, 'https://player.vimeo.com/video/1077316521?h=929a935412');
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>
@@ -261,7 +262,7 @@ export default function HappyHourHustlersOneSheet({ title }: { title: SafeTitle 
           }}>Casting Sizzle</p>
           <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
             <iframe
-              src={embedUrl}
+              src={embedUrl ?? undefined}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0, borderRadius: 4 }}
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen

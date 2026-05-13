@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Warm amber/copper palette — heartfelt, animal rescue warmth
 const PRIMARY = '#D4891A'; // amber
@@ -97,7 +98,7 @@ export default function GiveMeShelterOneSheet({ title }: { title: SafeTitle }) {
   }
 
   // Sizzle reel — use DB URL (no hardcoded fallback; DB has it)
-  const embedUrl: string | null = title.vimeo_url ?? null;
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url);
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>

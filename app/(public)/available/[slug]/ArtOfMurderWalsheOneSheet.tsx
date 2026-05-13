@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Gold — wealth, deception, art world intrigue
 const PRIMARY = '#D4AF37';
@@ -103,7 +104,7 @@ export default function ArtOfMurderWalsheOneSheet({ title }: { title: SafeTitle 
   }
 
   // Sizzle reel available — use DB URL if set, fallback to hardcoded
-  const embedUrl: string | null = title.vimeo_url || 'https://player.vimeo.com/video/1116791591?h=20323057f9';
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url, 'https://player.vimeo.com/video/1116791591?h=20323057f9');
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>

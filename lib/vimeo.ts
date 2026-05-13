@@ -1,6 +1,8 @@
 // lib/vimeo.ts
-// Converts any Vimeo URL format to the player embed src format.
-// Used by both the API and the UI to normalise URLs before storage / display.
+// Video URL helpers. Despite the filename, this module covers both Vimeo and
+// Google Drive — Drive is the preferred source for deck/one-sheet embeds and
+// Vimeo is the legacy fallback. `pickDeckVideoEmbed()` is the single entry
+// point one-sheets should call.
 
 /**
  * Converts any Vimeo URL variant to the canonical player.vimeo.com embed URL.
@@ -34,4 +36,39 @@ export function toVimeoEmbedUrl(url: string): string {
 
   // No pattern matched — return unchanged (may be a custom domain or future format)
   return url;
+}
+
+/**
+ * Google Drive file ID → embeddable preview URL.
+ *
+ * Drive serves `https://drive.google.com/file/d/{id}/preview` as a framed
+ * player (controls, fullscreen, the works) for any file whose sharing is set
+ * to "anyone with the link". Sizzle uploads through `lib/google-drive-video.ts`
+ * set that permission at upload time, so this URL works for every backfilled
+ * file in the myentprod.com "Sizzle Reels" folder.
+ */
+export function toDriveEmbedUrl(fileId: string): string {
+  return `https://drive.google.com/file/d/${fileId}/preview`;
+}
+
+/**
+ * Decide which video to embed on a deck / one-sheet, preferring Drive over Vimeo.
+ *
+ * Order of preference:
+ *   1. `drive_file_id` if set — Drive is the canonical store going forward
+ *   2. `vimeo_url` if set — passed through `toVimeoEmbedUrl` to handle page URLs
+ *   3. Caller's hardcoded fallback (legacy player.vimeo.com URLs in some
+ *      one-sheets — these are being phased out as Drive backfills land).
+ *
+ * Returns null when nothing is available so callers can render a placeholder.
+ */
+export function pickDeckVideoEmbed(
+  driveFileId: string | null | undefined,
+  vimeoUrl: string | null | undefined,
+  hardcodedFallback?: string | null,
+): string | null {
+  if (driveFileId) return toDriveEmbedUrl(driveFileId);
+  if (vimeoUrl)    return toVimeoEmbedUrl(vimeoUrl);
+  if (hardcodedFallback) return toVimeoEmbedUrl(hardcodedFallback);
+  return null;
 }

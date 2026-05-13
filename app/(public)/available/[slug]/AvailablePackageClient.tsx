@@ -6,15 +6,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
-
-// ── Vimeo URL → embed URL conversion ──────────────────────────────────────────
-// Handles standard vimeo.com URLs: https://vimeo.com/123456789/abcdef1234
-// Returns null for unrecognized formats so the embed block is safely skipped.
-function vimeoEmbedUrl(url: string): string | null {
-  const m = url.match(/vimeo\.com\/(\d+)(?:\/([a-f0-9]+))?/);
-  if (!m) return null;
-  return `https://player.vimeo.com/video/${m[1]}${m[2] ? `?h=${m[2]}` : ''}`;
-}
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Shared input style used across all form fields in the password gate
 const inputStyle: React.CSSProperties = {
@@ -139,7 +131,7 @@ export default function AvailablePackageClient({ title }: { title: SafeTitle }) 
   }
 
   // ── Vimeo embed URL ──────────────────────────────────────────────────────
-  const embedUrl = title.vimeo_url ? vimeoEmbedUrl(title.vimeo_url) : null;
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url);
 
   return (
     <div style={{ background: '#000', minHeight: '100vh' }}>

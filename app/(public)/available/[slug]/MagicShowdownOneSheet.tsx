@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Midnight purple — mystical, theatrical, electric
 const PRIMARY = '#9B59B6';
@@ -95,7 +96,7 @@ export default function MagicShowdownOneSheet({ title }: { title: SafeTitle }) {
   }
 
   // Sizzle reel on Vimeo — use DB URL if set, fallback to hardcoded
-  const embedUrl = title.vimeo_url || 'https://player.vimeo.com/video/1152709330?h=a5049b3652';
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url, 'https://player.vimeo.com/video/1152709330?h=a5049b3652');
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>
@@ -263,7 +264,7 @@ export default function MagicShowdownOneSheet({ title }: { title: SafeTitle }) {
           }}>Sizzle Reel</p>
           <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
             <iframe
-              src={embedUrl}
+              src={embedUrl ?? undefined}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0, borderRadius: 4 }}
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen

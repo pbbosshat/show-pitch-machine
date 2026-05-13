@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Alert red — danger, urgency, viral energy
 const PRIMARY = '#E83030';
@@ -94,7 +95,7 @@ export default function BotchedByATikTokDocOneSheet({ title }: { title: SafeTitl
   }
 
   // Sizzle reel embed URL — use DB URL if set, fallback to hardcoded
-  const embedUrl: string | null = title.vimeo_url || 'https://player.vimeo.com/video/1085697854?h=293bac573a';
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url, 'https://player.vimeo.com/video/1085697854?h=293bac573a');
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>

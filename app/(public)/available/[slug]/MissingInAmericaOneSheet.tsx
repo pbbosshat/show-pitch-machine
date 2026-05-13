@@ -2,12 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
-
-function vimeoEmbedUrl(url: string): string | null {
-  const m = url.match(/vimeo\.com\/(\d+)(?:\/([a-f0-9]+))?/);
-  if (!m) return null;
-  return `https://player.vimeo.com/video/${m[1]}${m[2] ? `?h=${m[2]}&autoplay=0` : '?autoplay=0'}`;
-}
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 const AMBER  = '#F5C400';   // amber alert yellow — headlines, stats
 const RED    = '#CC0000';   // urgency/crime — accents, CTA
@@ -102,7 +97,7 @@ export default function MissingInAmericaOneSheet({ title }: { title: SafeTitle }
   const [reqSent, setReqSent]   = useState(false);
   const [reqError, setReqError] = useState('');
 
-  const embedUrl = title.vimeo_url ? vimeoEmbedUrl(title.vimeo_url) : null;
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url);
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();

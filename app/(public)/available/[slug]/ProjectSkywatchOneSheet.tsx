@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Deep space blue — UAP investigation energy
 const PRIMARY = '#2563EB';
@@ -96,7 +97,7 @@ export default function ProjectSkywatchOneSheet({ title }: { title: SafeTitle })
   }
 
   // Sizzle reel embed URL — use DB URL if set, fallback to hardcoded
-  const embedUrl: string | null = title.vimeo_url || 'https://player.vimeo.com/video/958547025?h=93220f9860';
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url, 'https://player.vimeo.com/video/958547025?h=93220f9860');
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>

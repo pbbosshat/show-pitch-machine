@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Amber — parole board hearings, tension, final judgment
 const PRIMARY = '#D4761E';
@@ -93,7 +94,7 @@ export default function UpForParoleOneSheet({ title }: { title: SafeTitle }) {
   }
 
   // Sizzle reel embed URL — use DB URL if set, fallback to hardcoded
-  const embedUrl: string | null = title.vimeo_url || 'https://player.vimeo.com/video/993640958?h=2e9d74f1da';
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url, 'https://player.vimeo.com/video/993640958?h=2e9d74f1da');
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Dusty mauve — justice, femininity, suppressed truth
 const PRIMARY = '#9E6E7A';
@@ -99,7 +100,7 @@ export default function ShowTellSandyShawOneSheet({ title }: { title: SafeTitle 
   }
 
   // Vimeo showcase embed — use DB URL if set, fallback to hardcoded
-  const embedUrl: string | null = title.vimeo_url || 'https://vimeo.com/showcase/11884490';
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url, 'https://vimeo.com/showcase/11884490');
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>

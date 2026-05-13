@@ -91,6 +91,9 @@ interface AvailableRow {
   contact_email: string | null;
   image_url: string | null;
   vimeo_url: string | null;
+  // Google Drive file ID for the sizzle reel. Preferred over vimeo_url — see
+  // pickDeckVideoEmbed() in lib/vimeo.ts.
+  drive_file_id: string | null;
   password: string | null;
 }
 
@@ -109,6 +112,7 @@ export interface SafeTitle {
   contact_email: string | null;
   image_url: string | null;
   vimeo_url: string | null;
+  drive_file_id: string | null;
   has_password: boolean;
 }
 
@@ -118,7 +122,7 @@ function fetchRow(slug: string): AvailableRow | null {
   const rows = query<AvailableRow>(
     `SELECT id, title, slug, rights_type, genre, seasons, episode_count,
             runtime_mins, markets, description, contact_email,
-            image_url, vimeo_url, gate_password AS password
+            image_url, vimeo_url, drive_file_id, gate_password AS password
      FROM deck_sites
      WHERE slug = ? AND is_active = 1 AND status = 'published'`,
     [slug]

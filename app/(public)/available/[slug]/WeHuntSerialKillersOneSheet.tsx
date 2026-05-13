@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Crimson — investigative danger, urgency
 const PRIMARY = '#C41E3A';
@@ -97,7 +98,7 @@ export default function WeHuntSerialKillersOneSheet({ title }: { title: SafeTitl
   }
 
   // Sizzle reel available — use DB URL if set, fallback to hardcoded
-  const embedUrl: string | null = title.vimeo_url || 'https://player.vimeo.com/video/1045104876?h=e2ec221efd';
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url, 'https://player.vimeo.com/video/1045104876?h=e2ec221efd');
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>

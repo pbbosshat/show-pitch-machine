@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // ── PDF export action bar ─────────────────────────────────────────────────────
 function ExportBar({ slug }: { slug: string }) {
@@ -86,12 +87,6 @@ function ExportBar({ slug }: { slug: string }) {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
-}
-
-function vimeoEmbedUrl(url: string): string | null {
-  const m = url.match(/vimeo\.com\/(\d+)(?:\/([a-f0-9]+))?/);
-  if (!m) return null;
-  return `https://player.vimeo.com/video/${m[1]}${m[2] ? `?h=${m[2]}&autoplay=0` : '?autoplay=0'}`;
 }
 
 const GOLD   = '#F5C400';
@@ -196,7 +191,7 @@ export default function GottaCatchEmAllOneSheet({ title }: { title: SafeTitle })
   const [reqSent, setReqSent]   = useState(false);
   const [reqError, setReqError] = useState('');
 
-  const embedUrl = title.vimeo_url ? vimeoEmbedUrl(title.vimeo_url) : null;
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url);
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Mardi Gras / Louisiana palette — deep purple and gold on dark navy
 const PRIMARY = '#D4AF37'; // Mardi Gras gold
@@ -104,7 +105,7 @@ export default function BouchardsOneSheet({ title }: { title: SafeTitle }) {
   }
 
   // Sizzle reel — use DB URL
-  const embedUrl: string | null = title.vimeo_url ?? null;
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url);
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>

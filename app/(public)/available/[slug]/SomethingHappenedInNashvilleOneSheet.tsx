@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Nashville gold — honky-tonk neon glow
 const PRIMARY = '#D4A017';
@@ -93,7 +94,7 @@ export default function SomethingHappenedInNashvilleOneSheet({ title }: { title:
   }
 
   // Vimeo showcase embed — use DB URL if set, fallback to hardcoded
-  const embedUrl: string | null = title.vimeo_url || 'https://vimeo.com/showcase/11942776';
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url, 'https://vimeo.com/showcase/11942776');
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Crunk gold — electric, celebratory, Atlanta energy
 const PRIMARY = '#F5C400';
@@ -95,7 +96,7 @@ export default function WelcomeToCrunkvilleOneSheet({ title }: { title: SafeTitl
   }
 
   // Sizzle reel — hosted on Vimeo — use DB URL if set, fallback to hardcoded
-  const embedUrl = title.vimeo_url || 'https://player.vimeo.com/video/1059770793?h=168000b3c2';
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url, 'https://player.vimeo.com/video/1059770793?h=168000b3c2');
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>
@@ -265,7 +266,7 @@ export default function WelcomeToCrunkvilleOneSheet({ title }: { title: SafeTitl
           }}>Sizzle Reel</p>
           <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
             <iframe
-              src={embedUrl}
+              src={embedUrl ?? undefined}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0, borderRadius: 4 }}
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen

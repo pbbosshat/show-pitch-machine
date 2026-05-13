@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SafeTitle } from './page';
+import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
 // Cobalt blue — truth, urgency, a case that defies belief
 const PRIMARY = '#1E5FA8';
@@ -97,7 +98,7 @@ export default function WhatHappenedToMichelleReneeOneSheet({ title }: { title: 
   }
 
   // Sizzle reel available — use DB URL if set, fallback to hardcoded
-  const embedUrl: string | null = title.vimeo_url || 'https://player.vimeo.com/video/1020264275?h=55db128984';
+  const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url, 'https://player.vimeo.com/video/1020264275?h=55db128984');
 
   return (
     <div style={{ background: BLACK, color: WHITE, fontFamily: "'Roboto', sans-serif", lineHeight: 1.6 }}>
