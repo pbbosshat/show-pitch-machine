@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import SizzleCard, { type SizzleCardData } from '@/components/shows/SizzleCard';
+import AddSizzleModal from '@/components/shows/AddSizzleModal';
 
 function matchesTerm(sizzle: SizzleCardData, term: string): boolean {
   const haystack = [
@@ -16,26 +17,44 @@ function matchesTerm(sizzle: SizzleCardData, term: string): boolean {
   return haystack.includes(term);
 }
 
-export default function SizzlesClient({ sizzles }: { sizzles: SizzleCardData[] }) {
+export default function SizzlesClient({ sizzles: serverSizzles }: { sizzles: SizzleCardData[] }) {
+  // Local copy so newly-created sizzles can be prepended without a full page reload.
+  // The page is `force-dynamic` server-side, but optimistically updating here keeps
+  // the post-upload experience instant.
+  const [sizzles, setSizzles] = useState<SizzleCardData[]>(serverSizzles);
   const [search, setSearch] = useState('');
-  const term = search.trim().toLowerCase();
+  const [addOpen, setAddOpen] = useState(false);
 
+  const term = search.trim().toLowerCase();
   const filtered = term ? sizzles.filter((s) => matchesTerm(s, term)) : sizzles;
   const withUrl = filtered.filter((s) => s.vimeo_url);
   const withoutUrl = filtered.filter((s) => !s.vimeo_url);
 
+  // Callback handed to AddSizzleModal — runs when the API has finished writing
+  // the row + uploading the video. Prepend so the new card is the first thing
+  // the user sees in the "With Video Link" section.
+  function handleCreated(newSizzle: SizzleCardData) {
+    setSizzles((prev) => [newSizzle, ...prev]);
+    setAddOpen(false);
+  }
+
   return (
     <div className="space-y-8">
 
-      {/* ── Search bar ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      {addOpen && (
+        <AddSizzleModal onCreated={handleCreated} onClose={() => setAddOpen(false)} />
+      )}
+
+      {/* ── Search bar + Add Video button ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <input
           type="search"
           placeholder="Search by title, notes, platform, sheet, URL…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{
-            width: '100%',
+            flex: 1,
+            minWidth: 240,
             maxWidth: 420,
             padding: '7px 12px',
             borderRadius: 6,
@@ -51,6 +70,32 @@ export default function SizzlesClient({ sizzles }: { sizzles: SizzleCardData[] }
             {filtered.length} of {sizzles.length} result{filtered.length !== 1 ? 's' : ''}
           </span>
         )}
+
+        {/* "+ Add Video" sits on the right so it stays visually anchored away from
+             the search input even when filter chips eventually land between them. */}
+        <button
+          onClick={() => setAddOpen(true)}
+          style={{
+            marginLeft: 'auto',
+            background: 'var(--accent, #e51d26)',
+            border: 'none',
+            borderRadius: 6,
+            color: '#fff',
+            cursor: 'pointer',
+            fontWeight: 700,
+            fontSize: 13,
+            padding: '8px 16px',
+            letterSpacing: '0.03em',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            whiteSpace: 'nowrap',
+          }}
+          aria-label="Add a new sizzle reel"
+        >
+          <span style={{ fontSize: 16, lineHeight: 1, fontWeight: 800 }}>+</span>
+          Add Video
+        </button>
       </div>
 
       {/* ── Section 1: Sizzles with a video URL ── */}
