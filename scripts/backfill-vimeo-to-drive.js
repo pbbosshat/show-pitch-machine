@@ -52,7 +52,10 @@ const CDP_URL     = process.env.CDP_URL              || 'http://localhost:9222';
 const TOKEN_PATH  = process.env.MYE_TOKEN_PATH       || 'C:/Users/pb/.claude/google/mye_token.json';
 const CREDS_PATH  = process.env.MYE_CREDENTIALS_PATH || 'C:/Users/pb/.claude/google/credentials.json';
 const DB_PATH     = process.env.DATABASE_PATH        || path.join(process.cwd(), 'data', 'db.sqlite');
-const TMP_DIR     = process.env.BACKFILL_TMP         || path.join(os.tmpdir(), 'vimeo-backfill');
+// Use a project-local tmp dir by default. The system temp directory is subject
+// to Windows TEMP cleanup and AV scanners that can delete files mid-run; a
+// directory under data/ stays untouched across the whole multi-hour backfill.
+const TMP_DIR     = process.env.BACKFILL_TMP         || path.join(process.cwd(), 'data', 'vimeo-backfill-tmp');
 const CAPTURE_JWT = path.join(__dirname, 'capture-vimeo-jwt.js');
 
 // Per-row timeout for the Vimeo download itself; total per-row budget is
@@ -349,6 +352,10 @@ async function main() {
       const ext = (rendition.type || 'mp4').split('/').pop() || 'mp4';
       const filename = safeFilename(row.title, row.clip_id, ext);
       tmpFile = path.join(TMP_DIR, `${row.clip_id}-${Date.now()}.${ext}`);
+      // Defensive — if the tmp dir was deleted between iterations (Windows
+      // TEMP cleanup, AV scanner, manual rm) the createWriteStream call below
+      // would ENOENT. Re-create per row so the run survives.
+      fs.mkdirSync(TMP_DIR, { recursive: true });
 
       console.log(`    downloading ${rendition.width}×${rendition.height} (${rendition.quality})`);
       // No per-chunk progress logging — when stdout is redirected to a file

@@ -54,3 +54,4 @@ show-pitch.db
 
 # one-off Railway deployment scripts (contain hardcoded tokens)
 railway-*.js
+data/vimeo-backfill-tmp/
