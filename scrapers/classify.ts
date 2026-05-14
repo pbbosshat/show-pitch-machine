@@ -77,8 +77,12 @@ function tierFor(fmt: FormatType, reason: string, signal: SignalType = 'greenlit
 // Matched case-insensitively against headline text. Extend as new scripted
 // renewals appear in the scrape feed — if it's in this list, it's always Tier 3.
 
+// Trade outlets style "Law & Order" two ways — ampersand and the word "and"
+// (e.g. Variety vs. TVLine). Include both spellings so a renewal piece can't
+// slip past the substring check just because the outlet preferred one form.
 const KNOWN_SCRIPTED_TITLES = [
-  "grey's anatomy", 'criminal minds', 'law & order', 'chicago fire', 'chicago med',
+  "grey's anatomy", 'criminal minds', 'law & order', 'law and order',
+  'chicago fire', 'chicago med',
   'chicago p.d.', 'the rookie', 'will trent', 'shifting gears', 'scrubs',
   'stranger things', 'school spirits', "nobody wants this", 'rooster',
   'beyond the gates', 'the madison', 'brilliant minds', "the 'burbs",
