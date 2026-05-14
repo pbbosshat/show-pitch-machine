@@ -69,11 +69,19 @@ export async function GET(request: Request) {
 
     // Exec moves and mandate statements are always shown regardless of content tier.
     // For content items (greenlit/cancelled/other), hide tier-3 by default.
+    //
+    // Use `IS DISTINCT FROM` instead of `<>` because Postgres three-valued logic
+    // would otherwise silently drop rows where `relevance_tier IS NULL`:
+    //   NULL = '3-skip'  → UNKNOWN
+    //   greenlit AND UNKNOWN → UNKNOWN
+    //   NOT UNKNOWN → UNKNOWN → treated as FALSE in WHERE → row excluded.
+    // `IS DISTINCT FROM` returns TRUE when either side is NULL and they differ,
+    // which is what we want (an unclassified greenlit is not 3-skip).
     const skipFilter = includeSkip
       ? ''
-      : `AND NOT (
-           item_type IN ('greenlit', 'cancelled', 'other')
-           AND relevance_tier = '3-skip'
+      : `AND (
+           item_type NOT IN ('greenlit', 'cancelled', 'other')
+           OR relevance_tier IS DISTINCT FROM '3-skip'
          )`;
 
     // Include 'other' items only when they passed the relevance filter (1-direct or 2-adjacent).
