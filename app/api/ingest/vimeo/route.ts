@@ -4,11 +4,17 @@
  * Auth: INGEST_API_KEY in Authorization: Bearer header
  * Body:
  *   {
+ *     ip_catalog?:  IpCatalogRow[],     // ip_catalog upserts — keyed on id
  *     videos?:      VimeoVideoRow[],    // rows for vimeo_library — keyed on clip_id
  *     show_videos?: ShowVideoRow[],     // join rows tying ip_catalog ↔ vimeo_library
  *   }
  *
  * Upserts scraped Vimeo metadata + show links into Postgres.
+ *
+ * ip_catalog is accepted alongside the vimeo data because show_videos rows have
+ * a FK on ip_catalog(id) — pushing show_videos for a show that doesn't exist in
+ * live's ip_catalog yet would 500. Sending the parent rows in the same body
+ * lets a single sync push the whole graph (per-row, not in one transaction).
  * The Vimeo Library page reads directly from vimeo_library + show_videos, so
  * this is what populates the live /vimeo-library view after a local scrape.
  *
@@ -48,6 +54,27 @@ interface ShowVideoRow {
   notes?: string | null;
 }
 
+// Mirror of migrations/001_schema.sql ip_catalog. Only `id` and `title` are
+// required — everything else is COALESCE'd against the existing row so partial
+// updates don't blank out fields we don't ship.
+interface IpCatalogRow {
+  id: string;
+  title: string;
+  logline?: string | null;
+  format?: string | null;
+  genre?: string | null;
+  subgenre?: string | null;
+  episode_count?: number | null;
+  status?: string | null;
+  rights_status?: string | null;
+  rights_expiry?: number | null;
+  seasons_count?: number | null;
+  is_library?: number | null;
+  notes?: string | null;
+  created_at?: number | null;
+  updated_at?: number | null;
+}
+
 function checkAuth(request: NextRequest): boolean {
   const apiKey = process.env.INGEST_API_KEY;
   if (!apiKey) return false;
@@ -61,20 +88,64 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let body: { videos?: unknown; show_videos?: unknown };
+  let body: { ip_catalog?: unknown; videos?: unknown; show_videos?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const videos      = Array.isArray(body.videos)      ? body.videos      as VimeoVideoRow[] : [];
-  const showVideos  = Array.isArray(body.show_videos) ? body.show_videos as ShowVideoRow[]  : [];
+  const ipCatalog   = Array.isArray(body.ip_catalog) ? body.ip_catalog as IpCatalogRow[] : [];
+  const videos      = Array.isArray(body.videos)     ? body.videos     as VimeoVideoRow[] : [];
+  const showVideos  = Array.isArray(body.show_videos) ? body.show_videos as ShowVideoRow[] : [];
 
+  let ipInserted    = 0;
+  let ipUpdated     = 0;
   let videosInserted = 0;
   let videosUpdated  = 0;
   let linksInserted  = 0;
   let linksSkipped   = 0;
+
+  // ── ip_catalog upsert ──────────────────────────────────────────────────────
+  // Runs FIRST so any show_videos rows that reference these ids in the same
+  // request body succeed. ON CONFLICT(id) updates only the human-editable
+  // fields — rights/library flags are deliberately COALESCE'd to keep
+  // server-side admin edits from being clobbered by a stale sync push.
+  for (const ip of ipCatalog) {
+    if (!ip.id || !ip.title) continue;
+    const result = await run(
+      `INSERT INTO ip_catalog
+         (id, title, logline, format, genre, subgenre, episode_count, status,
+          rights_status, rights_expiry, seasons_count, is_library, notes,
+          created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         title         = excluded.title,
+         logline       = COALESCE(excluded.logline,       ip_catalog.logline),
+         format        = COALESCE(excluded.format,        ip_catalog.format),
+         genre         = COALESCE(excluded.genre,         ip_catalog.genre),
+         subgenre      = COALESCE(excluded.subgenre,      ip_catalog.subgenre),
+         episode_count = COALESCE(excluded.episode_count, ip_catalog.episode_count),
+         status        = COALESCE(excluded.status,        ip_catalog.status),
+         rights_status = COALESCE(excluded.rights_status, ip_catalog.rights_status),
+         rights_expiry = COALESCE(excluded.rights_expiry, ip_catalog.rights_expiry),
+         seasons_count = COALESCE(excluded.seasons_count, ip_catalog.seasons_count),
+         is_library    = COALESCE(excluded.is_library,    ip_catalog.is_library),
+         notes         = COALESCE(excluded.notes,         ip_catalog.notes),
+         updated_at    = COALESCE(excluded.updated_at,    ip_catalog.updated_at)`,
+      [
+        ip.id, ip.title,
+        ip.logline ?? null, ip.format ?? null, ip.genre ?? null, ip.subgenre ?? null,
+        ip.episode_count ?? null, ip.status ?? null,
+        ip.rights_status ?? null, ip.rights_expiry ?? null,
+        ip.seasons_count ?? null, ip.is_library ?? null,
+        ip.notes ?? null, ip.created_at ?? null, ip.updated_at ?? null,
+      ]
+    );
+    // Postgres pg driver doesn't distinguish insert from update via rowCount;
+    // we settle for a single counter that captures "rows touched".
+    if (result.changes > 0) ipInserted++;
+  }
 
   // ── vimeo_library upsert ───────────────────────────────────────────────────
   // Keyed on clip_id (UNIQUE in migration 026). Re-pushes safely refresh
@@ -175,10 +246,11 @@ export async function POST(request: NextRequest) {
   // Response shape matches the other /api/ingest/* endpoints so sync-to-railway.ts
   // can log uniformly across entity types.
   return NextResponse.json({
-    inserted: videosInserted + linksInserted,
-    updated:  videosUpdated,
-    total:    videos.length + showVideos.length,
+    inserted: ipInserted + videosInserted + linksInserted,
+    updated:  ipUpdated + videosUpdated,
+    total:    ipCatalog.length + videos.length + showVideos.length,
     detail: {
+      ip_catalog:  { inserted: ipInserted,    updated: ipUpdated,     total: ipCatalog.length },
       videos:      { inserted: videosInserted, updated: videosUpdated, total: videos.length },
       show_videos: { inserted: linksInserted,  skipped: linksSkipped,  total: showVideos.length },
     },
