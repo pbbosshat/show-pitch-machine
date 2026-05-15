@@ -16,11 +16,13 @@ const PUBLIC_PATHS = new Set([
   // crawlers see a 307 to /login and the site stops being indexed.
   '/robots.txt',
   '/sitemap.xml',
-  // GEO endpoint — llms.txt is the AI-crawler equivalent of robots.txt and
+  // GEO endpoints — llms.txt is the AI-crawler equivalent of robots.txt and
   // gives LLM training and retrieval systems a structured company summary.
-  // Without this whitelist, the middleware redirects /llms.txt to /login,
-  // making the file unreachable to ChatGPT/Claude/Perplexity ingestion.
+  // llms-full.txt is the same idea but with full page content for retrieval-
+  // augmented generation. Without these whitelists, the middleware redirects
+  // both to /login, making them unreachable to ChatGPT/Claude/Perplexity.
   '/llms.txt',
+  '/llms-full.txt',
   // Public site pages rewritten from /site/* — must be listed here so the
   // middleware doesn't intercept them before Next.js rewrites resolve.
   '/shows',
