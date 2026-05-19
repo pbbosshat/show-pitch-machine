@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { trackShowPitchSubmit, trackContactFormSubmit } from '@/lib/analytics';
 
 const INPUT_STYLE = {
   background: '#1d1f21',
@@ -48,8 +49,29 @@ export default function ContactForm() {
         const d = await res.json().catch(() => ({})) as { error?: string };
         throw new Error(d.error || `Error ${res.status}`);
       }
+
+      /* Fire both conversion events on confirmed API success (not on click)
+         so bot submissions and network failures don't inflate conversion counts.
+
+         submit_pitch — primary pitch/lead intent signal; mark as Key Event in
+           GA4 Admin for properties/486537975. The contact page doubles as the
+           pitch submission page per the site's CTA structure, so sourceSection
+           is 'contact-pitch' to distinguish it from any future dedicated pitch
+           form. show_genre and hasSizzleReel are not collected on this form —
+           they are (not set) here and can be enriched from a future pitch form.
+
+         contact_form_submit — secondary general-inquiry signal; also a Key
+           Event. Fires alongside submit_pitch so GA4 can report either event
+           as the conversion depending on the analysis goal. has_phone is false
+           because this form has no phone field. */
+      trackShowPitchSubmit({ sourceSection: 'contact-pitch' });
+      trackContactFormSubmit({ hasPhone: false, sourceSection: 'contact-pitch' });
+
       setSubmitted(true);
     } catch (err) {
+      /* Log the full error so it's visible in GA4 DebugView and the console —
+         never swallow analytics errors silently. */
+      console.error('[ContactForm] submission error:', err);
       setError((err as Error).message);
     } finally {
       setSubmitting(false);

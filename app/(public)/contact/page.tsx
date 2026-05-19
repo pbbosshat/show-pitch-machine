@@ -4,6 +4,7 @@
 
 import type { Metadata } from 'next';
 import ContactForm from './ContactForm';
+import SubmissionDownloadLink from './SubmissionDownloadLink';
 
 const OG_IMAGE = 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/67c9c4bc80ecce7a341a501c_MYE%20Banner%20.png';
 
@@ -202,8 +203,11 @@ export default function ContactPage() {
               {/*
                 Download link — Webflow: inline link styled with color #e02027 and underline.
                 href points to /submission-release-form.pdf (placeholder — file not yet uploaded).
+                SubmissionDownloadLink wraps the anchor in a 'use client' component so the
+                onClick handler can fire the download_epk GA4 conversion event. Mark
+                download_epk as a Key Event in GA4 Admin for properties/486537975.
               */}
-              <a
+              <SubmissionDownloadLink
                 href="/submission-release-form.pdf"
                 style={{
                   fontFamily: "'Roboto', sans-serif",
@@ -213,7 +217,7 @@ export default function ContactPage() {
                 }}
               >
                 Download Submission Release Form
-              </a>
+              </SubmissionDownloadLink>
             </div>
 
             {/*
