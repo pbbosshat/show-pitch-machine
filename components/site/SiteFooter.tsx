@@ -49,6 +49,21 @@ const COMPANY_LINKS = [
   { href: '/contact',            label: 'Contact' },
 ];
 
+// FOR BUYERS column — the 4 B2B money pages shipped in PR #3.
+// WHY footer placement: site-wide footer links are the single highest-equity
+// internal link location — every page (homepage, show pages, about, FAQ, etc.)
+// contributes PageRank to these destinations. A footer link from 100+ pages
+// sends a much stronger topical signal than the same link on a single page.
+// Anchor text is descriptive and buyer-intent-matched (not generic "click here")
+// so Google treats them as editorial votes for buyer-intent queries.
+const BUYER_LINKS = [
+  { href: '/available',              label: 'Available Titles' },
+  { href: '/sizzle-reel',            label: 'Sizzle Reels' },
+  { href: '/how-to-pitch-a-tv-show', label: 'How to Pitch a TV Show' },
+  { href: '/tv-production-company',  label: 'TV Production Company' },
+  { href: '/tv-show-pitch-deck',     label: 'TV Show Pitch Deck' },
+];
+
 export default function SiteFooter() {
   return (
     // Webflow: footer { background: #1d1f21; }
@@ -71,6 +86,20 @@ export default function SiteFooter() {
           <div style={{ flex: '1 1 160px' }}>
             <h4 style={colHeadingStyle}>COMPANY</h4>
             {COMPANY_LINKS.map(({ href, label }) => (
+              <FooterLink key={href} href={href}>{label}</FooterLink>
+            ))}
+          </div>
+
+          {/* ---- FOR BUYERS column ---- */}
+          {/* Site-wide footer links are the highest-equity internal link
+              placement: every page on the site — homepage, show pages, about,
+              FAQ, press releases — passes PageRank through this column to the
+              4 B2B money pages. One footer edit, maximum link equity reach.
+              Heading "FOR BUYERS" matches the buyer-intent audience and signals
+              topical relevance to Google crawlers reading the footer. */}
+          <div style={{ flex: '1 1 160px' }}>
+            <h4 style={colHeadingStyle}>FOR BUYERS</h4>
+            {BUYER_LINKS.map(({ href, label }) => (
               <FooterLink key={href} href={href}>{label}</FooterLink>
             ))}
           </div>

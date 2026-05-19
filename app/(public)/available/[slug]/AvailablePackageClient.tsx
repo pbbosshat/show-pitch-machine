@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import type { SafeTitle } from './page';
 import { pickDeckVideoEmbed } from '@/lib/vimeo';
+import BuyerCTA from '@/components/shows/BuyerCTA';
 
 // Shared input style used across all form fields in the password gate
 const inputStyle: React.CSSProperties = {
@@ -513,6 +514,14 @@ export default function AvailablePackageClient({ title }: { title: SafeTitle }) 
         )}
 
       </div>
+
+      {/* ── Buyer feeder block ── */}
+      {/* Placed below show content — never above — so the pitch experience
+          is uninterrupted. This block funnels link equity from every show
+          page into the 4 B2B money pages via contextual internal links.
+          BuyerCTA uses the slug to pick one of 4 anchor-text variants so
+          Google sees natural diversity, not sitewide identical anchors. */}
+      <BuyerCTA title={title.title} slug={title.slug} />
 
       {/* ── CTA section ── */}
       <section
