@@ -10,6 +10,11 @@ import { query, initDb } from '@/lib/db';
 import { getSessionUser, SESSION_COOKIE } from '@/lib/auth';
 import type { Metadata } from 'next';
 import AvailablePackageClient from './AvailablePackageClient';
+// ShowPageWrapper injects JSON-LD WebPage schema (with relatedLink to the 4
+// B2B money pages) and the BuyerCTA feeder block on every custom OneSheet.
+// AvailablePackageClient already includes BuyerCTA inline, so for that path
+// we use ShowPageWrapper with noExtraCta=true to skip the duplicate block.
+import ShowPageWrapper from '@/components/shows/ShowPageWrapper';
 import GottaCatchEmAllOneSheet from './GottaCatchEmAllOneSheet';
 import HauntedWorldOneSheet from './HauntedWorldOneSheet';
 import MissingInAmericaOneSheet from './MissingInAmericaOneSheet';
@@ -190,199 +195,222 @@ export default async function AvailablePackagePage(
     has_password: !isAdmin && !!(row.password),
   };
 
-  // Rich custom one-sheet for this specific show
+  // Helper: shared ShowPageWrapper props derived from the DB row.
+  // Passes title, slug, image, and description so the wrapper can build
+  // both the WebPage JSON-LD schema and the BuyerCTA anchor-text variant.
+  const wrapperProps = {
+    title: safeTitle.title,
+    slug:  safeTitle.slug,
+    imageUrl:    safeTitle.image_url,
+    description: safeTitle.description,
+  };
+
+  // Rich custom one-sheet for this specific show.
+  // Every branch is wrapped in ShowPageWrapper which:
+  //   • injects WebPage JSON-LD with relatedLink to the 4 B2B money pages
+  //   • appends the BuyerCTA feeder block below the OneSheet content
+  // WHY wrap here not inside each OneSheet: the ~60 OneSheet components are
+  // client components — JSON-LD must be server-rendered. A single wrapper
+  // in this server component is the minimal, non-invasive approach.
   if (slug === 'gotta-catch-em-all') {
-    return <GottaCatchEmAllOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><GottaCatchEmAllOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'haunted-world') {
-    return <HauntedWorldOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><HauntedWorldOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'missing-in-america') {
-    return <MissingInAmericaOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><MissingInAmericaOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'heartland-power') {
-    return <HeartlandPowerOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><HeartlandPowerOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'heidi-montag-rookie-pi') {
-    return <HeidiMontagRookiePiOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><HeidiMontagRookiePiOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'canada-heidi-montag') {
-    return <CanadaHeidiMontagOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><CanadaHeidiMontagOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'gone-viral') {
-    return <GoneViralOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><GoneViralOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'scared-shirtless') {
-    return <ScaredShirtlessOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><ScaredShirtlessOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'out-of-bounds') {
-    return <OutOfBoundsOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><OutOfBoundsOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'senseless') {
-    return <SenselessOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><SenselessOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'pretty-big-liars') {
-    return <PrettyBigLiarsOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><PrettyBigLiarsOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'storm-warriors-deck') {
-    return <StormWarriorsOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><StormWarriorsOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'haunted-world-youtube') {
-    return <HauntedWorldYouTubeOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><HauntedWorldYouTubeOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'haunted-world-north-america') {
-    return <HauntedWorldNorthAmericaOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><HauntedWorldNorthAmericaOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'home-game') {
-    return <HomeGameOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><HomeGameOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'home-game-excel') {
-    return <HomeGameExcelOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><HomeGameExcelOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'home-game-athletes-first') {
-    return <HomeGameAthletesFirstOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><HomeGameAthletesFirstOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'home-game-caa') {
-    return <HomeGameCAAOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><HomeGameCAAOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'storm-warriors-us') {
-    return <StormWarriorsUSOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><StormWarriorsUSOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'welcome-to-crunkville') {
-    return <WelcomeToCrunkvilleOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><WelcomeToCrunkvilleOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'open-secrets') {
-    return <OpenSecretsOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><OpenSecretsOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'just-like-home') {
-    return <JustLikeHomeOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><JustLikeHomeOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'swing-thoughts') {
-    return <SwingThoughtsOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><SwingThoughtsOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'magic-showdown') {
-    return <MagicShowdownOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><MagicShowdownOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'happy-hour-hustlers') {
-    return <HappyHourHustlersOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><HappyHourHustlersOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'fandemonium') {
-    return <FandemoniumOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><FandemoniumOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'oops-i-broke-the-law') {
-    return <OopsIBrokeTheLawOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><OopsIBrokeTheLawOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'carolina-gridiron') {
-    return <CarolinaGridironOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><CarolinaGridironOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'botched-by-a-tiktok-doc') {
-    return <BotchedByATikTokDocOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><BotchedByATikTokDocOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'something-happened-in-nashville') {
-    return <SomethingHappenedInNashvilleOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><SomethingHappenedInNashvilleOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'susan-smith') {
-    return <SusanSmithOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><SusanSmithOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'up-for-parole') {
-    return <UpForParoleOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><UpForParoleOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'dont-f-with-my-kids') {
-    return <DontFWithMyKidsOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><DontFWithMyKidsOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'collateral-damage') {
-    return <CollateralDamageOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><CollateralDamageOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'exit-strategy') {
-    return <ExitStrategyOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><ExitStrategyOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'cold-blooded') {
-    return <ColdBloodedOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><ColdBloodedOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'number-one-with-a-bullet') {
-    return <NumberOneWithABulletOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><NumberOneWithABulletOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'the-girl-in-the-tesla') {
-    return <TheGirlInTheTeslaOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><TheGirlInTheTeslaOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'project-skywatch') {
-    return <ProjectSkywatchOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><ProjectSkywatchOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'summer-of-69') {
-    return <SummerOf69OneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><SummerOf69OneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'buried-secrets') {
-    return <BuriedSecretsOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><BuriedSecretsOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'now-you-know') {
-    return <NowYouKnowOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><NowYouKnowOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'queens-verdict') {
-    return <QueensVerdictOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><QueensVerdictOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'i-am-the-warrior') {
-    return <IAmTheWarriorOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><IAmTheWarriorOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'ira-judleson') {
-    return <IraJudlesonOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><IraJudlesonOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'curbside-cash') {
-    return <CurbsideCashOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><CurbsideCashOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'fright-before-christmas') {
-    return <FrightBeforeChristmasOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><FrightBeforeChristmasOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'ghosted') {
-    return <GhostedOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><GhostedOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'we-hunt-serial-killers') {
-    return <WeHuntSerialKillersOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><WeHuntSerialKillersOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'my-father-the-serial-killer') {
-    return <MyFatherTheSerialKillerOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><MyFatherTheSerialKillerOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'show-tell-sandy-shaw') {
-    return <ShowTellSandyShawOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><ShowTellSandyShawOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'art-of-murder-walshe') {
-    return <ArtOfMurderWalsheOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><ArtOfMurderWalsheOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'murder-on-music-row') {
-    return <MurderOnMusicRowOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><MurderOnMusicRowOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'what-happened-to-michelle-renee') {
-    return <WhatHappenedToMichelleReneeOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><WhatHappenedToMichelleReneeOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'death-on-demand') {
-    return <DeathOnDemandOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><DeathOnDemandOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'parental-guilt') {
-    return <ParentalGuiltOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><ParentalGuiltOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'give-me-shelter') {
-    return <GiveMeShelterOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><GiveMeShelterOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'the-bouchards') {
-    return <BouchardsOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><BouchardsOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'the-day-before') {
-    return <TheDayBeforeOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><TheDayBeforeOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'pvj') {
-    return <PVJOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><PVJOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'jose-fernandez') {
-    return <JoseFernandezOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><JoseFernandezOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'woody-strode') {
-    return <WoodyStrodeOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><WoodyStrodeOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'lori-vallow') {
-    return <LoriVallowOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><LoriVallowOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
   if (slug === 'a-little-christmas-spirit') {
-    return <ALittleChristmasSpiritOneSheet title={safeTitle} />;
+    return <ShowPageWrapper {...wrapperProps}><ALittleChristmasSpiritOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
 
-  return <AvailablePackageClient title={safeTitle} />;
+  // Generic fallback — AvailablePackageClient already contains BuyerCTA
+  // internally (added in this PR), so noExtraCta prevents a duplicate block.
+  // ShowPageWrapper still fires here to inject the WebPage JSON-LD schema.
+  return (
+    <ShowPageWrapper {...wrapperProps} noExtraCta>
+      <AvailablePackageClient title={safeTitle} />
+    </ShowPageWrapper>
+  );
 }

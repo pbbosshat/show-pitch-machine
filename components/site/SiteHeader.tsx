@@ -29,6 +29,20 @@ const NAV_LINKS = [
   { href: '/login',         label: 'LOGIN' },
 ];
 
+// B2B money-page links surfaced in the mobile nav under a "FOR BUYERS" divider.
+// WHY mobile-only for the grouped list: the desktop nav is already at capacity
+// (9 links + CTA button). Adding 4 more would overflow on mid-size screens.
+// The footer "FOR BUYERS" column handles desktop sitewide link equity.
+// Mobile nav gets the full list because it's a vertical stack with no overflow risk.
+// The desktop nav already has /available which provides one crawlable sitewide
+// entry point to the buyer cluster from the header.
+const BUYER_NAV_LINKS = [
+  { href: '/sizzle-reel',            label: 'SIZZLE REELS' },
+  { href: '/how-to-pitch-a-tv-show', label: 'HOW TO PITCH A TV SHOW' },
+  { href: '/tv-production-company',  label: 'TV PRODUCTION COMPANY' },
+  { href: '/tv-show-pitch-deck',     label: 'TV SHOW PITCH DECK' },
+];
+
 // Shared nav link style — Webflow: .nav-link
 const navLinkStyle: React.CSSProperties = {
   color: '#fff',
@@ -159,6 +173,51 @@ export default function SiteHeader() {
               {label}
             </Link>
           ))}
+
+          {/* ── FOR BUYERS section — mobile only ─────────────────────────
+              These 4 links are the B2B money pages. Surfacing them in the
+              mobile nav ensures every page type (including show pages) has
+              a crawlable path to the money pages via the header, not just
+              the footer. The divider label "FOR BUYERS" adds topical context
+              for both users and search crawlers reading the nav DOM. */}
+          <div style={{
+            borderTop: '1px solid #333',
+            marginTop: 8,
+            paddingTop: 8,
+          }}>
+            <p style={{
+              fontFamily: "'Roboto Condensed', sans-serif",
+              fontSize: 10,
+              color: '#909499',
+              textTransform: 'uppercase',
+              letterSpacing: '2px',
+              margin: '8px 0 4px',
+            }}>
+              For Buyers
+            </p>
+            {BUYER_NAV_LINKS.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMenuOpen(false)}
+                style={{
+                  display: 'block',
+                  color: '#e51d26',
+                  textDecoration: 'none',
+                  fontFamily: "'Roboto Condensed', sans-serif",
+                  fontSize: 13,
+                  fontWeight: 400,
+                  textTransform: 'uppercase',
+                  letterSpacing: '2px',
+                  padding: '10px 0',
+                  borderBottom: '1px solid #1a1a1a',
+                }}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+
           {/* Mobile "WORK WITH MYE" — bordered same as desktop */}
           <Link
             href="/contact"

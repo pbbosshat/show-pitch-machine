@@ -47,10 +47,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   // ── Static pages ──────────────────────────────────────────────────────────
-  // Priorities follow the SEO spec: homepage = 1.0, shows/genres = 0.8,
-  // press = 0.6, utility pages (contact/faq) = 0.5.
+  // Priority tiers (SEO spec, updated 2026-05-19 for B2B money-page cluster):
+  //   1.0  — homepage: highest crawl frequency signal
+  //   0.9  — B2B money pages: buyer-intent queries, core commercial value;
+  //           weekly changeFreq tells Googlebot to recrawl often so fresh
+  //           PageRank from show-page feeders registers quickly
+  //   0.8  — catalog/genre indexes: high-value browse surfaces
+  //   0.7  — brand/editorial pages: about, international, available catalog
+  //   0.6  — press: regularly updated but not buyer-facing
+  //   0.5  — utility: contact, faq — stable, low churn
   const staticPages: MetadataRoute.Sitemap = [
     { url: `${BASE_URL}/`,               lastModified: now, changeFrequency: 'weekly',  priority: 1.0 },
+
+    // ── B2B money pages — buyer-intent cluster (PR #3) ──────────────────
+    // priority: 0.9 (second only to homepage) so Googlebot allocates
+    // proportionally more crawl budget here than to any individual show page.
+    // changeFrequency: weekly signals that PageRank flow from new show-page
+    // feeder links should be re-evaluated frequently.
+    { url: `${BASE_URL}/sizzle-reel`,           lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE_URL}/how-to-pitch-a-tv-show`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE_URL}/tv-production-company`,  lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE_URL}/tv-show-pitch-deck`,     lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+
     { url: `${BASE_URL}/shows`,          lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE_URL}/genres`,         lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE_URL}/about`,          lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
@@ -63,11 +81,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   // ── Dynamic show pages ────────────────────────────────────────────────────
+  // priority: 0.4 (reduced from 0.8) — show pages are long-tail brand queries
+  // that feed qualified traffic to the site, but they should NOT compete with
+  // the B2B money pages (0.9) for crawl budget or ranking signals on buyer-
+  // intent queries. Lowering priority tells Googlebot to rank the money pages
+  // above individual show pages when both could theoretically satisfy a query.
+  // changeFrequency: monthly — show metadata changes infrequently; no need to
+  // recrawl weekly and waste budget that the money pages need.
   const showPages: MetadataRoute.Sitemap = showRows.map(({ slug }) => ({
-    url: `${BASE_URL}/shows/${slug}`,
+    url: `${BASE_URL}/available/${slug}`,
     lastModified: now,
     changeFrequency: 'monthly',
-    priority: 0.8,
+    priority: 0.4,
   }));
 
   // ── Dynamic genre pages ───────────────────────────────────────────────────
