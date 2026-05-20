@@ -28,6 +28,11 @@ const PUBLIC_PATHS = new Set([
   '/faq',
   '/contact',
   '/film-commissions',
+  // B2B pitch SEO cluster — public marketing pages (PR #3)
+  '/how-to-pitch-a-tv-show',
+  '/sizzle-reel',
+  '/tv-production-company',
+  '/tv-show-pitch-deck',
 ]);
 
 // Path prefixes that are always public
