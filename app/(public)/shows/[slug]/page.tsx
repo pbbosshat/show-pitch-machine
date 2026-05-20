@@ -6,6 +6,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import ShowPageTracker from '@/components/shows/ShowPageTracker';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Show data — scraped directly from myentertainment.tv/shows/* pages.
@@ -791,9 +792,20 @@ export default async function ShowPage({
             </div>
 
             <div style={{ flex: '0 0 auto', textAlign: 'center', paddingTop: 9 }}>
-              <Link
-                href="/contact"
-                style={{
+              {/*
+                ShowPageTracker is a 'use client' component that:
+                1. Fires view_show_page on mount (engagement, not a Key Event).
+                2. Fires request_buyers_pack on this CTA click (Key Event —
+                   mark in GA4 Admin for properties/486537975).
+                The CTA appearance is identical to the original Link; only
+                onClick tracking is added. aria-label names the show so
+                screen readers announce the specific action.
+              */}
+              <ShowPageTracker
+                showSlug={show.slug}
+                ctaHref="/contact"
+                ctaChildren={<>contact&nbsp;us&nbsp;&nbsp;&#10095;</>}
+                ctaStyle={{
                   display: 'inline-block',
                   background: '#e51d26',
                   color: '#fff',
@@ -807,9 +819,7 @@ export default async function ShowPage({
                   borderRadius: 2,
                   padding: '13px 24px',
                 }}
-              >
-                contact&nbsp;us&nbsp;&nbsp;&#10095;
-              </Link>
+              />
             </div>
           </div>
         </div>
