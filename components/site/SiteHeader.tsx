@@ -120,7 +120,8 @@ export default function SiteHeader() {
             </Link>
           ))}
           {/* "WORK WITH MYE" — bordered button floated right, Webflow: .nav-link.right */}
-          <Link href="/contact" style={workWithMYEStyle} target="_blank">
+          {/* Redirected from /contact to /work-with-us (seo/option-a-fan-and-b2b) */}
+          <Link href="/work-with-us" style={workWithMYEStyle}>
             WORK WITH MYE
           </Link>
         </nav>
@@ -219,8 +220,9 @@ export default function SiteHeader() {
           </div>
 
           {/* Mobile "WORK WITH MYE" — bordered same as desktop */}
+          {/* Redirected from /contact to /work-with-us (seo/option-a-fan-and-b2b) */}
           <Link
-            href="/contact"
+            href="/work-with-us"
             onClick={() => setMenuOpen(false)}
             style={{
               display: 'inline-block',
