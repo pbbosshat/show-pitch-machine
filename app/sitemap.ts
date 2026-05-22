@@ -68,6 +68,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/how-to-pitch-a-tv-show`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE_URL}/tv-production-company`,  lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE_URL}/tv-show-pitch-deck`,     lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    // /work-with-us/ — B2B partnership page, primary CTA destination from site header
+    // (seo/option-a-fan-and-b2b). Priority 0.9 alongside the other buyer-intent money
+    // pages: it is the nav-level CTA so it receives sitewide internal link equity
+    // from every page via the "WORK WITH MYE" header button.
+    { url: `${BASE_URL}/work-with-us`,           lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
 
     { url: `${BASE_URL}/shows`,          lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE_URL}/genres`,         lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
