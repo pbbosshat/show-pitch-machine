@@ -33,6 +33,8 @@ const PUBLIC_PATHS = new Set([
   '/sizzle-reel',
   '/tv-production-company',
   '/tv-show-pitch-deck',
+  // B2B work-with-us landing page (Option A SEO sprint, 2026-05-22)
+  '/work-with-us',
 ]);
 
 // Path prefixes that are always public
@@ -48,6 +50,7 @@ const PUBLIC_PREFIXES = [
   '/available/',      // buyer pitch deck pages — each has its own deck password gate
   '/api/available/',      // deck password verify endpoint — must be callable without a session
   '/api/contact',         // POST is public (form submission); GET enforces auth inside the handler
+  '/api/newsletter',      // POST is public (fan newsletter signup from show pages + /work-with-us)
   '/api/admin/db-restore', // protected by ADMIN_RESTORE_SECRET header, not session cookie
   '/api/admin/backfill-deck-drive', // protected by ADMIN_RESTORE_SECRET header, not session cookie
   '/api/viqi',            // protected by VIQI_PROXY_SECRET header, not session cookie
