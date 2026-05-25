@@ -22,6 +22,23 @@ export function generateStaticParams() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Per-show SEO metadata — title matches Webflow pattern "Show Title - MyEntertainment Shows"
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Show-specific metadata overrides for high-impression / low-CTR keywords.
+// Each entry replaces the default "title | MyEntertainment" + truncated-description
+// pattern for that slug with a hand-crafted snippet targeting searcher intent.
+// Keep title ≤ 60 chars and description ≤ 155 chars to avoid SERP truncation.
+const SHOW_META_OVERRIDES: Record<string, { title: string; description: string }> = {
+  // "destination fear" — pos 8.8, 1,229 impressions, 0 clicks (30 days to 2026-05-25).
+  // Searchers want to confirm they've found the Travel Channel paranormal show
+  // and see who made it. Previous snippet led with "GHOST ADVENTURES spin-off"
+  // which buried the show's own identity and truncated mid-sentence.
+  'destination-fear': {
+    title: 'Destination Fear – Travel Channel Paranormal Series | MY Entertainment',
+    description:
+      'Dakota Laden and crew spend the night in America\'s most haunted locations in this Travel Channel paranormal series. See the trailer from MY Entertainment.',
+  },
+};
+
 export async function generateMetadata({
   params,
 }: {
@@ -30,14 +47,21 @@ export async function generateMetadata({
   const { slug } = await params;
   const show = SHOWS.find((s) => s.slug === slug);
   if (!show) return {};
-  const desc = show.description.replace(/\n/g, ' ').substring(0, 160);
   const canonicalUrl = `https://www.myentertainment.tv/shows/${show.slug}`;
+
+  // Use hand-crafted override if available; fall back to auto-generated snippet.
+  const override = SHOW_META_OVERRIDES[slug];
+  const title = override ? override.title : `${show.title} | MyEntertainment`;
+  const desc = override
+    ? override.description
+    : show.description.replace(/\n/g, ' ').substring(0, 160);
+
   return {
-    title: `${show.title} | MyEntertainment`,
+    title,
     description: desc,
     alternates: { canonical: canonicalUrl },
     openGraph: {
-      title: `${show.title} | MyEntertainment`,
+      title,
       description: desc,
       url: canonicalUrl,
       siteName: 'MyEntertainment',
@@ -46,7 +70,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${show.title} | MyEntertainment`,
+      title,
       description: desc,
       images: [show.titleImgSrc],
     },
