@@ -58,6 +58,7 @@ const COMPANY_LINKS = [
 // so Google treats them as editorial votes for buyer-intent queries.
 const BUYER_LINKS = [
   { href: '/available',              label: 'Available Titles' },
+  { href: '/tv-show-pitch',          label: 'TV Show Pitch' },
   { href: '/sizzle-reel',            label: 'Sizzle Reels' },
   { href: '/how-to-pitch-a-tv-show', label: 'How to Pitch a TV Show' },
   { href: '/tv-production-company',  label: 'TV Production Company' },
