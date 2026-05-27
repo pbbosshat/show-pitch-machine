@@ -30,8 +30,9 @@ const NAV_LINKS = [
 ];
 
 // B2B money-page links surfaced in the mobile nav under a "FOR BUYERS" divider.
+// Updated (seo/scale-mye 2026-05-27): /documentary and /buyers added.
 // WHY mobile-only for the grouped list: the desktop nav is already at capacity
-// (9 links + CTA button). Adding 4 more would overflow on mid-size screens.
+// (9 links + CTA button). Adding more would overflow on mid-size screens.
 // The footer "FOR BUYERS" column handles desktop sitewide link equity.
 // Mobile nav gets the full list because it's a vertical stack with no overflow risk.
 // The desktop nav already has /available which provides one crawlable sitewide
@@ -42,6 +43,8 @@ const BUYER_NAV_LINKS = [
   { href: '/how-to-pitch-a-tv-show', label: 'HOW TO PITCH A TV SHOW' },
   { href: '/tv-production-company',  label: 'TV PRODUCTION COMPANY' },
   { href: '/tv-show-pitch-deck',     label: 'TV SHOW PITCH DECK' },
+  { href: '/documentary',            label: 'DOCUMENTARY PRODUCTION' },
+  { href: '/tv-buyers',              label: 'TV BUYERS & LICENSING' },
 ];
 
 // Shared nav link style — Webflow: .nav-link

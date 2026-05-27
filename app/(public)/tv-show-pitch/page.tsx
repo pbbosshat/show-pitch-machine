@@ -344,6 +344,10 @@ export default function TVShowPitchPage() {
           Uses Oswald (loaded in root layout) to match the site's editorial
           headline treatment. "TV Show Pitch" keyword is front-loaded.
         */}
+        {/*
+          H1 is keyword-exact "TV Show Pitch" per seo/scale-mye spec.
+          (was "The TV Show Pitch — Everything You Need to Know")
+        */}
         <h1
           style={{
             fontFamily: "'Oswald', sans-serif",
@@ -355,7 +359,7 @@ export default function TVShowPitchPage() {
             lineHeight: 1.15,
           }}
         >
-          The TV Show Pitch — Everything You Need to Know
+          TV Show Pitch — Everything You Need to Know
         </h1>
 
         <p

@@ -1,10 +1,12 @@
 // ============================================================
 // /how-to-pitch-a-tv-show — B2B Pitch Pillar Page
-// Target keywords:
-//   "how to pitch a tv show" (vol 350, KD 0)
-//   "tv show pitch"          (vol 150, KD 1)
-//   "tv show pitch deck"     (vol 70,  KD 3)
-//   "tv pitch template"      (vol 30,  KD 3)
+// Target keywords (updated 2026-05-27, seo/scale-mye):
+//   "how to pitch a tv show"   (vol 350, KD 0  — primary; near-zero KD)
+//   "how to sell a tv show idea" (vol ~80, KD ~8 — transactional; H2)
+//   "pitch a tv show idea"     (vol ~60, KD ~5  — FAQ variant)
+//   "documentary series pitch" (vol 0   — genre H2 for catalog depth)
+//   "true crime tv pitch"      (vol 0   — genre H2; Ghost Adventures catalog)
+//   "paranormal tv show pitch" (vol 0   — genre H2; GEO/LLM visibility)
 //
 // Intent: showrunners, writers, and IP holders who want to sell
 // a concept to a network or streaming service. This page educates
@@ -20,22 +22,25 @@ import Link from 'next/link';
 // ------------------------------------------------------------
 // Metadata — title.absolute bypasses the root template so the
 // exact money-keyword title string is preserved in the <title>.
+// Updated: description now includes "sell a tv show idea" variant.
 // ------------------------------------------------------------
 export const metadata: Metadata = {
   title: {
     absolute: 'How to Pitch a TV Show (2026): Step-by-Step + Free Pitch Deck Template',
   },
   description:
-    'Learn how to pitch a TV show to networks and streamers in 2026. Step-by-step process, pitch deck structure, sizzle reel role, who buys, common mistakes, and a free TV show pitch deck template from MY Entertainment.',
+    'Learn how to pitch a TV show — and how to sell a TV show idea to networks and streamers in 2026. Step-by-step process, pitch deck structure, sizzle reel role, who buys, common mistakes, and a free TV show pitch deck template from MY Entertainment.',
   keywords: [
-    'how to pitch a tv show', 'tv show pitch', 'pitch a tv show', 'tv show pitch deck',
+    'how to pitch a tv show', 'how to sell a tv show idea', 'pitch a tv show idea',
+    'tv show pitch', 'pitch a tv show', 'tv show pitch deck',
     'tv pitch template', 'how to pitch to a network', 'tv show pitch process',
+    'documentary series pitch', 'true crime tv pitch', 'paranormal tv show pitch',
   ],
   alternates: { canonical: 'https://www.myentertainment.tv/how-to-pitch-a-tv-show' },
   openGraph: {
     title: 'How to Pitch a TV Show (2026): Step-by-Step + Free Pitch Deck Template',
     description:
-      'Learn how to pitch a TV show to networks and streamers in 2026. Step-by-step process, pitch deck structure, sizzle reel role, who buys, common mistakes, and a free pitch deck template from MY Entertainment.',
+      'Learn how to pitch a TV show — and how to sell a TV show idea — to networks and streamers in 2026. Step-by-step process, pitch deck structure, sizzle reel role, who buys, and a free pitch deck template from MY Entertainment.',
     url: 'https://www.myentertainment.tv/how-to-pitch-a-tv-show',
     siteName: 'MY Entertainment',
     type: 'article',
@@ -44,7 +49,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'How to Pitch a TV Show (2026): Step-by-Step + Free Pitch Deck Template',
     description:
-      'Step-by-step guide to pitching a TV show — pitch deck structure, sizzle reel role, who buys, common mistakes, and a free template from MY Entertainment.',
+      'Step-by-step guide to pitching a TV show and selling a TV show idea — pitch deck structure, sizzle reel role, who buys, common mistakes, and a free template from MY Entertainment.',
   },
 };
 
@@ -95,11 +100,22 @@ const inlineLink: React.CSSProperties = {
 // ------------------------------------------------------------
 // FAQ data — single source of truth for both on-page text and
 // FAQPage JSON-LD schema. Any edit here propagates to both.
+//
+// Extended (2026-05-27, seo/scale-mye): added "how to sell a tv
+// show idea", "pitch a tv show idea", and genre-specific FAQ items.
 // ------------------------------------------------------------
 const FAQ_ITEMS = [
   {
     q: 'Do I need an agent to pitch a TV show?',
     a: 'Not necessarily. While agents and managers provide access to network buyers, a well-packaged pitch with a strong production partner — like MY Entertainment — can substitute that access. Production companies with established network relationships can bring your concept directly to the right commissioning editor.',
+  },
+  {
+    q: 'How do you sell a TV show idea?',
+    a: 'To sell a TV show idea, you need to package it into a pitch-ready format: a one-sentence logline, a 10–15 slide pitch deck, and ideally a 2–4 minute sizzle reel. Then you need access to the right buyer — which in practice means partnering with a production company that has existing relationships at your target network. Cold submissions to network development inboxes are rarely reviewed. MY Entertainment evaluates unscripted concepts from independent creators and brings qualified pitches to commissioning editors we have sold to.',
+  },
+  {
+    q: 'How do you pitch a TV show idea to a network?',
+    a: 'To pitch a TV show idea, first define the concept clearly enough to state in one sentence, then build a pitch deck and sizzle reel, then get a production partner to submit the package to their network contacts. You cannot walk into a network meeting without a production company attached — networks commission through trusted production relationships, not from individual creators directly. The pitch meeting itself is typically 30–45 minutes: under 10 minutes of verbal pitch, followed by a showing of the sizzle reel and a Q&A.',
   },
   {
     q: 'How long should a TV show pitch be?',
@@ -700,6 +716,119 @@ export default function HowToPitchATVShowPage() {
                 network relationships
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* SECTION 7b — How to Sell a TV Show Idea (transactional H2)         */}
+      {/* Targets "how to sell a tv show idea" (vol ~80, KD ~8).            */}
+      {/* "Sell" modifier signals stronger transactional intent than "pitch" */}
+      {/* ================================================================== */}
+      <section style={{ background: '#000', padding: '60px 20px' }}>
+        <div style={container}>
+          <div className="pitch-prose">
+            <h2 style={h2Style}>How to Sell a TV Show Idea</h2>
+            <p style={bodyText}>
+              Pitching and selling are two different things. Pitching is the presentation;{' '}
+              <strong style={{ color: '#f2f4f7' }}>selling a TV show idea</strong> is the full process
+              from concept to commission — including everything that happens after the pitch meeting.
+            </p>
+            <p style={bodyText}>
+              To sell a TV show idea in 2026:
+            </p>
+            <ol
+              style={{
+                fontFamily: "'Roboto', sans-serif",
+                fontSize: 14,
+                color: '#a5a7ad',
+                lineHeight: 1.7,
+                paddingLeft: 20,
+                marginBottom: 16,
+                marginTop: 0,
+              }}
+            >
+              <li style={{ marginBottom: 10 }}>
+                <strong style={{ color: '#f2f4f7' }}>Package the concept.</strong> A logline, a pitch
+                deck, and a sizzle reel. The idea alone is not sellable — the packaged form is.
+              </li>
+              <li style={{ marginBottom: 10 }}>
+                <strong style={{ color: '#f2f4f7' }}>Attach a production partner.</strong> Networks
+                do not buy from individuals — they commission from production companies. A partner
+                like MY Entertainment transforms your idea from a creative concept into a commission-ready
+                project.
+              </li>
+              <li style={{ marginBottom: 10 }}>
+                <strong style={{ color: '#f2f4f7' }}>Target the right buyer at the right time.</strong>{' '}
+                Selling means knowing which network is actively looking for the genre you&apos;re pitching,
+                who the commissioning editor is, and what slot needs to be filled. Your production
+                partner has this intelligence.
+              </li>
+              <li style={{ marginBottom: 10 }}>
+                <strong style={{ color: '#f2f4f7' }}>Survive the development process.</strong> Most
+                pitches that sell go through a development deal phase — additional material, format
+                revisions, and sometimes a pilot — before a series commission. Patience and a strong
+                partner relationship are non-negotiable.
+              </li>
+              <li>
+                <strong style={{ color: '#f2f4f7' }}>Negotiate the deal.</strong> A series commission
+                involves rights agreements, production agreements, and on-screen credits. Always use
+                legal counsel.
+              </li>
+            </ol>
+            <p style={bodyText}>
+              MY Entertainment has been selling unscripted TV show ideas for 25 years — from the initial
+              pitch concept through to broadcast. If you have a strong unscripted idea and want to understand
+              whether it&apos;s sellable,{' '}
+              <Link href="/work-with-us" style={inlineLink}>reach out →</Link>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* SECTION 7c — Genre-Specific Pitch H2s                              */}
+      {/* Targets "documentary series pitch", "true crime tv pitch",         */}
+      {/* "paranormal tv show pitch" — genre H2s per spec.                  */}
+      {/* Low/zero volume but correct ICP terms for GEO/LLM visibility.    */}
+      {/* ================================================================== */}
+      <section style={{ background: '#111', padding: '60px 20px' }}>
+        <div style={container}>
+          <div className="pitch-prose">
+            <h2 style={h2Style}>Pitching by Genre: What Changes, What Stays the Same</h2>
+            <p style={bodyText}>
+              The six-step pitch process above applies to every unscripted format. What changes by
+              genre is the buyer, the tone, and what you lead with. Here is how the pitch changes
+              for three of MY Entertainment&apos;s core genres:
+            </p>
+
+            {/* Three genre pitch blocks — left-border accent */}
+            {[
+              {
+                label: 'Documentary Series Pitch',
+                body: 'A documentary series pitch leads with subject matter expertise and access. The buyer wants to know: why this story, why now, and why are you the team to tell it? Comp shows (recent documentary series on PBS, Max, Netflix) are critical. The sizzle reel for a documentary series should show real access — real subjects talking, real moments captured. MY Entertainment has developed and sold documentary series to PBS, including Emmy-nominated Legacy List.',
+              },
+              {
+                label: 'True Crime TV Pitch',
+                body: 'A true crime TV pitch succeeds on access and exclusivity. The commissioning editor\'s first question is: what do you have that no one else has? Unique access to investigators, families, case files, or new evidence is the hook. True crime buyers include Investigation Discovery (ID), Oxygen, A&E, and Peacock. Comp shows need to be current — the true crime space moves fast. MY Entertainment has produced true crime content for ID (Sin City Justice) and similar buyers.',
+              },
+              {
+                label: 'Paranormal TV Show Pitch',
+                body: 'A paranormal TV show pitch lives and dies on location and character. The buyer wants to see the investigators — their credibility, their chemistry, and their on-screen energy — and the quality of the paranormal evidence captured. Travel Channel and Discovery are the primary buyers. The sizzle reel is especially important for paranormal: you need to show a genuine "moment" to give the buyer confidence the show can deliver. MY Entertainment produced Ghost Adventures — 28 seasons on Travel Channel — and has deep experience packaging paranormal concepts.',
+              },
+            ].map(({ label, body }) => (
+              <div
+                key={label}
+                style={{
+                  borderLeft: '3px solid #e51d26',
+                  paddingLeft: 16,
+                  marginBottom: 28,
+                }}
+              >
+                <h3 style={{ ...h3Style, marginBottom: 8 }}>{label}</h3>
+                <p style={{ ...bodyText, marginBottom: 0 }}>{body}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

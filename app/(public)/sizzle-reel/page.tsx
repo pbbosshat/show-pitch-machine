@@ -1,8 +1,15 @@
 // ============================================================
 // /sizzle-reel — B2B SEO Flagship Page
-// Target keyword: "sizzle reel" (vol 3,200, KD 1, opportunity 3,168)
+// Target keywords (updated 2026-05-27, seo/scale-mye):
+//   "sizzle reel"                    (vol 3,200, KD 1  — crown jewel)
+//   "sizzle reel production company" (vol ~100,  KD ~10 — H2/FAQ)
+//   "tv sizzle reel"                 (vol ~150,  KD ~5  — H2/FAQ)
 // Intent: producers, showrunners, and IP holders searching for
 // production company expertise to package and sell their concept.
+//
+// H1 is keyword-exact "sizzle reel" per spec.
+// "sizzle reel production company" added as H2.
+// "tv sizzle reel" added as H2/FAQ variant.
 //
 // This is a Server Component — no 'use client'. All styles inline.
 // Mirrors the Webflow design token system exactly:
@@ -17,31 +24,34 @@ import Link from 'next/link';
 // Metadata — title.absolute bypasses the root layout
 // template ('%s | MyEntertainment') so the exact title string
 // is preserved for maximum SEO impact on this money keyword.
+// Keywords updated: "sizzle reel production company" and "tv sizzle reel"
+// added per keyword-scale-to-25 spec.
 // ------------------------------------------------------------
 export const metadata: Metadata = {
   title: {
-    absolute: 'Sizzle Reel: What It Is, Examples & How to Make One That Sells a Show',
+    absolute: 'Sizzle Reel: What It Is, Examples & How a Production Company Makes One',
   },
   description:
-    'A sizzle reel is a short, high-impact video that pitches a TV show concept to networks and streamers. Learn what makes one work, see examples, and find out how MY Entertainment produces reels that sell.',
+    'A sizzle reel is a short, high-impact video that pitches a TV show concept to networks and streamers. Learn what a TV sizzle reel is, what makes one work, see examples, and find out how MY Entertainment — a sizzle reel production company with 25+ years of experience — produces reels that sell.',
   keywords: [
-    'sizzle reel', 'sizzle reel for tv show', 'what is a sizzle reel', 'tv sizzle reel',
+    'sizzle reel', 'tv sizzle reel', 'sizzle reel production company',
+    'sizzle reel for tv show', 'what is a sizzle reel',
     'how to make a sizzle reel', 'sizzle reel examples', 'tv pitch reel',
   ],
   alternates: { canonical: 'https://www.myentertainment.tv/sizzle-reel' },
   openGraph: {
-    title: 'Sizzle Reel: What It Is, Examples & How to Make One That Sells a Show',
+    title: 'Sizzle Reel: What It Is, Examples & How a Production Company Makes One',
     description:
-      'A sizzle reel is a short, high-impact video that pitches a TV show concept to networks and streamers. Learn what makes one work, see examples, and find out how MY Entertainment produces reels that sell.',
+      'A sizzle reel is a short, high-impact video that pitches a TV show concept to networks and streamers. Learn what makes a TV sizzle reel work and how MY Entertainment produces reels that sell.',
     url: 'https://www.myentertainment.tv/sizzle-reel',
     siteName: 'MY Entertainment',
     type: 'article',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Sizzle Reel: What It Is, Examples & How to Make One That Sells a Show',
+    title: 'Sizzle Reel: What It Is, Examples & How a Production Company Makes One',
     description:
-      'A sizzle reel is a short, high-impact video that pitches a TV show concept to networks and streamers. Learn what makes one work, see examples, and find out how MY Entertainment produces reels.',
+      'What a TV sizzle reel is, what makes one work, and how MY Entertainment — a sizzle reel production company with 25+ years of experience — produces reels that sell.',
   },
 };
 
@@ -105,11 +115,18 @@ const inlineLink: React.CSSProperties = {
 // FAQ data — must match the FAQPage JSON-LD below exactly,
 // question-for-question, so Google's rich result matches the
 // visible on-page text. Any drift will invalidate the markup.
+//
+// FAQ extended (2026-05-27): added "tv sizzle reel" and
+// "sizzle reel production company" variants per keyword-scale spec.
 // ------------------------------------------------------------
 const FAQ_ITEMS = [
   {
     q: 'What is a sizzle reel?',
     a: 'A sizzle reel is a short (2–5 minute) video that pitches a TV show concept to a network or streaming service. It combines interviews, dramatic moments, narration, and graphics to convey the tone, format, and audience appeal of a proposed series — before a single episode is shot.',
+  },
+  {
+    q: 'What is a TV sizzle reel?',
+    a: 'A TV sizzle reel is a sizzle reel made specifically to pitch an unscripted television series to a commissioning editor at a cable network, broadcast channel, or streaming platform. It is purpose-built for the TV pitch meeting — not a trailer for an existing show, but a persuasion tool designed to make a buyer greenlight a concept.',
   },
   {
     q: 'How long should a sizzle reel be?',
@@ -126,6 +143,10 @@ const FAQ_ITEMS = [
   {
     q: 'How much does a sizzle reel cost to produce?',
     a: 'Production budgets vary widely depending on scope. A basic "tone reel" assembled from existing footage can run $5,000–$15,000. A fully produced field sizzle with a shoot day and post-production typically runs $25,000–$75,000+. MY Entertainment assesses each concept individually to recommend the right production level for the target network.',
+  },
+  {
+    q: 'What does a sizzle reel production company do?',
+    a: 'A sizzle reel production company develops, shoots, and edits sizzle reels for TV creators pitching unscripted concepts to networks and streamers. Unlike a generic video production house, a specialized sizzle reel production company understands what commissioning editors are looking for — the pacing, tone, character selection, and network-fit signals that move a pitch from "interesting" to "greenlit." MY Entertainment has produced sizzle reels for shows sold to Discovery, Travel Channel, PBS, A&E, Max, and 28+ other buyers.',
   },
 ];
 
@@ -263,6 +284,7 @@ export default function SizzleReelPage() {
           Uses Oswald (loaded in root layout) to match the live site's
           editorial headline treatment; different from the red uppercase
           section labels so the hierarchy is visually clear.
+          H1 is keyword-exact "Sizzle Reel" per seo/scale-mye spec.
         */}
         <h1
           style={{
@@ -275,7 +297,7 @@ export default function SizzleReelPage() {
             lineHeight: 1.15,
           }}
         >
-          The Sizzle Reel — Your Show&apos;s First Impression
+          Sizzle Reel — Your Show&apos;s First Impression
         </h1>
 
         <p
@@ -571,6 +593,117 @@ export default function SizzleReelPage() {
       </section>
 
       {/* ================================================================== */}
+      {/* SECTION 5b — TV Sizzle Reel (cluster variant H2)                   */}
+      {/* Targets "tv sizzle reel" (vol ~150, KD ~5) as a within-page H2.   */}
+      {/* Differentiates the TV-specific context from general usage.        */}
+      {/* ================================================================== */}
+      <section style={{ background: '#000', padding: '60px 20px' }}>
+        <div style={container}>
+          <div className="sizzle-prose">
+            <h2 style={h2Style}>What Is a TV Sizzle Reel?</h2>
+            <p style={bodyText}>
+              A <strong style={{ color: '#f2f4f7' }}>TV sizzle reel</strong> is a sizzle reel built
+              specifically for the television pitch process — designed not as a trailer for an existing
+              show, but as a persuasion tool aimed at a specific commissioning editor at a specific network.
+            </p>
+            <p style={bodyText}>
+              The distinction matters because the TV pitch environment has its own rules:
+            </p>
+            <ul
+              style={{
+                fontFamily: "'Roboto', sans-serif",
+                fontSize: 14,
+                color: '#a5a7ad',
+                lineHeight: 1.7,
+                paddingLeft: 20,
+                marginBottom: 16,
+                marginTop: 0,
+              }}
+            >
+              <li style={{ marginBottom: 8 }}>
+                <strong style={{ color: '#f2f4f7' }}>Network-fit signals:</strong> A TV sizzle reel
+                is toned to match the target buyer — a Travel Channel reel and a PBS reel look and
+                feel fundamentally different, even for the same concept.
+              </li>
+              <li style={{ marginBottom: 8 }}>
+                <strong style={{ color: '#f2f4f7' }}>Character over concept:</strong> TV commissioning
+                editors invest in people, not premises. The TV sizzle reel prioritises character moments,
+                genuine conflict, and on-screen energy over production polish.
+              </li>
+              <li>
+                <strong style={{ color: '#f2f4f7' }}>Pitch context:</strong> A TV sizzle reel typically
+                runs 2–4 minutes and is shown in a live pitch meeting — meaning it needs to hold the
+                room, not just look good on a laptop screen.
+              </li>
+            </ul>
+            <p style={bodyText}>
+              MY Entertainment has produced TV sizzle reels for shows sold to Discovery, Travel Channel,
+              PBS, A&amp;E, Max, and 28+ other networks over 25 years. Every reel we produce is built for
+              a specific TV buyer, not as a generic demo.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* SECTION 5c — Sizzle Reel Production Company (cluster H2)           */}
+      {/* Targets "sizzle reel production company" (vol ~100, KD ~10).       */}
+      {/* Positions MYE explicitly as a sizzle reel production company.     */}
+      {/* ================================================================== */}
+      <section style={{ background: '#111', padding: '60px 20px' }}>
+        <div style={container}>
+          <div className="sizzle-prose">
+            <h2 style={h2Style}>Sizzle Reel Production Company</h2>
+            <p style={bodyText}>
+              MY Entertainment is an unscripted TV{' '}
+              <strong style={{ color: '#f2f4f7' }}>sizzle reel production company</strong> with 25+
+              years of experience pitching and selling non-fiction television. We do not just produce
+              video — we produce reels in the context of an active network pitch strategy, built
+              alongside the pitch deck and submitted through our real relationships with commissioning
+              editors.
+            </p>
+            <p style={bodyText}>
+              What separates a specialist sizzle reel production company from a general video house:
+            </p>
+            <ul
+              style={{
+                fontFamily: "'Roboto', sans-serif",
+                fontSize: 14,
+                color: '#a5a7ad',
+                lineHeight: 1.7,
+                paddingLeft: 20,
+                marginBottom: 16,
+                marginTop: 0,
+              }}
+            >
+              <li style={{ marginBottom: 8 }}>
+                <strong style={{ color: '#f2f4f7' }}>We know what buyers are looking for</strong> because
+                we are buyers. MY Entertainment has been on both sides of the commissioning table —
+                submitting concepts and receiving them.
+              </li>
+              <li style={{ marginBottom: 8 }}>
+                <strong style={{ color: '#f2f4f7' }}>Every creative choice is buyer-motivated.</strong>{' '}
+                Music, pacing, character selection, and tone are chosen to match the specific commissioning
+                editor receiving the reel — not for generic appeal.
+              </li>
+              <li>
+                <strong style={{ color: '#f2f4f7' }}>The reel and the pitch live together.</strong>{' '}
+                We build the sizzle reel alongside the pitch deck as an integrated system, not two
+                separate deliverables assembled by different vendors.
+              </li>
+            </ul>
+            <p style={bodyText}>
+              If you are looking for a sizzle reel production company with a genuine track record in
+              unscripted TV — not just video production — reach out to discuss your concept.{' '}
+              <Link href="/work-with-us" style={inlineLink}>
+                Work with MY Entertainment →
+              </Link>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
       {/* SECTION 6 — How MY Entertainment produces sizzle reels             */}
       {/* Converts the informational reader into a B2B lead. Explains the   */}
       {/* production process and implicitly answers "who do I hire?"        */}
@@ -758,7 +891,7 @@ export default function SizzleReelPage() {
             </span>
           </span>
 
-          {/* Cross-cluster navigation links */}
+          {/* Cross-cluster navigation links — updated to include /buyers (seo/scale-mye) */}
           <p
             style={{
               fontFamily: "'Roboto', sans-serif",
@@ -779,6 +912,10 @@ export default function SizzleReelPage() {
             {' · '}
             <Link href="/tv-production-company" style={inlineLink}>
               Our Production Services
+            </Link>
+            {' · '}
+            <Link href="/tv-buyers" style={inlineLink}>
+              TV Buyers &amp; Licensing
             </Link>
           </p>
         </div>
