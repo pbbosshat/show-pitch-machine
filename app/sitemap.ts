@@ -68,6 +68,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/how-to-pitch-a-tv-show`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE_URL}/tv-production-company`,  lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE_URL}/tv-show-pitch-deck`,     lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    // /tv-show-pitch — pillar page tying together the B2B buyer-intent cluster (added PR #4)
+    { url: `${BASE_URL}/tv-show-pitch`,          lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     // /work-with-us/ — B2B partnership page, primary CTA destination from site header
     // (seo/option-a-fan-and-b2b). Priority 0.9 alongside the other buyer-intent money
     // pages: it is the nav-level CTA so it receives sitewide internal link equity

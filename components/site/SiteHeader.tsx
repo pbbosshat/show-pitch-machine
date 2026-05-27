@@ -37,6 +37,7 @@ const NAV_LINKS = [
 // The desktop nav already has /available which provides one crawlable sitewide
 // entry point to the buyer cluster from the header.
 const BUYER_NAV_LINKS = [
+  { href: '/tv-show-pitch',          label: 'TV SHOW PITCH' },
   { href: '/sizzle-reel',            label: 'SIZZLE REELS' },
   { href: '/how-to-pitch-a-tv-show', label: 'HOW TO PITCH A TV SHOW' },
   { href: '/tv-production-company',  label: 'TV PRODUCTION COMPANY' },
