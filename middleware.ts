@@ -37,6 +37,11 @@ const PUBLIC_PATHS = new Set([
   // without its PUBLIC_PATHS entry, so middleware 307'd Googlebot to /login and
   // the page couldn't be crawled or ranked. This entry makes it publicly crawlable.
   '/tv-show-pitch',
+  // Keyword-scale pages (2026-05-27): documentary production company page +
+  // unscripted-tv-buyers / content-licensing page. Public marketing pages —
+  // must be whitelisted or middleware 307s Googlebot to /login (see PR #9/#10).
+  '/documentary',
+  '/tv-buyers',
   // B2B work-with-us landing page (Option A SEO sprint, 2026-05-22)
   '/work-with-us',
 ]);
