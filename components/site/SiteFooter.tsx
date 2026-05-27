@@ -49,7 +49,8 @@ const COMPANY_LINKS = [
   { href: '/contact',            label: 'Contact' },
 ];
 
-// FOR BUYERS column — the 4 B2B money pages shipped in PR #3.
+// FOR BUYERS column — B2B money pages.
+// Updated (seo/scale-mye 2026-05-27): /documentary and /buyers added.
 // WHY footer placement: site-wide footer links are the single highest-equity
 // internal link location — every page (homepage, show pages, about, FAQ, etc.)
 // contributes PageRank to these destinations. A footer link from 100+ pages
@@ -63,6 +64,8 @@ const BUYER_LINKS = [
   { href: '/how-to-pitch-a-tv-show', label: 'How to Pitch a TV Show' },
   { href: '/tv-production-company',  label: 'TV Production Company' },
   { href: '/tv-show-pitch-deck',     label: 'TV Show Pitch Deck' },
+  { href: '/documentary',            label: 'Documentary Production' },
+  { href: '/tv-buyers',              label: 'TV Buyers & Licensing' },
 ];
 
 export default function SiteFooter() {

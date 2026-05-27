@@ -1,8 +1,10 @@
 // ============================================================
 // /tv-production-company — B2B Services Positioning Page
-// Target keywords:
-//   "tv production company"  (vol 100, KD 5)
-//   "commissioning editor"   (vol 40,  KD 0)
+// Target keywords (updated 2026-05-27, seo/scale-mye):
+//   "tv production company"           (vol 100, KD 5  — primary, H1 exact)
+//   "unscripted production company"   (vol ~20, KD ~8 — H2 section)
+//   "reality tv production company"   (vol 10,  KD 0  — H2/FAQ)
+//   "commissioning editor"            (vol 40,  KD 0  — existing H2)
 //
 // Intent: IP holders, showrunners, and content creators actively
 // searching for a production partner. This page positions MY
@@ -97,11 +99,21 @@ const inlineLink: React.CSSProperties = {
 // ------------------------------------------------------------
 // FAQ data — single source of truth for both visible text and
 // FAQPage JSON-LD. Question text must match schema verbatim.
+// Extended (2026-05-27, seo/scale-mye): added "unscripted production
+// company" and "reality tv production company" FAQ items.
 // ------------------------------------------------------------
 const FAQ_ITEMS = [
   {
     q: 'What does a TV production company do?',
     a: 'A TV production company develops, produces, and delivers television content on behalf of networks and streaming platforms. For an independent creator, a production company provides the infrastructure (crew, equipment, post-production), network access (direct relationships with commissioning editors), and experience to take a concept from idea to broadcast-ready series.',
+  },
+  {
+    q: 'What is an unscripted production company?',
+    a: 'An unscripted production company specializes in non-fiction television — reality formats, documentary series, competition shows, lifestyle programming, and paranormal or true crime series. Unlike scripted production companies that develop fictional dramas and comedies, an unscripted production company\'s expertise is in finding and developing real characters, real stories, and real formats that translate to compelling non-fiction television. MY Entertainment is an unscripted production company that has sold over 25 years of non-fiction programming to Discovery, Travel Channel, PBS, A&E, Max, and 28+ other networks.',
+  },
+  {
+    q: 'What does a reality TV production company do differently?',
+    a: 'A reality TV production company specializes in the unscripted format specifically — casting real people, developing format structures that generate recurring conflict, shooting in real environments, and editing documentary-style footage to tell narrative stories without a script. The skills are distinct from scripted production: reality TV requires deep casting expertise, format development experience, and the ability to build stories from real raw footage rather than from a writer\'s room. MY Entertainment has produced reality and unscripted formats across paranormal, sports, lifestyle, crime, and food genres.',
   },
   {
     q: 'How do I approach a TV production company with my idea?',
@@ -448,6 +460,116 @@ export default function TVProductionCompanyPage() {
                 pitch-to-greenlight timeline.
               </li>
             </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* SECTION 2b — Unscripted Production Company (H2 keyword target)      */}
+      {/* Targets "unscripted production company" (vol ~20, KD ~8, CPC $80). */}
+      {/* Positions MYE's specialty explicitly for ICP searchers.           */}
+      {/* ================================================================== */}
+      <section style={{ background: '#000', padding: '60px 20px' }}>
+        <div style={container}>
+          <div className="prodco-prose">
+            <h2 style={h2Style}>Unscripted TV Production Company</h2>
+            <p style={bodyText}>
+              MY Entertainment is an <strong style={{ color: '#f2f4f7' }}>unscripted production
+              company</strong> — meaning our entire business is built around non-fiction television.
+              We do not produce scripted dramas or comedies. We develop, produce, and pitch unscripted
+              formats: docuseries, reality, competition, lifestyle, paranormal, true crime, travel,
+              and food programming.
+            </p>
+            <p style={bodyText}>
+              The unscripted production specialization matters because the craft is fundamentally different:
+            </p>
+            <ul
+              style={{
+                fontFamily: "'Roboto', sans-serif",
+                fontSize: 14,
+                color: '#a5a7ad',
+                lineHeight: 1.7,
+                paddingLeft: 20,
+                marginBottom: 16,
+                marginTop: 0,
+              }}
+            >
+              <li style={{ marginBottom: 10 }}>
+                <strong style={{ color: '#f2f4f7' }}>Casting is everything.</strong> In unscripted TV,
+                the characters are real people — and finding people who are compelling on camera,
+                whose lives generate genuine conflict, and who can sustain a series is a specialized
+                skill that takes years to develop.
+              </li>
+              <li style={{ marginBottom: 10 }}>
+                <strong style={{ color: '#f2f4f7' }}>Format design, not screenplay.</strong> An
+                unscripted production company does not work from a script — it designs the format
+                conditions that generate compelling real moments. Structure, not writing, is the
+                creative tool.
+              </li>
+              <li>
+                <strong style={{ color: '#f2f4f7' }}>Network relationships are genre-specific.</strong>{' '}
+                The commissioning editors at Discovery, Travel Channel, A&amp;E, and ID who buy
+                unscripted content are not the same people who buy scripted dramas at HBO or Netflix.
+                Unscripted network access requires 25 years of relationship-building in the non-fiction
+                space — which is exactly what MY Entertainment brings.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* SECTION 2c — Reality TV Production Company (H2 keyword target)      */}
+      {/* Targets "reality tv production company" (vol 10, KD 0).            */}
+      {/* Zero KD = easy win; marginal volume but correct ICP term.         */}
+      {/* ================================================================== */}
+      <section style={{ background: '#111', padding: '60px 20px' }}>
+        <div style={container}>
+          <div className="prodco-prose">
+            <h2 style={h2Style}>Reality TV Production Company</h2>
+            <p style={bodyText}>
+              Within the unscripted television category, MY Entertainment has deep experience as a{' '}
+              <strong style={{ color: '#f2f4f7' }}>reality TV production company</strong> — producing
+              formats built around real people, real competition, and real stakes. Reality TV is a
+              broad genre that spans competition formats, docufollows, makeover shows, relationship formats,
+              and talent searches.
+            </p>
+            <p style={bodyText}>
+              Key examples from MY Entertainment&apos;s catalog that span the reality TV spectrum:
+            </p>
+            <ul
+              style={{
+                fontFamily: "'Roboto', sans-serif",
+                fontSize: 14,
+                color: '#a5a7ad',
+                lineHeight: 1.7,
+                paddingLeft: 20,
+                marginBottom: 16,
+                marginTop: 0,
+              }}
+            >
+              <li style={{ marginBottom: 8 }}>
+                <strong style={{ color: '#f2f4f7' }}>Ghost Adventures</strong> — paranormal reality
+                series, 28 seasons, Travel Channel / Discovery
+              </li>
+              <li style={{ marginBottom: 8 }}>
+                <strong style={{ color: '#f2f4f7' }}>Baggage Battles</strong> — competition reality,
+                Travel Channel
+              </li>
+              <li style={{ marginBottom: 8 }}>
+                <strong style={{ color: '#f2f4f7' }}>Wild and Crazy Kids</strong> — children&apos;s
+                reality / competition
+              </li>
+              <li>
+                <strong style={{ color: '#f2f4f7' }}>Billy Buys Brooklyn</strong> — lifestyle / real
+                estate reality
+              </li>
+            </ul>
+            <p style={bodyText}>
+              If you are developing a reality TV concept and looking for a production partner with a
+              proven track record across these formats,{' '}
+              <Link href="/work-with-us" style={inlineLink}>reach out to discuss your concept →</Link>
+            </p>
           </div>
         </div>
       </section>

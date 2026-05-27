@@ -75,6 +75,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // pages: it is the nav-level CTA so it receives sitewide internal link equity
     // from every page via the "WORK WITH MYE" header button.
     { url: `${BASE_URL}/work-with-us`,           lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    // /documentary — "documentary production company" (vol 100, KD 44, CPC $140)
+    // (added seo/scale-mye). Priority 0.9: buyer-intent money keyword, high CPC signal.
+    { url: `${BASE_URL}/documentary`,            lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    // /tv-buyers — "unscripted tv buyers" + "tv content licensing" (B2B distribution page)
+    // (added seo/scale-mye). /buyers conflicts with (internal)/buyers CRM route,
+    // so the public SEO page is at /tv-buyers.
+    // Priority 0.9: B2B buyer-facing page, ICP-matched intent.
+    { url: `${BASE_URL}/tv-buyers`,              lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
 
     { url: `${BASE_URL}/shows`,          lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE_URL}/genres`,         lastModified: now, changeFrequency: 'monthly', priority: 0.8 },

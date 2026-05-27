@@ -1,8 +1,10 @@
 // ============================================================
 // /tv-show-pitch-deck — Pitch Deck Template / Lead-Magnet Page
-// Target keywords:
-//   "tv show pitch deck"  (vol 70, KD 3)
-//   "tv pitch template"   (vol 30, KD 3)
+// Target keywords (updated 2026-05-27, seo/scale-mye):
+//   "tv show pitch deck"          (vol 70, KD 3, CPC $140 — primary)
+//   "tv show pitch deck examples" (vol ~40, KD ~8, CPC $100 — H2)
+//   "tv pitch template"           (vol 30, KD 3, CPC $60  — H2/FAQ)
+//   "tv pitch deck template free" (vol ~20, KD ~5, CPC $50 — FAQ)
 //
 // Intent: showrunners and creators who want a structured template
 // to build a pitch deck. This is the lead-magnet page of the cluster:
@@ -168,12 +170,26 @@ const SLIDES = [
 
 // ------------------------------------------------------------
 // FAQ data — single source of truth for visible text and schema.
-// Questions target "pitch deck" and "template" sub-queries.
+// Questions target "pitch deck", "template", "examples", and "free" sub-queries.
+// Extended (2026-05-27, seo/scale-mye): added examples, free template,
+// and tv pitch template FAQ items.
 // ------------------------------------------------------------
 const FAQ_ITEMS = [
   {
     q: 'What should be in a TV show pitch deck?',
     a: 'A TV show pitch deck typically contains eight sections: title and logline, the hook or why-now, show format details, character or talent profiles, episode arc or season map, target audience, competitive landscape, and production team credentials. The deck should be 10–15 slides and designed for a 5–10 minute verbal walkthrough in a pitch meeting.',
+  },
+  {
+    q: 'Are there TV show pitch deck examples I can look at?',
+    a: 'Yes. The best TV show pitch deck examples are from shows that actually sold — but most are never made public because they contain confidential network information. The next best thing is a detailed annotated template from a production company with a real track record. The template on this page is based on the structure MY Entertainment uses for our own network submissions — refined from 25 years and hundreds of pitches to Discovery, PBS, A&E, Max, and 28+ other buyers. Each slide includes guidance on what to write and what to avoid, based on what commissioning editors respond to.',
+  },
+  {
+    q: 'Where can I find a free TV pitch template?',
+    a: 'The download on this page is a free TV pitch deck template — no email required, no paywall. It is an 8-slide annotated template built from MY Entertainment\'s 25-year pitch playbook. It covers every section a commissioning editor expects to see: logline, format, characters/talent, episode arc, target audience, competitive landscape, and production team. Download it and have a pitch-ready document structure in a day.',
+  },
+  {
+    q: 'Is this a free TV pitch deck template?',
+    a: 'Yes. The template on this page is completely free — click the download button above and save the PDF to your device. No account, no email submission, no paywall. It is MY Entertainment\'s own pitch deck structure, shared freely because we believe better-prepared pitches are better for everyone in the unscripted TV industry.',
   },
   {
     q: 'How many slides should a TV pitch deck have?',
@@ -438,6 +454,105 @@ export default function TVShowPitchDeckPage() {
               </Link>{' '}
               — the visual complement to the written document. Together, they form a complete
               pitch package.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* SECTION 2b — TV Show Pitch Deck Examples (H2 sub-target)            */}
+      {/* Targets "tv show pitch deck examples" (vol ~40, KD ~8, CPC $100).  */}
+      {/* Provides real context for what "examples" look like in practice.  */}
+      {/* ================================================================== */}
+      <section style={{ background: '#000', padding: '60px 20px' }}>
+        <div style={container}>
+          <div className="deck-prose">
+            <h2 style={h2Style}>TV Show Pitch Deck Examples</h2>
+            <p style={bodyText}>
+              Real <strong style={{ color: '#f2f4f7' }}>TV show pitch deck examples</strong> from
+              successful pitches are rarely made public — they contain confidential network strategy,
+              unreleased character information, and deal-sensitive framing. What we can share is the
+              structural anatomy of decks that have sold shows, drawn from MY Entertainment&apos;s
+              25-year pitch history.
+            </p>
+            <p style={bodyText}>
+              Here is what the best-performing pitch decks we have seen (and used) have in common:
+            </p>
+            {[
+              {
+                label: 'The logline owns the first page',
+                body: 'Every winning deck puts the logline front and center — not buried in slide 4. If the buyer has to hunt for what the show is, they are already distracted.',
+              },
+              {
+                label: 'Characters are specific, not generic',
+                body: 'The character slides in the best pitch decks do not describe a type of person — they describe a specific individual with a specific conflict. "A third-generation auctioneer in rural Texas who is racing to save his family\'s business from bankruptcy" is sellable. "An interesting entrepreneur" is not.',
+              },
+              {
+                label: 'Comps are current and on-network',
+                body: 'The best pitch deck examples we have seen use comp shows from the past two to three years, from the specific network being pitched. "Your audience already watches X — this is the next step" is more persuasive than any abstract comparison.',
+              },
+              {
+                label: 'The production team slide is a closing argument',
+                body: 'The final content slide answers: "Can these people actually make this show?" Logos, key credits, and a brief track record summary. A production partner like MY Entertainment provides the credibility that transforms this slide from weak to convincing.',
+              },
+            ].map(({ label, body }) => (
+              <div key={label} style={{ borderLeft: '3px solid #e51d26', paddingLeft: 16, marginBottom: 20 }}>
+                <h3 style={{ ...h3Style, color: '#f2f4f7', textTransform: 'none' as const, letterSpacing: 0, marginBottom: 6 }}>{label}</h3>
+                <p style={{ ...bodyText, marginBottom: 0 }}>{body}</p>
+              </div>
+            ))}
+            <p style={bodyText}>
+              The annotated template below gives you the structural framework from these examples.
+              The free PDF download contains slide-by-slide guidance so you can apply these lessons
+              to your specific concept.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* SECTION 2c — TV Pitch Template (H2 keyword target)                  */}
+      {/* Targets "tv pitch template" (vol 30, KD 3, CPC $60).               */}
+      {/* Explicitly names the asset as a "tv pitch template" for SEO.      */}
+      {/* ================================================================== */}
+      <section style={{ background: '#111', padding: '60px 20px' }}>
+        <div style={container}>
+          <div className="deck-prose">
+            <h2 style={h2Style}>TV Pitch Template — What&apos;s Included</h2>
+            <p style={bodyText}>
+              The free download on this page is a complete{' '}
+              <strong style={{ color: '#f2f4f7' }}>TV pitch template</strong> in PDF format.
+              It is not a generic presentation template — it is built specifically for unscripted
+              television pitches, with guidance on what commissioning editors at cable networks,
+              broadcast channels, and streaming platforms expect to see in each section.
+            </p>
+            <p style={bodyText}>
+              The TV pitch template covers eight sections:
+            </p>
+            <ol
+              style={{
+                fontFamily: "'Roboto', sans-serif",
+                fontSize: 14,
+                color: '#a5a7ad',
+                lineHeight: 1.7,
+                paddingLeft: 20,
+                marginBottom: 16,
+                marginTop: 0,
+              }}
+            >
+              <li style={{ marginBottom: 8 }}>Title &amp; Logline — your show in one sentence</li>
+              <li style={{ marginBottom: 8 }}>The Hook / Why Now — cultural moment or urgency angle</li>
+              <li style={{ marginBottom: 8 }}>Show Format — episode count, structure, production model</li>
+              <li style={{ marginBottom: 8 }}>Characters / Talent — specific people, not types</li>
+              <li style={{ marginBottom: 8 }}>Episode Arc / Season Map — proof the format sustains</li>
+              <li style={{ marginBottom: 8 }}>Target Audience — demographics, psychographics, comp shows</li>
+              <li style={{ marginBottom: 8 }}>Competitive Landscape — current comps, your differentiation</li>
+              <li>Production Team — credentials that say "we can deliver this"</li>
+            </ol>
+            <p style={bodyText}>
+              Each section of the TV pitch template includes annotated guidance — not just blank boxes,
+              but explanations of what to write, how much detail to include, and what mistakes to avoid.
+              Download it free above.
             </p>
           </div>
         </div>
