@@ -33,6 +33,10 @@ const PUBLIC_PATHS = new Set([
   '/sizzle-reel',
   '/tv-production-company',
   '/tv-show-pitch-deck',
+  // Pillar page for the "tv show pitch" focus keyword (KD1). Was added (PR #9)
+  // without its PUBLIC_PATHS entry, so middleware 307'd Googlebot to /login and
+  // the page couldn't be crawled or ranked. This entry makes it publicly crawlable.
+  '/tv-show-pitch',
   // B2B work-with-us landing page (Option A SEO sprint, 2026-05-22)
   '/work-with-us',
 ]);
