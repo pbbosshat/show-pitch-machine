@@ -195,6 +195,32 @@ const faqSchema = {
 };
 
 // ------------------------------------------------------------
+// BreadcrumbList schema — SERP breadcrumb trail for this flagship page.
+// Shows "Home > Sizzle Reel" in Google results alongside the listing.
+// "sizzle reel" is the crown-jewel keyword (vol 3,200, KD 1); breadcrumbs
+// reinforce that this is the definitive page on the topic.
+// Added 2026-06-01 as part of cluster-wide BreadcrumbList rollout.
+// ------------------------------------------------------------
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: 'https://www.myentertainment.tv/',
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Sizzle Reel',
+      item: 'https://www.myentertainment.tv/sizzle-reel',
+    },
+  ],
+};
+
+// ------------------------------------------------------------
 // Page Component
 // ------------------------------------------------------------
 export default function SizzleReelPage() {
@@ -208,6 +234,11 @@ export default function SizzleReelPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      {/* BreadcrumbList — SERP breadcrumb trail for this flagship page */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
       {/* Responsive prose column styles */}

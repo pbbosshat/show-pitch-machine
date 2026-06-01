@@ -189,6 +189,31 @@ const faqSchema = {
   })),
 };
 
+// ------------------------------------------------------------
+// BreadcrumbList schema — SERP breadcrumb trail for this pillar page.
+// Shows "Home > TV Show Pitch" in Google results alongside the listing.
+// Breadcrumbs are a confirmed Google ranking signal and improve CTR.
+// Added 2026-06-01 as part of cluster-wide BreadcrumbList rollout.
+// ------------------------------------------------------------
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: 'https://www.myentertainment.tv/',
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'TV Show Pitch',
+      item: 'https://www.myentertainment.tv/tv-show-pitch',
+    },
+  ],
+};
+
 // The anatomy elements of a strong TV show pitch — used in the
 // pitch anatomy grid section. Defined once to feed the JSX grid.
 const PITCH_ANATOMY = [
@@ -266,6 +291,11 @@ export default function TVShowPitchPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      {/* BreadcrumbList — SERP breadcrumb trail for this pillar page */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
       {/* Responsive prose column and layout styles.
