@@ -252,6 +252,31 @@ const faqSchema = {
 };
 
 // ------------------------------------------------------------
+// BreadcrumbList schema — SERP breadcrumb trail for this page.
+// Shows "Home > TV Show Pitch Deck Template" in Google results.
+// Improves CTR and signals site hierarchy to Googlebot.
+// Added 2026-06-01 as part of cluster-wide BreadcrumbList rollout.
+// ------------------------------------------------------------
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: 'https://www.myentertainment.tv/',
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'TV Show Pitch Deck Template',
+      item: 'https://www.myentertainment.tv/tv-show-pitch-deck',
+    },
+  ],
+};
+
+// ------------------------------------------------------------
 // Page Component
 // ------------------------------------------------------------
 export default function TVShowPitchDeckPage() {
@@ -265,6 +290,11 @@ export default function TVShowPitchDeckPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      {/* BreadcrumbList — SERP breadcrumb trail for this lead-magnet page */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
       {/* Responsive styles — slide grid, tooltip, CTA hover */}

@@ -197,6 +197,32 @@ const faqSchema = {
   })),
 };
 
+// ------------------------------------------------------------
+// BreadcrumbList schema — helps Google render breadcrumb trails
+// in the SERP ("Home > Pitch Playbook > How to Pitch a TV Show").
+// Improves CTR by showing site context in search results.
+// Position 1 = Homepage, Position 2 = this page (single-level pillar).
+// Added 2026-06-01 as part of cluster-wide BreadcrumbList rollout.
+// ------------------------------------------------------------
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: 'https://www.myentertainment.tv/',
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'How to Pitch a TV Show',
+      item: 'https://www.myentertainment.tv/how-to-pitch-a-tv-show',
+    },
+  ],
+};
+
 // Pitch deck slide structure — used in both the prose and the
 // cross-link to /tv-show-pitch-deck. Defined once here.
 const DECK_SLIDES = [
@@ -224,6 +250,11 @@ export default function HowToPitchATVShowPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      {/* BreadcrumbList — SERP breadcrumb trail for this pillar page */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
       {/* Responsive styles — prose column, step layout, deck grid */}

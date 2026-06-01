@@ -191,6 +191,31 @@ const faqSchema = {
 };
 
 // ------------------------------------------------------------
+// BreadcrumbList schema — SERP breadcrumb trail for this services page.
+// Shows "Home > TV Production Company" in Google results.
+// Complements the Service + Organization schemas already on this page.
+// Added 2026-06-01 as part of cluster-wide BreadcrumbList rollout.
+// ------------------------------------------------------------
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: 'https://www.myentertainment.tv/',
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'TV Production Company',
+      item: 'https://www.myentertainment.tv/tv-production-company',
+    },
+  ],
+};
+
+// ------------------------------------------------------------
 // Service offerings — rendered as a feature card grid.
 // Defines what "working with MY Entertainment" means in practice.
 // ------------------------------------------------------------
@@ -253,6 +278,11 @@ export default function TVProductionCompanyPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      {/* BreadcrumbList — SERP breadcrumb trail for this services page */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
       {/* Responsive styles — grid layouts, tooltip, CTA hover */}
