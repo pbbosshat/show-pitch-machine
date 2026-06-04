@@ -20,7 +20,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import ContactForm from '@/app/(public)/contact/ContactForm';
-import SubmissionDownloadLink from '@/app/(public)/contact/SubmissionDownloadLink';
 import { JsonLd } from '@/components/site/JsonLd';
 
 const OG_IMAGE =
@@ -566,7 +565,6 @@ export default function PitchPage() {
           id="submit" is the anchor target for the hero CTA button above.
           Reuses the existing ContactForm component — posts to /api/contact →
           contact_leads table. No new backend work required.
-          SubmissionDownloadLink reuses the same GA4 download_epk event.
           The source_section 'pitch-page' tag (set inside ContactForm on
           trackShowPitchSubmit/trackContactFormSubmit calls) distinguishes
           leads from this page from /contact leads in GA4 Explorations.
@@ -615,26 +613,8 @@ export default function PitchPage() {
             >
               info@myentertainment.tv
             </a>
-            . Please include a Submission Release Form with any formal pitch materials.
+            .
           </p>
-
-          {/* Submission Release Form download — same SubmissionDownloadLink component
-              used on /contact and /work-with-us. Fires download_epk GA4 event on click.
-              The PDF at /submission-release-form.pdf is the standard MYE submission form;
-              [FLAG: verify] confirm that this PDF file has been uploaded to the /public dir */}
-          <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <SubmissionDownloadLink
-              href="/submission-release-form.pdf"
-              style={{
-                fontFamily: "'Roboto', sans-serif",
-                fontSize: 14,
-                color: '#e02027',
-                textDecoration: 'underline',
-              }}
-            >
-              Download Submission Release Form (PDF)
-            </SubmissionDownloadLink>
-          </div>
 
           {/*
             ContactForm — existing component, posts to /api/contact.
