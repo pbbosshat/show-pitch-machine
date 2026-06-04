@@ -47,6 +47,9 @@ const COMPANY_LINKS = [
   { href: '/faq',                label: 'FAQs' },
   { href: '/film-commissions',   label: 'Film Commissions' },
   { href: '/contact',            label: 'Contact' },
+  // Producer submission page — sitewide footer link ensures crawlability
+  // and surfaces the /pitch conversion page for any producer browsing the site.
+  { href: '/pitch',              label: 'Submit Your Show' },
 ];
 
 // FOR BUYERS column — B2B money pages.
