@@ -158,6 +158,40 @@ export function trackEpkDownload(params: {
 }
 
 /**
+ * trackGenerateLead — fires the standard GA4 `generate_lead` event when a
+ * contact form is successfully submitted.
+ *
+ * WHY generate_lead (in addition to contact_form_submit): GA4 has built-in
+ * understanding of the `generate_lead` event name — it appears in GA4's default
+ * reports, Ads conversion import, and Google Ads bidding signals without any
+ * custom configuration. The custom events (submit_pitch, contact_form_submit)
+ * still fire for Explorations segmentation, but generate_lead is the one to
+ * import into Google Ads as a conversion action for Smart Bidding.
+ *
+ * WHY include UTM params as event parameters: GA4 automatically attributes
+ * events to sessions via its session model, but passing utm_source/medium/campaign
+ * as event parameters makes them available in Explorations custom dimensions
+ * WITHOUT needing to set up custom dimensions separately in GA4 Admin.
+ *
+ * Mark as Key Event: YES — generate_lead
+ */
+export function trackGenerateLead(params: {
+  sourceSection: string;
+  utmSource?:    string;
+  utmMedium?:    string;
+  utmCampaign?:  string;
+}): void {
+  gtag("event", "generate_lead", {
+    event_category:  "lead",
+    source_section:  params.sourceSection,
+    utm_source:      params.utmSource  ?? "(not set)",
+    utm_medium:      params.utmMedium  ?? "(not set)",
+    utm_campaign:    params.utmCampaign ?? "(not set)",
+    page_path:       currentPath(),
+  });
+}
+
+/**
  * trackShowPageView — fired on mount of any /shows/[slug] page.
  * Engagement only — do NOT mark as Key Event.
  *

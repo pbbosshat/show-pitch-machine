@@ -1,7 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { trackShowPitchSubmit, trackContactFormSubmit } from '@/lib/analytics';
+import { trackShowPitchSubmit, trackContactFormSubmit, trackGenerateLead } from '@/lib/analytics';
+// readAttribution reads the first-touch UTM/gclid/fbclid/referrer/landing_page
+// that AttributionCapture stored in localStorage when the visitor first landed.
+// clearAttribution removes those records after a successful submission so a
+// future visit from a different campaign gets a fresh first-touch.
+import { readAttribution, clearAttribution } from '@/lib/attribution';
 
 const INPUT_STYLE = {
   background: '#1d1f21',
@@ -40,17 +45,31 @@ export default function ContactForm() {
     setSubmitting(true);
     setError(null);
     try {
+      // Read attribution BEFORE the fetch so we capture the correct first-touch
+      // data even if the user clicked around after landing. readAttribution() is
+      // synchronous and safe to call client-side — it returns an all-null object
+      // during SSR or if localStorage was never written (direct visitors).
+      const attribution = readAttribution();
+
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ first_name: firstName, last_name: lastName, email, message }),
+        // Spread attribution fields alongside the form fields.
+        // The server ignores any null values and maps them to SQL NULL.
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          email,
+          message,
+          ...attribution,
+        }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { error?: string };
         throw new Error(d.error || `Error ${res.status}`);
       }
 
-      /* Fire both conversion events on confirmed API success (not on click)
+      /* Fire conversion events on confirmed API success (not on click)
          so bot submissions and network failures don't inflate conversion counts.
 
          submit_pitch — primary pitch/lead intent signal; mark as Key Event in
@@ -63,9 +82,25 @@ export default function ContactForm() {
          contact_form_submit — secondary general-inquiry signal; also a Key
            Event. Fires alongside submit_pitch so GA4 can report either event
            as the conversion depending on the analysis goal. has_phone is false
-           because this form has no phone field. */
+           because this form has no phone field.
+
+         generate_lead — standard GA4 e-commerce conversion event. GA4 treats
+           this as a built-in event with a standard meaning: a qualified lead
+           has been captured. Including utm_source/medium/campaign as event
+           parameters lets GA4 Explorations segment "leads by traffic source"
+           without needing a custom funnel. */
       trackShowPitchSubmit({ sourceSection: 'contact-pitch' });
       trackContactFormSubmit({ hasPhone: false, sourceSection: 'contact-pitch' });
+      trackGenerateLead({
+        sourceSection: 'contact-pitch',
+        utmSource:   attribution.utm_source ?? undefined,
+        utmMedium:   attribution.utm_medium ?? undefined,
+        utmCampaign: attribution.utm_campaign ?? undefined,
+      });
+
+      // Clear first-touch after a successful conversion so a future visit from
+      // a different campaign doesn't inherit this session's attribution.
+      clearAttribution();
 
       setSubmitted(true);
     } catch (err) {

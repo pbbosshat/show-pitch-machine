@@ -15,14 +15,16 @@
  * Called by: Public contact form on myentertainment.tv (browser, unauthenticated);
  *   also callable directly by bots or API consumers via JSON
  * Auth: none — intentionally public
- * Body (JSON): { first_name, last_name, email, message?, company?, available_title_id? }
+ * Body (JSON): { first_name, last_name, email, message?, company?, available_title_id?,
+ *               utm_source?, utm_medium?, utm_campaign?, utm_term?, utm_content?,
+ *               gclid?, fbclid?, landing_page?, referrer? }
  * Body (form): same fields as application/x-www-form-urlencoded
  * Response: { data: Lead } at 201, or HTTP redirect to /contact?submitted=true
  *   for form posts (to support browsers with no JS)
  *
- * Persists the lead, then fires a notification email to leads_email (from
- * site_settings) in fire-and-forget mode — mail failure must not block the
- * 201 response visible to the submitter.
+ * Persists the lead (including attribution fields), classifies the channel,
+ * then fires a notification email to leads_email (from site_settings) in
+ * fire-and-forget mode — mail failure must not block the 201 response.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -149,6 +151,75 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ data: leads });
 }
 
+// ── Channel classification ───────────────────────────────────────────────────
+
+/**
+ * classifyChannel — maps raw attribution signals to a human-readable channel label.
+ *
+ * Priority order (most specific → least specific):
+ *   1. gclid present → paid_search (Google click IDs only exist in paid traffic)
+ *   2. fbclid present → paid_social (Facebook click IDs only exist in FB/IG ads)
+ *   3. utm_medium = cpc | ppc | paidsearch → paid_search
+ *   4. utm_medium = social | social-media | socialmedia → organic_social
+ *   5. referrer is present and external AND is a known search engine → organic_search
+ *   6. referrer is present and external (not a search engine) → referral
+ *   7. everything else → direct (typed URL, bookmarks, dark social, etc.)
+ *
+ * WHY store the classified channel (vs. computing it at query time): avoids
+ * re-running the classification on every dashboard load or export query.
+ * Also future-proofs against changing the classification logic — historical
+ * rows keep the channel they were classified with at insert time.
+ */
+function classifyChannel(params: {
+  gclid:      string | null;
+  fbclid:     string | null;
+  utm_medium: string | null;
+  referrer:   string | null;
+}): string {
+  const { gclid, fbclid, utm_medium, referrer } = params;
+
+  // Google click ID → paid search (highest precedence; present = GA paid)
+  if (gclid) return 'paid_search';
+
+  // Facebook/Instagram click ID → paid social
+  if (fbclid) return 'paid_social';
+
+  // UTM medium overrides referrer-based classification when explicitly set
+  if (utm_medium) {
+    const m = utm_medium.toLowerCase().trim();
+    if (['cpc', 'ppc', 'paidsearch', 'paid_search', 'paid search'].includes(m)) {
+      return 'paid_search';
+    }
+    if (['social', 'social-media', 'socialmedia', 'social_media'].includes(m)) {
+      return 'organic_social';
+    }
+    // email, display, video, affiliate etc. — return the medium as-is so
+    // operators see "email" in the dashboard rather than "direct"
+    if (m) return m;
+  }
+
+  // Referrer-based classification — only meaningful if a referrer is present
+  // and it's external (not the same domain — that would be internal navigation)
+  if (referrer) {
+    try {
+      const refHost = new URL(referrer).hostname.replace(/^www\./, '');
+      const SEARCH_ENGINES = [
+        'google.com', 'bing.com', 'yahoo.com', 'duckduckgo.com',
+        'baidu.com', 'yandex.com', 'ecosia.org', 'brave.com',
+      ];
+      if (SEARCH_ENGINES.some((se) => refHost.endsWith(se))) {
+        return 'organic_search';
+      }
+      // External referrer but not a search engine → referral traffic
+      return 'referral';
+    } catch {
+      // Malformed referrer URL — fall through to direct
+    }
+  }
+
+  return 'direct';
+}
+
 export async function POST(request: NextRequest) {
   const contentType = request.headers.get('content-type') ?? '';
   const isFormPost = contentType.includes('application/x-www-form-urlencoded');
@@ -160,6 +231,18 @@ export async function POST(request: NextRequest) {
   let company: string | undefined;
   let available_title_id: string | undefined;
 
+  // Attribution fields — all optional, all nullable in the DB.
+  // Sent by the ContactForm client component via readAttribution().
+  let utm_source:   string | undefined;
+  let utm_medium:   string | undefined;
+  let utm_campaign: string | undefined;
+  let utm_term:     string | undefined;
+  let utm_content:  string | undefined;
+  let gclid:        string | undefined;
+  let fbclid:       string | undefined;
+  let landing_page: string | undefined;
+  let referrer:     string | undefined;
+
   if (isFormPost) {
     const text = await request.text();
     const params = new URLSearchParams(text);
@@ -169,6 +252,16 @@ export async function POST(request: NextRequest) {
     message             = params.get('message')?.trim() || undefined;
     company             = params.get('company')?.trim() || undefined;
     available_title_id  = params.get('available_title_id')?.trim() || undefined;
+    // Attribution (form submissions via no-JS browser path)
+    utm_source          = params.get('utm_source')?.trim() || undefined;
+    utm_medium          = params.get('utm_medium')?.trim() || undefined;
+    utm_campaign        = params.get('utm_campaign')?.trim() || undefined;
+    utm_term            = params.get('utm_term')?.trim() || undefined;
+    utm_content         = params.get('utm_content')?.trim() || undefined;
+    gclid               = params.get('gclid')?.trim() || undefined;
+    fbclid              = params.get('fbclid')?.trim() || undefined;
+    landing_page        = params.get('landing_page')?.trim() || undefined;
+    referrer            = params.get('referrer')?.trim() || undefined;
   } else {
     const body = await request.json().catch(() => ({})) as {
       first_name?: string;
@@ -177,6 +270,16 @@ export async function POST(request: NextRequest) {
       message?: string;
       company?: string;
       available_title_id?: string;
+      // Attribution fields
+      utm_source?: string | null;
+      utm_medium?: string | null;
+      utm_campaign?: string | null;
+      utm_term?: string | null;
+      utm_content?: string | null;
+      gclid?: string | null;
+      fbclid?: string | null;
+      landing_page?: string | null;
+      referrer?: string | null;
     };
     first_name          = body.first_name?.trim() ?? '';
     last_name           = body.last_name?.trim() ?? '';
@@ -184,6 +287,16 @@ export async function POST(request: NextRequest) {
     message             = body.message?.trim() || undefined;
     company             = body.company?.trim() || undefined;
     available_title_id  = body.available_title_id?.trim() || undefined;
+    // Attribution — null is treated the same as absent (→ SQL NULL)
+    utm_source          = body.utm_source?.trim() || undefined;
+    utm_medium          = body.utm_medium?.trim() || undefined;
+    utm_campaign        = body.utm_campaign?.trim() || undefined;
+    utm_term            = body.utm_term?.trim() || undefined;
+    utm_content         = body.utm_content?.trim() || undefined;
+    gclid               = body.gclid?.trim() || undefined;
+    fbclid              = body.fbclid?.trim() || undefined;
+    landing_page        = body.landing_page?.trim() || undefined;
+    referrer            = body.referrer?.trim() || undefined;
   }
 
   if (!first_name || !last_name || !email) {
@@ -193,12 +306,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'first_name, last_name, and email are required' }, { status: 400 });
   }
 
+  // Classify the channel BEFORE insert so it's stored atomically with the lead.
+  const channel = classifyChannel({
+    gclid:      gclid ?? null,
+    fbclid:     fbclid ?? null,
+    utm_medium: utm_medium ?? null,
+    referrer:   referrer ?? null,
+  });
+
   const id = randomBytes(16).toString('hex');
   const created_at = Date.now(); // milliseconds — existing behavior for contact_leads
 
   await run(
-    'INSERT INTO contact_leads (id, first_name, last_name, email, message, company, available_title_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    [id, first_name, last_name, email, message ?? null, company ?? null, available_title_id ?? null, created_at]
+    `INSERT INTO contact_leads
+       (id, first_name, last_name, email, message, company, available_title_id, created_at,
+        utm_source, utm_medium, utm_campaign, utm_term, utm_content,
+        gclid, fbclid, landing_page, referrer, channel)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id, first_name, last_name, email,
+      message ?? null, company ?? null, available_title_id ?? null, created_at,
+      utm_source    ?? null,
+      utm_medium    ?? null,
+      utm_campaign  ?? null,
+      utm_term      ?? null,
+      utm_content   ?? null,
+      gclid         ?? null,
+      fbclid        ?? null,
+      landing_page  ?? null,
+      referrer      ?? null,
+      channel,
+    ]
   );
 
   const lead: Lead = {
