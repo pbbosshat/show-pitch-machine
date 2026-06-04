@@ -6,6 +6,10 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import SiteHeader from '@/components/site/SiteHeader';
 import SiteFooter from '@/components/site/SiteFooter';
+// AttributionCapture is a 'use client' island that captures UTM/gclid/fbclid
+// + referrer on every page load and persists them to localStorage (first-touch).
+// It renders null — it exists purely for the useEffect side effect.
+import AttributionCapture from '@/components/site/AttributionCapture';
 
 // GA4 Measurement ID for myentertainment.tv
 const GA4_ID = 'G-5M15CDKBGQ';
@@ -128,6 +132,11 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       ))}
 
       <SiteHeader />
+
+      {/* Attribution capture — records UTM/gclid/fbclid/referrer to localStorage
+          on every page load so the contact form can attach first-touch data.
+          Renders nothing; runs a useEffect side effect only. */}
+      <AttributionCapture />
 
       {/* GA4 — load after interactive so it doesn't block page render */}
       <Script
