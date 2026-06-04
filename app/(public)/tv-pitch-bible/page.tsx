@@ -311,7 +311,9 @@ export default function TVPitchBiblePage() {
           background: '#000',
         }}
       >
-        {/* Eyebrow */}
+        {/* Eyebrow — "Pitch Playbook" positions this as educational/top-of-funnel support.
+            Producers who already HAVE a show should be routed to /tv-distribution-company
+            (commercial spine) or /pitch (submission form) — not this educational page. */}
         <p
           style={{
             fontFamily: "'Roboto Condensed', sans-serif",
@@ -415,6 +417,91 @@ export default function TVPitchBiblePage() {
               to generate interest; the bible is what a network requests when they are seriously
               considering a development deal.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* SECTION 2b — Distribution routing callout (re-point 2026-06-04)    */}
+      {/* A bible is requested AFTER a pitch goes well. Once you have a bible */}
+      {/* AND a finished show, the next step is finding a distributor.        */}
+      {/* This callout captures that intent and routes to the distribution    */}
+      {/* commercial spine pages (/tv-distribution-company and /pitch).      */}
+      {/* ================================================================== */}
+      <section
+        style={{
+          background: '#0a0a0a',
+          padding: '28px 20px',
+          borderTop: '1px solid #1a1a1a',
+          borderBottom: '1px solid #1a1a1a',
+        }}
+      >
+        <div style={container}>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 20,
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              maxWidth: 780,
+              margin: '0 auto',
+            }}
+          >
+            <div style={{ flex: '1 1 300px' }}>
+              <p
+                style={{
+                  fontFamily: "'Roboto Condensed', sans-serif",
+                  fontSize: 11,
+                  color: '#e51d26',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.15em',
+                  margin: '0 0 6px',
+                }}
+              >
+                Past the bible stage and ready to distribute?
+              </p>
+              <p
+                style={{
+                  fontFamily: "'Roboto', sans-serif",
+                  fontSize: 14,
+                  color: '#f2f4f7',
+                  margin: 0,
+                  lineHeight: 1.5,
+                }}
+              >
+                If your show is finished and you need a{' '}
+                <Link href="/tv-distribution-company" style={inlineLink}>
+                  TV distribution company
+                </Link>
+                {' '}to pitch it to networks, skip ahead to the{' '}
+                <Link href="/pitch" style={inlineLink}>
+                  show submission form
+                </Link>
+                .
+              </p>
+            </div>
+            <a
+              href="/tv-distribution-company"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'transparent',
+                color: '#a5a7ad',
+                fontFamily: "'Roboto Condensed', sans-serif",
+                fontSize: 13,
+                fontWeight: 400,
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+                borderRadius: 4,
+                border: '1px solid #2a2a2a',
+                padding: '10px 22px',
+                flexShrink: 0,
+              }}
+            >
+              TV Distribution →
+            </a>
           </div>
         </div>
       </section>
@@ -776,13 +863,29 @@ export default function TVPitchBiblePage() {
             </span>
           </span>
 
-          {/* Cluster cross-links */}
+          {/* Distribution path — primary commercial spine link */}
           <p
             style={{
               fontFamily: "'Roboto', sans-serif",
               fontSize: 13,
               color: '#a5a7ad',
               marginTop: 24,
+              marginBottom: 8,
+            }}
+          >
+            <strong style={{ color: '#f2f4f7' }}>Show finished and need a distributor?</strong>{' '}
+            <Link href="/tv-distribution-company" style={inlineLink}>
+              MY Entertainment distributes unscripted TV to 28+ networks →
+            </Link>
+          </p>
+
+          {/* Cluster cross-links */}
+          <p
+            style={{
+              fontFamily: "'Roboto', sans-serif",
+              fontSize: 13,
+              color: '#a5a7ad',
+              marginTop: 8,
               marginBottom: 0,
             }}
           >

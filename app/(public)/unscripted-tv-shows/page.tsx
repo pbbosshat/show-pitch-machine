@@ -296,7 +296,9 @@ export default function UnscriptedTVShowsPage() {
           background: '#000',
         }}
       >
-        {/* Eyebrow */}
+        {/* Eyebrow — positions this as the genre discovery / E-E-A-T hub.
+            Producers with a finished unscripted show seeking distribution should
+            be routed to /tv-distribution-company or /pitch — callout below. */}
         <p
           style={{
             fontFamily: "'Roboto Condensed', sans-serif",
@@ -412,6 +414,112 @@ export default function UnscriptedTVShowsPage() {
                   </p>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* SECTION 2b — Distribution routing callout (re-point 2026-06-04)    */}
+      {/* This page has dual intent: genre discovery (informational) AND      */}
+      {/* producers seeking distribution (commercial). The callout splits the */}
+      {/* audience: distribution-seekers with a finished show → /tv-          */}
+      {/* distribution-company; genre/production learners → continue reading. */}
+      {/* ================================================================== */}
+      <section
+        style={{
+          background: '#0d0d0d',
+          padding: '28px 20px',
+          borderTop: '1px solid #1a1a1a',
+          borderBottom: '1px solid #1a1a1a',
+        }}
+      >
+        <div style={container}>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 24,
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              maxWidth: 900,
+              margin: '0 auto',
+            }}
+          >
+            {/* Left: distribution path CTA */}
+            <div style={{ flex: '1 1 300px' }}>
+              <p
+                style={{
+                  fontFamily: "'Roboto Condensed', sans-serif",
+                  fontSize: 11,
+                  color: '#e51d26',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.15em',
+                  margin: '0 0 6px',
+                }}
+              >
+                Have a finished unscripted show?
+              </p>
+              <p
+                style={{
+                  fontFamily: "'Roboto', sans-serif",
+                  fontSize: 14,
+                  color: '#f2f4f7',
+                  margin: 0,
+                  lineHeight: 1.5,
+                }}
+              >
+                MY Entertainment is a{' '}
+                <Link href="/tv-distribution-company" style={inlineLink}>
+                  TV distribution company
+                </Link>
+                {' '}that pitches finished unscripted shows to 28+ US networks and international
+                broadcasters. If your show is in production or complete,{' '}
+                <Link href="/pitch" style={inlineLink}>
+                  submit it for distribution consideration
+                </Link>
+                .
+              </p>
+            </div>
+
+            {/* Two action links */}
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <a
+                href="/tv-distribution-company"
+                style={{
+                  display: 'inline-block',
+                  background: '#e51d26',
+                  color: '#fff',
+                  fontFamily: "'Roboto Condensed', sans-serif",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  textTransform: 'uppercase',
+                  textDecoration: 'none',
+                  borderRadius: 4,
+                  padding: '10px 20px',
+                  transition: 'opacity 150ms',
+                }}
+              >
+                TV Distribution
+              </a>
+              <a
+                href="/pitch"
+                style={{
+                  display: 'inline-block',
+                  background: 'transparent',
+                  color: '#a5a7ad',
+                  fontFamily: "'Roboto Condensed', sans-serif",
+                  fontSize: 13,
+                  fontWeight: 400,
+                  textTransform: 'uppercase',
+                  textDecoration: 'none',
+                  border: '1px solid #2a2a2a',
+                  borderRadius: 4,
+                  padding: '10px 20px',
+                }}
+              >
+                Submit Your Show
+              </a>
             </div>
           </div>
         </div>
@@ -781,13 +889,29 @@ export default function UnscriptedTVShowsPage() {
             </span>
           </span>
 
-          {/* Cluster cross-links */}
+          {/* Distribution spine link — primary commercial conversion path */}
           <p
             style={{
               fontFamily: "'Roboto', sans-serif",
               fontSize: 13,
               color: '#a5a7ad',
               marginTop: 24,
+              marginBottom: 8,
+            }}
+          >
+            <strong style={{ color: '#f2f4f7' }}>Show already made?</strong>{' '}
+            <Link href="/tv-distribution-company" style={inlineLink}>
+              Learn about TV distribution with MY Entertainment →
+            </Link>
+          </p>
+
+          {/* Cluster cross-links — education mesh */}
+          <p
+            style={{
+              fontFamily: "'Roboto', sans-serif",
+              fontSize: 13,
+              color: '#a5a7ad',
+              marginTop: 8,
               marginBottom: 0,
             }}
           >

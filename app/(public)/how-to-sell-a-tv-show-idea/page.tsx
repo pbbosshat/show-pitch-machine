@@ -312,7 +312,9 @@ export default function HowToSellATVShowIdeaPage() {
           background: '#000',
         }}
       >
-        {/* Eyebrow — Webflow .subtitle-small / Roboto Condensed uppercase */}
+        {/* Eyebrow — "Pitch Playbook" positions this as educational/top-of-funnel support.
+            Producers who already HAVE a show and need distribution should be routed to
+            /tv-distribution-company (the commercial spine) or /pitch (submission). */}
         <p
           style={{
             fontFamily: "'Roboto Condensed', sans-serif",
@@ -388,6 +390,92 @@ export default function HowToSellATVShowIdeaPage() {
               problem — they have a packaging or targeting problem. The pitch is the tip of the
               spear. Everything behind it determines whether you get a deal.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* SECTION 2b — Distribution path callout (re-point 2026-06-04)       */}
+      {/* Audience split: readers who HAVE a finished show are producer-      */}
+      {/* seekers who should go to /tv-distribution-company → /pitch.        */}
+      {/* Readers still developing should continue reading this page.        */}
+      {/* This callout captures the distribution-intent segment mid-funnel.  */}
+      {/* ================================================================== */}
+      <section
+        style={{
+          background: '#0a0a0a',
+          padding: '32px 20px',
+          borderTop: '1px solid #1a1a1a',
+          borderBottom: '1px solid #1a1a1a',
+        }}
+      >
+        <div style={container}>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 20,
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              maxWidth: 780,
+              margin: '0 auto',
+            }}
+          >
+            <div style={{ flex: '1 1 300px' }}>
+              {/* Flag this as a routing callout, not content */}
+              <p
+                style={{
+                  fontFamily: "'Roboto Condensed', sans-serif",
+                  fontSize: 11,
+                  color: '#e51d26',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.15em',
+                  margin: '0 0 6px',
+                }}
+              >
+                Already have a finished show?
+              </p>
+              <p
+                style={{
+                  fontFamily: "'Roboto', sans-serif",
+                  fontSize: 14,
+                  color: '#f2f4f7',
+                  margin: 0,
+                  lineHeight: 1.5,
+                }}
+              >
+                If you have a completed or near-completed unscripted show and need a{' '}
+                <Link href="/tv-distribution-company" style={inlineLink}>
+                  TV distribution company
+                </Link>
+                , skip to our distribution page — or go directly to the{' '}
+                <Link href="/pitch" style={inlineLink}>
+                  show submission form
+                </Link>
+                .
+              </p>
+            </div>
+            <a
+              href="/pitch"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: '#e51d26',
+                color: '#fff',
+                fontFamily: "'Roboto Condensed', sans-serif",
+                fontSize: 13,
+                fontWeight: 500,
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+                borderRadius: 4,
+                padding: '10px 22px',
+                flexShrink: 0,
+                transition: 'opacity 150ms',
+              }}
+            >
+              Submit Your Show →
+            </a>
           </div>
         </div>
       </section>
@@ -749,13 +837,29 @@ export default function HowToSellATVShowIdeaPage() {
             </span>
           </span>
 
-          {/* Cluster cross-links — full internal link mesh */}
+          {/* Distribution path link — the commercial spine for producers with content */}
           <p
             style={{
               fontFamily: "'Roboto', sans-serif",
               fontSize: 13,
               color: '#a5a7ad',
               marginTop: 24,
+              marginBottom: 8,
+            }}
+          >
+            <strong style={{ color: '#f2f4f7' }}>Have a finished show?</strong>{' '}
+            <Link href="/tv-distribution-company" style={inlineLink}>
+              Learn about TV distribution →
+            </Link>
+          </p>
+
+          {/* Cluster cross-links — full internal link mesh */}
+          <p
+            style={{
+              fontFamily: "'Roboto', sans-serif",
+              fontSize: 13,
+              color: '#a5a7ad',
+              marginTop: 8,
               marginBottom: 0,
             }}
           >

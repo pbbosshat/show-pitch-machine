@@ -85,19 +85,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/tv-buyers`,              lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
 
     // ── New money-keyword pages — seo/mye-pitch-money-2026-06-04 ──────────
-    // /how-to-sell-a-tv-show-idea — standalone transactional page targeting
-    // "how to sell a tv show idea" (vol ~80, KD ~8, CPC ~$90). Previously
-    // only an H2 on /how-to-pitch-a-tv-show; now a full dedicated URL with
-    // rights/deal structure depth. Priority 0.9: transactional B2B intent.
+    // /tv-distribution-company — PRIMARY DISTRIBUTION MONEY-KEYWORD PILLAR
+    // Targets "tv distribution company", "tv show distribution", "tv content
+    // licensing", "tv format rights", "unscripted tv distribution" (buyer-intent
+    // distribution-seeker cluster per 2026-06-04 thesis correction). This is the
+    // commercial spine of the MyE SEO strategy — priority 1.0 alongside homepage
+    // since this is the genuine buyer-intent conversion page.
+    { url: `${BASE_URL}/tv-distribution-company`,     lastModified: now, changeFrequency: 'weekly', priority: 1.0 },
+    // /how-to-sell-a-tv-show-idea — top-of-funnel maker education (re-framed
+    // 2026-06-04). Supports /tv-distribution-company as the commercial spine.
+    // Audience = creators developing concepts (not yet producers with content).
+    // Priority 0.9 maintained — high educational intent, routes to distribution.
     { url: `${BASE_URL}/how-to-sell-a-tv-show-idea`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
-    // /tv-pitch-bible — TV show bible / format bible guide targeting
-    // "tv show bible" (vol ~90), "tv pitch bible" (vol ~40), "format bible"
-    // (vol ~30). Late-stage pitch research signal — high buyer intent.
+    // /tv-pitch-bible — TV show bible / format bible guide (top-of-funnel support).
+    // Audience = creators building pitch packages. Routes to /tv-distribution-company
+    // and /pitch when they have a finished show.
     { url: `${BASE_URL}/tv-pitch-bible`,              lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
-    // /unscripted-tv-shows — genre hub + pitch entry point targeting
-    // "unscripted tv shows" (vol 1,200), "unscripted television" (vol ~300).
-    // Dual-intent: informational (genre discovery) + transactional (pitch CTA).
-    // Includes named show facts (Ghost Adventures, Destination Fear) for E-E-A-T.
+    // /unscripted-tv-shows — genre hub + distribution entry point (dual-intent).
+    // Informational (genre discovery) + distribution CTA routing to /tv-distribution-
+    // company and /pitch. E-E-A-T signal via named shows (Ghost Adventures, etc.).
     { url: `${BASE_URL}/unscripted-tv-shows`,         lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
 
     { url: `${BASE_URL}/shows`,          lastModified: now, changeFrequency: 'monthly', priority: 0.8 },

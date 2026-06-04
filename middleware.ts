@@ -45,10 +45,16 @@ const PUBLIC_PATHS = new Set([
   // B2B work-with-us landing page (Option A SEO sprint, 2026-05-22)
   '/work-with-us',
   // New money-keyword pages — seo/mye-pitch-money-2026-06-04:
-  //   /how-to-sell-a-tv-show-idea — standalone transactional page (vol ~80, KD ~8)
-  //   /tv-pitch-bible             — TV show bible / format bible guide (vol ~40+90, KD ~5-8)
-  //   /unscripted-tv-shows        — genre + pitch hub (vol 1,200+, KD ~20)
-  // All three must be public or Googlebot gets 307'd to /login.
+  //   /tv-distribution-company    — PRIMARY distribution pillar (buyer-intent thesis
+  //                                 re-point 2026-06-04); targets "tv distribution company",
+  //                                 "tv show distribution", "tv content licensing",
+  //                                 "tv format rights", "unscripted tv distribution".
+  //                                 MUST be public or Googlebot 307s to /login.
+  //   /how-to-sell-a-tv-show-idea — top-of-funnel education (re-framed 2026-06-04)
+  //   /tv-pitch-bible             — TV show bible / format bible guide
+  //   /unscripted-tv-shows        — genre hub + distribution routing
+  // All four must be public or Googlebot gets 307'd to /login.
+  '/tv-distribution-company',
   '/how-to-sell-a-tv-show-idea',
   '/tv-pitch-bible',
   '/unscripted-tv-shows',
