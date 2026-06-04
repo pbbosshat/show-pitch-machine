@@ -44,6 +44,14 @@ const PUBLIC_PATHS = new Set([
   '/tv-buyers',
   // B2B work-with-us landing page (Option A SEO sprint, 2026-05-22)
   '/work-with-us',
+  // New money-keyword pages — seo/mye-pitch-money-2026-06-04:
+  //   /how-to-sell-a-tv-show-idea — standalone transactional page (vol ~80, KD ~8)
+  //   /tv-pitch-bible             — TV show bible / format bible guide (vol ~40+90, KD ~5-8)
+  //   /unscripted-tv-shows        — genre + pitch hub (vol 1,200+, KD ~20)
+  // All three must be public or Googlebot gets 307'd to /login.
+  '/how-to-sell-a-tv-show-idea',
+  '/tv-pitch-bible',
+  '/unscripted-tv-shows',
 ]);
 
 // Path prefixes that are always public

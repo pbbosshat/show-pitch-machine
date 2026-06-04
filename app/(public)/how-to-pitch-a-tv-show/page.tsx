@@ -989,6 +989,11 @@ export default function HowToPitchATVShowPage() {
             <Link href="/tv-production-company" style={inlineLink}>
               Our Production Services
             </Link>
+            {' · '}
+            {/* Added seo/mye-pitch-money-2026-06-04 — link to sell page (related transactional intent) */}
+            <Link href="/how-to-sell-a-tv-show-idea" style={inlineLink}>
+              How to Sell a TV Show Idea
+            </Link>
           </p>
         </div>
       </section>

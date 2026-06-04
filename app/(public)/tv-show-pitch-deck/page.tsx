@@ -941,6 +941,11 @@ export default function TVShowPitchDeckPage() {
             <Link href="/tv-production-company" style={inlineLink}>
               Our Production Services
             </Link>
+            {' · '}
+            {/* Added seo/mye-pitch-money-2026-06-04 — TV bible is the companion doc to pitch deck */}
+            <Link href="/tv-pitch-bible" style={inlineLink}>
+              What Is a TV Show Bible?
+            </Link>
           </p>
         </div>
       </section>

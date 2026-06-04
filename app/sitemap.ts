@@ -84,6 +84,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Priority 0.9: B2B buyer-facing page, ICP-matched intent.
     { url: `${BASE_URL}/tv-buyers`,              lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
 
+    // ── New money-keyword pages — seo/mye-pitch-money-2026-06-04 ──────────
+    // /how-to-sell-a-tv-show-idea — standalone transactional page targeting
+    // "how to sell a tv show idea" (vol ~80, KD ~8, CPC ~$90). Previously
+    // only an H2 on /how-to-pitch-a-tv-show; now a full dedicated URL with
+    // rights/deal structure depth. Priority 0.9: transactional B2B intent.
+    { url: `${BASE_URL}/how-to-sell-a-tv-show-idea`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    // /tv-pitch-bible — TV show bible / format bible guide targeting
+    // "tv show bible" (vol ~90), "tv pitch bible" (vol ~40), "format bible"
+    // (vol ~30). Late-stage pitch research signal — high buyer intent.
+    { url: `${BASE_URL}/tv-pitch-bible`,              lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    // /unscripted-tv-shows — genre hub + pitch entry point targeting
+    // "unscripted tv shows" (vol 1,200), "unscripted television" (vol ~300).
+    // Dual-intent: informational (genre discovery) + transactional (pitch CTA).
+    // Includes named show facts (Ghost Adventures, Destination Fear) for E-E-A-T.
+    { url: `${BASE_URL}/unscripted-tv-shows`,         lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+
     { url: `${BASE_URL}/shows`,          lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE_URL}/genres`,         lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE_URL}/about`,          lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
