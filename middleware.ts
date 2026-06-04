@@ -44,6 +44,10 @@ const PUBLIC_PATHS = new Set([
   '/tv-buyers',
   // B2B work-with-us landing page (Option A SEO sprint, 2026-05-22)
   '/work-with-us',
+  // Producer submission / distribution landing page (feature/seo-distribution-page).
+  // Conversion asset for producers arriving via referral/brand/outreach.
+  // Must be public or middleware 307s the visitor to /login.
+  '/pitch',
 ]);
 
 // Path prefixes that are always public
