@@ -58,6 +58,10 @@ const PUBLIC_PATHS = new Set([
   '/how-to-sell-a-tv-show-idea',
   '/tv-pitch-bible',
   '/unscripted-tv-shows',
+  // Producer submission / distribution landing page (feature/seo-distribution-page, merged #14).
+  // Conversion asset for producers arriving via referral/brand/outreach.
+  // Must be public or middleware 307s the visitor to /login.
+  '/pitch',
 ]);
 
 // Path prefixes that are always public
