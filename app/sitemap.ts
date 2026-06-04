@@ -84,6 +84,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Priority 0.9: B2B buyer-facing page, ICP-matched intent.
     { url: `${BASE_URL}/tv-buyers`,              lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
 
+    // ── New money-keyword pages — seo/mye-pitch-money-2026-06-04 ──────────
+    // /tv-distribution-company — PRIMARY DISTRIBUTION MONEY-KEYWORD PILLAR
+    // Targets "tv distribution company", "tv show distribution", "tv content
+    // licensing", "tv format rights", "unscripted tv distribution" (buyer-intent
+    // distribution-seeker cluster per 2026-06-04 thesis correction). This is the
+    // commercial spine of the MyE SEO strategy — priority 1.0 alongside homepage
+    // since this is the genuine buyer-intent conversion page.
+    { url: `${BASE_URL}/tv-distribution-company`,     lastModified: now, changeFrequency: 'weekly', priority: 1.0 },
+    // /how-to-sell-a-tv-show-idea — top-of-funnel maker education (re-framed
+    // 2026-06-04). Supports /tv-distribution-company as the commercial spine.
+    // Audience = creators developing concepts (not yet producers with content).
+    // Priority 0.9 maintained — high educational intent, routes to distribution.
+    { url: `${BASE_URL}/how-to-sell-a-tv-show-idea`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    // /tv-pitch-bible — TV show bible / format bible guide (top-of-funnel support).
+    // Audience = creators building pitch packages. Routes to /tv-distribution-company
+    // and /pitch when they have a finished show.
+    { url: `${BASE_URL}/tv-pitch-bible`,              lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    // /unscripted-tv-shows — genre hub + distribution entry point (dual-intent).
+    // Informational (genre discovery) + distribution CTA routing to /tv-distribution-
+    // company and /pitch. E-E-A-T signal via named shows (Ghost Adventures, etc.).
+    { url: `${BASE_URL}/unscripted-tv-shows`,         lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+
     { url: `${BASE_URL}/shows`,          lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE_URL}/genres`,         lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE_URL}/about`,          lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
