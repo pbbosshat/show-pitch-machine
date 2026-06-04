@@ -82,6 +82,7 @@ const PUBLIC_PREFIXES = [
   '/api/admin/backfill-deck-drive', // protected by ADMIN_RESTORE_SECRET header, not session cookie
   '/api/viqi',            // protected by VIQI_PROXY_SECRET header, not session cookie
   '/api/ingest/',         // Bang pushes classified articles here via INGEST_API_KEY (no session)
+  '/api/export/conversions', // SEO attribution export — protected by CONV_EXPORT_TOKEN Bearer auth inside the handler, not session cookie
 ];
 
 export function middleware(request: NextRequest) {
