@@ -131,13 +131,24 @@ export default function SiteFooter() {
             </address>
 
             {/* Email — same muted color, no underline */}
-            <p style={{ color: '#909499', fontSize: 13, marginBottom: 0, lineHeight: 1.8 }}>
+            <p style={{ color: '#909499', fontSize: 13, marginBottom: 4, lineHeight: 1.8 }}>
               E:{' '}
               <a
                 href="mailto:info@myentertainment.tv"
                 style={{ color: '#909499', textDecoration: 'none' }}
               >
                 info@myentertainment.tv
+              </a>
+            </p>
+
+            {/* Phone — click-to-call link (added PR feature/cta-overhaul) */}
+            <p style={{ color: '#909499', fontSize: 13, marginBottom: 0, lineHeight: 1.8 }}>
+              P:{' '}
+              <a
+                href="tel:+18438846222"
+                style={{ color: '#909499', textDecoration: 'none' }}
+              >
+                843-884-6222
               </a>
             </p>
           </div>

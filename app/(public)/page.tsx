@@ -327,10 +327,49 @@ export default function HomePage() {
                 Adventures now in its 28th season on Discovery.&nbsp; In 2022, My Entertainment was
                 acquired by Media Content Services.
               </p>
-              {/* Webflow: .get-started-link */}
-              <a href="/about" style={getStartedLink}>
-                learn more&nbsp; ❯{' '}
-              </a>
+              {/* Dual hero CTAs — replaced weak "learn more" link (PR feature/cta-overhaul).
+                  Primary: buyers browse catalog; Secondary: producers submit their show.
+                  Side-by-side flex row, wraps on mobile. */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 24 }}>
+                {/* Primary CTA — solid MYE red, takes buyers straight to the catalog */}
+                <Link
+                  href="/available"
+                  style={{
+                    background: '#e51d26',
+                    color: '#fff',
+                    fontFamily: "'Roboto Condensed', sans-serif",
+                    fontSize: 15,
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                    borderRadius: 8,
+                    padding: '11px 26px',
+                    display: 'inline-block',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  Browse Our Catalog →
+                </Link>
+
+                {/* Secondary CTA — ghost/outline style, invites show submissions */}
+                <Link
+                  href="/pitch"
+                  style={{
+                    background: 'transparent',
+                    color: '#e51d26',
+                    border: '2px solid #e51d26',
+                    fontFamily: "'Roboto Condensed', sans-serif",
+                    fontSize: 15,
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                    borderRadius: 8,
+                    padding: '9px 26px',
+                    display: 'inline-block',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  Submit Your Show →
+                </Link>
+              </div>
             </div>
             {/* Right column — intentionally empty (matches Webflow layout) */}
             <div aria-hidden="true" />
