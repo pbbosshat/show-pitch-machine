@@ -955,20 +955,24 @@ export default function TVDistributionCompanyPage() {
             }}
           >
             Explore:{' '}
-            <Link href="/available" style={inlineLink}>
-              Available Titles
+            <Link href="/tv-distribution-deal" style={inlineLink}>
+              How Distribution Deals Work
             </Link>
             {' · '}
-            <Link href="/unscripted-tv-shows" style={inlineLink}>
-              Unscripted TV Genres
+            <Link href="/independent-film-distribution" style={inlineLink}>
+              Documentary Distribution
+            </Link>
+            {' · '}
+            <Link href="/available" style={inlineLink}>
+              Available Titles
             </Link>
             {' · '}
             <Link href="/tv-buyers" style={inlineLink}>
               For TV Buyers & Acquirers
             </Link>
             {' · '}
-            <Link href="/how-to-pitch-a-tv-show" style={inlineLink}>
-              New to Pitching? Start Here
+            <Link href="/unscripted-tv-shows" style={inlineLink}>
+              Unscripted TV Genres
             </Link>
           </p>
         </div>

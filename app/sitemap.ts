@@ -106,6 +106,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // company and /pitch. E-E-A-T signal via named shows (Ghost Adventures, etc.).
     { url: `${BASE_URL}/unscripted-tv-shows`,         lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
 
+    // ── Distribution-deal cluster (seo/mye-distribution-deal-2026-06-07) ──
+    // Support pages that extend the /tv-distribution-company pillar (priority 1.0)
+    // down the funnel into specific producer research queries.
+    // /tv-distribution-deal — targets "tv distribution deal", "how to get tv
+    //   distribution", "television distribution agreement". Meets the producer
+    //   at the research stage (before they submit) and converts into /pitch.
+    // /independent-film-distribution — targets "independent film distribution",
+    //   "documentary distribution company", "how to distribute a documentary".
+    //   Captures documentary/indie producers searching for a TV distribution partner.
+    // Priority 0.9: buyer-intent distribution cluster, high-intent search audience.
+    { url: `${BASE_URL}/tv-distribution-deal`,          lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE_URL}/independent-film-distribution`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+
     { url: `${BASE_URL}/shows`,          lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE_URL}/genres`,         lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE_URL}/about`,          lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
