@@ -62,6 +62,14 @@ const PUBLIC_PATHS = new Set([
   // Conversion asset for producers arriving via referral/brand/outreach.
   // Must be public or middleware 307s the visitor to /login.
   '/pitch',
+  // Distribution-deal cluster — two new money-keyword pages (seo/mye-distribution-deal-2026-06-07):
+  //   /tv-distribution-deal          — targets "tv distribution deal", "how to get tv distribution",
+  //                                    "television distribution agreement" (producer research stage)
+  //   /independent-film-distribution — targets "independent film distribution", "documentary
+  //                                    distribution company", "how to distribute a documentary"
+  // Both must be public or Googlebot gets 307'd to /login and the pages can't rank.
+  '/tv-distribution-deal',
+  '/independent-film-distribution',
 ]);
 
 // Path prefixes that are always public
