@@ -21,7 +21,7 @@ const ALL_SOURCES = [
   'gmail-newsletters',
   'deadline', 'variety', 'thr', 'c21', 'realscreen',
   'cynopsis', 'tvline', 'indiewire', 'bc', 'production-weekly',
-  'network-press',
+  'network-press', 'billboard',
 ];
 
 // Resolve which sources to run (CLI args override default ALL_SOURCES)
@@ -43,6 +43,7 @@ async function importScraper(source: string): Promise<() => Promise<ScrapedArtic
     case 'gmail-newsletters': return (await import('../scrapers/gmail-newsletters')).default;
     // network-press default export accepts an optional source arg; calling with no arg runs all three sites
     case 'network-press':     return (await import('../scrapers/network-press')).default;
+    case 'billboard':         return (await import('../scrapers/billboard')).default;
     default: throw new Error(`Unknown source: ${source}`);
   }
 }
