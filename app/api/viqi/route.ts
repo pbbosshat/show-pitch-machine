@@ -13,6 +13,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { queryViqi } from '@/lib/vitrina/client';
 
 export const dynamic = 'force-dynamic';
+// VIQI multi-agent runs take 2-5 minutes — must override Railway's default 30s HTTP timeout
+export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   const secret = process.env.VIQI_PROXY_SECRET;
