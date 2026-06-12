@@ -14,21 +14,39 @@ const VITRINA_PASSWORD = process.env.VITRINA_PASSWORD ?? '';
 // CDP ports to try in order — local DevProfile first, Bang tunnel second
 const CDP_PORTS = [9222, 19223];
 
-interface TokenCache {
-  accessToken: string;
+interface VitrinaTokens {
+  idToken: string;      // Authorization: Bearer <idToken>  (Cognito token_use=id)
+  accessToken: string;  // X-vtr-auth-at: <accessToken>     (Cognito token_use=access)
+}
+export interface VitrinaAuth extends VitrinaTokens {
+  source: string;       // X-vtr-auth-src  (always "cognito")
+}
+
+interface TokenCache extends VitrinaTokens {
   expiresAt: number; // ms
 }
 
 let _cache: TokenCache | null = null;
 
-export async function getVitrinaToken(): Promise<string> {
+// Returns the full auth bundle the VIQI API requires. The scheme below was
+// verified against the live app.vitrina.ai web client:
+//   Authorization: Bearer <ID token>  +  X-vtr-auth-at: <access token>  +  X-vtr-auth-src: cognito
+// Sending the access token in Authorization, or omitting X-vtr-auth-src,
+// returns HTTP 401 {"message":"Invalid source !!"}.
+export async function getVitrinaAuth(): Promise<VitrinaAuth> {
   if (_cache && _cache.expiresAt - Date.now() > 5 * 60 * 1000) {
-    return _cache.accessToken;
+    return { idToken: _cache.idToken, accessToken: _cache.accessToken, source: 'cognito' };
   }
 
-  const token = await fetchFreshToken();
-  _cache = { accessToken: token, expiresAt: jwtExp(token) };
-  return token;
+  const t = await fetchFreshAuth();
+  _cache = { idToken: t.idToken, accessToken: t.accessToken, expiresAt: jwtExp(t.accessToken) };
+  return { ...t, source: 'cognito' };
+}
+
+// Back-compat helper: returns just the access token. Do NOT use this for the
+// Authorization header (VIQI wants the ID token there) — prefer getVitrinaAuth().
+export async function getVitrinaToken(): Promise<string> {
+  return (await getVitrinaAuth()).accessToken;
 }
 
 // Decode JWT exp claim (returns ms timestamp)
@@ -45,12 +63,12 @@ function isExpiredSoon(token: string): boolean {
   return jwtExp(token) - Date.now() < 5 * 60 * 1000;
 }
 
-async function fetchFreshToken(): Promise<string> {
+async function fetchFreshAuth(): Promise<VitrinaTokens> {
   // Try CDP first — fastest path when a browser session exists
   for (const port of CDP_PORTS) {
     try {
-      const token = await getTokenViaCDP(port);
-      if (token) return token;
+      const t = await getAuthViaCDP(port);
+      if (t) return t;
     } catch { /* try next */ }
   }
 
@@ -61,7 +79,7 @@ async function fetchFreshToken(): Promise<string> {
   return loginHeadless();
 }
 
-async function getTokenViaCDP(port: number): Promise<string | null> {
+async function getAuthViaCDP(port: number): Promise<VitrinaTokens | null> {
   const browser = await puppeteer.connect({
     browserURL: `http://localhost:${port}`,
     defaultViewport: null,
@@ -84,26 +102,27 @@ async function getTokenViaCDP(port: number): Promise<string | null> {
       await new Promise(r => setTimeout(r, 2_000));
     }
 
-    const token = await page.evaluate(
-      () => window.localStorage.getItem('vtr_auth_access_token') ?? ''
-    );
+    // VIQI needs BOTH the ID token (Authorization) and the access token (X-vtr-auth-at).
+    const readTokens = () => page!.evaluate(() => ({
+      idToken: window.localStorage.getItem('vtr_auth_id_token') ?? '',
+      accessToken: window.localStorage.getItem('vtr_auth_access_token') ?? '',
+    }));
 
-    if (token && !isExpiredSoon(token)) return token;
+    let t = await readTokens();
+    if (t.idToken && t.accessToken && !isExpiredSoon(t.accessToken)) return t;
 
     // Token is stale — reload the page to trigger Amplify refresh
     await page.reload({ waitUntil: 'networkidle0', timeout: 15_000 });
     await new Promise(r => setTimeout(r, 2_000));
 
-    const refreshed = await page.evaluate(
-      () => window.localStorage.getItem('vtr_auth_access_token') ?? ''
-    );
-    return refreshed && !isExpiredSoon(refreshed) ? refreshed : null;
+    t = await readTokens();
+    return (t.idToken && t.accessToken && !isExpiredSoon(t.accessToken)) ? t : null;
   } finally {
     await browser.disconnect();
   }
 }
 
-async function loginHeadless(): Promise<string> {
+async function loginHeadless(): Promise<VitrinaTokens> {
   console.log('[vitrina] Starting headless login...');
 
   const browser = await puppeteer.launch({
@@ -148,13 +167,14 @@ async function loginHeadless(): Promise<string> {
     // Wait for dashboard redirect
     await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 20_000 });
 
-    const token = await page.evaluate(
-      () => window.localStorage.getItem('vtr_auth_access_token') ?? ''
-    );
+    const tokens = await page.evaluate(() => ({
+      idToken: window.localStorage.getItem('vtr_auth_id_token') ?? '',
+      accessToken: window.localStorage.getItem('vtr_auth_access_token') ?? '',
+    }));
 
-    if (!token) throw new Error('[vitrina] No token found after headless login');
+    if (!tokens.idToken || !tokens.accessToken) throw new Error('[vitrina] No tokens found after headless login');
     console.log('[vitrina] Headless login successful');
-    return token;
+    return tokens;
   } finally {
     await browser.close();
   }
