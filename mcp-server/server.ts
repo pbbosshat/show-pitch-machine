@@ -244,7 +244,7 @@ function buildMcpServer(): McpServer {
           Authorization: `Bearer ${VIQI_PROXY_SECRET}`,
         },
         body: JSON.stringify({ query }),
-        signal: AbortSignal.timeout(90_000),
+        signal: AbortSignal.timeout(290_000),
       });
       if (!res.ok) {
         const err = await res.text().catch(() => '');

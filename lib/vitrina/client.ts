@@ -109,9 +109,10 @@ async function collectSSEStream(res: Response): Promise<string> {
   const chunks: string[] = [];
   let raw = '';
 
-  // 60-second hard cap — VIQI agents can be slow
+  // 270-second hard cap — VIQI multi-agent synthesis can take 2-5 minutes;
+  // must stay under the 300s maxDuration set on the route handler
   const timeout = new Promise<never>((_, rej) =>
-    setTimeout(() => rej(new Error('[vitrina] Stream timeout after 60s')), 60_000)
+    setTimeout(() => rej(new Error('[vitrina] Stream timeout after 270s')), 270_000)
   );
 
   try {
