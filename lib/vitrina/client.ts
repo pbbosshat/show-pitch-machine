@@ -8,7 +8,7 @@
 // Response: Server-Sent Events stream — data: lines, terminated by data: [DONE]
 
 import { v4 as uuidv4 } from 'uuid';
-import { getVitrinaToken } from './auth';
+import { getVitrinaAuth } from './auth';
 
 const VIQI_URL = 'https://app.vitrina.ai/api/v1/cmd/viqi4';
 
@@ -59,13 +59,18 @@ const VITRINA_USER = {
 };
 
 export async function queryViqi(query: string): Promise<string> {
-  const token = await getVitrinaToken();
+  const { idToken, accessToken, source } = await getVitrinaAuth();
 
   const res = await fetch(VIQI_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      // Vitrina API auth scheme (verified against the live web app): the ID token
+      // goes in Authorization, the access token in X-vtr-auth-at, plus the source
+      // header. Omitting the source / using the access token here => 401 "Invalid source".
+      Authorization: `Bearer ${idToken}`,
+      'X-vtr-auth-at': accessToken,
+      'X-vtr-auth-src': source,
     },
     body: JSON.stringify({
       query,
