@@ -13,30 +13,33 @@ import Link from 'next/link';
 const OG_IMAGE = 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/67c9c4bc80ecce7a341a501c_MYE%20Banner%20.png';
 
 export const metadata: Metadata = {
-  // Exact title matches the brand: "MY Entertainment" (two words, all-caps MY)
-  title: 'MY Entertainment — Unscripted TV Production Company',
+  // Front-load the primary money term "TV distribution company" — buyers searching for
+  // a company to distribute their unscripted show use this exact phrase.
+  // "MY Entertainment" as brand anchor at the end matches the SERP pattern for known brands.
+  title: 'TV Distribution Company | MY Entertainment',
   description:
-    'MY Entertainment is a New York unscripted TV production company founded in 2000, behind Ghost Adventures (28 seasons on Discovery), Destination Fear, Pros vs Joes, and Paranormal Challenge. Acquired by Media Content Services in 2022. Offices in Manhattan, Toronto, and London.',
+    'MY Entertainment is a New York TV distribution company connecting unscripted reality shows and formats with broadcasters and streaming services worldwide. Ghost Adventures, Destination Fear, Pros vs Joes, and 40+ titles distributed across Discovery, A&E, PBS, and 28+ networks.',
   keywords: [
-    'unscripted TV production company', 'New York production company', 'reality TV producer',
-    'Ghost Adventures producer', 'non-fiction television', 'paranormal TV', 'Discovery Channel shows',
-    'Destination Fear', 'Pros vs Joes', 'Paranormal Challenge', 'MY Entertainment',
+    'TV distribution company', 'television distribution', 'unscripted TV distribution',
+    'reality TV distribution', 'show distribution', 'TV format distribution',
+    'unscripted TV production company', 'New York production company',
+    'Ghost Adventures producer', 'Discovery Channel shows', 'MY Entertainment',
   ],
   alternates: { canonical: 'https://www.myentertainment.tv/' },
   openGraph: {
-    title: 'MY Entertainment — Unscripted TV Production Company',
+    title: 'TV Distribution Company | MY Entertainment',
     description:
-      'New York unscripted TV production company behind Ghost Adventures (28 seasons), Destination Fear, Pros vs Joes, and 40+ shows for Discovery, PBS, A&E, and 28+ networks worldwide.',
+      'NY TV distribution company placing unscripted reality shows with broadcasters + streamers worldwide. 40+ titles across Discovery, A&E, PBS, Lifetime, and 28+ networks.',
     url: 'https://www.myentertainment.tv/',
     siteName: 'MY Entertainment',
     type: 'website',
-    images: [{ url: OG_IMAGE, width: 1887, alt: 'MY Entertainment — New York unscripted TV production company' }],
+    images: [{ url: OG_IMAGE, width: 1887, alt: 'MY Entertainment — New York TV distribution company' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MY Entertainment — Unscripted TV Production Company',
+    title: 'TV Distribution Company | MY Entertainment',
     description:
-      'New York unscripted TV production company behind Ghost Adventures, Destination Fear, Pros vs Joes, and 40+ shows for Discovery, PBS, A&E, and more.',
+      'NY TV distribution company placing unscripted reality shows with broadcasters + streamers. Ghost Adventures, Destination Fear, and 40+ titles distributed worldwide.',
     images: [OG_IMAGE],
   },
 };
