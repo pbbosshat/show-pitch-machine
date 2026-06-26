@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'TV Distribution Company | MY Entertainment',
     description:
-      'NY TV distribution company placing unscripted reality shows with broadcasters + streamers worldwide. 40+ titles across Discovery, A&E, PBS, and 28+ networks.',
+      'NY TV distribution company placing unscripted reality shows with broadcasters + streamers worldwide. 40+ titles across Discovery, A&E, PBS, Lifetime, and 28+ networks.',
     url: 'https://www.myentertainment.tv/',
     siteName: 'MY Entertainment',
     type: 'website',
@@ -559,17 +559,6 @@ export default function HomePage() {
           <a href="/contact" style={{ ...getStartedLink, marginTop: 24 }}>
             CONTACT US&nbsp; ❯
           </a>
-
-          {/* Producer entry point — crawlable homepage link into the pitch-to-
-              distribution pillar (seo/mye-how-to-sell-a-tv-show-2026-07-17).
-              Small, non-disruptive addition below the primary Webflow-parity
-              CTA so it doesn't alter the section's visual design. */}
-          <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: '#a5a7ad', marginTop: 20, marginBottom: 0 }}>
-            Producer with a show to sell?{' '}
-            <Link href="/how-to-sell-a-tv-show" style={{ color: '#e02027', textDecoration: 'none' }}>
-              Learn how to sell &amp; distribute a TV show →
-            </Link>
-          </p>
         </div>
       </section>
     </>
