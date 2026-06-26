@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'TV Distribution Company | MY Entertainment',
     description:
-      'NY TV distribution company placing unscripted reality shows with broadcasters + streamers worldwide. 40+ titles across Discovery, A&E, PBS, Lifetime, and 28+ networks.',
+      'NY TV distribution company placing unscripted reality shows with broadcasters + streamers worldwide. 40+ titles across Discovery, A&E, PBS, and 28+ networks.',
     url: 'https://www.myentertainment.tv/',
     siteName: 'MY Entertainment',
     type: 'website',
