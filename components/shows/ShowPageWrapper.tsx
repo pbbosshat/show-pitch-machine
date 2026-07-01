@@ -31,7 +31,11 @@
 import { JsonLd } from '@/components/site/JsonLd';
 import BuyerCTA from '@/components/shows/BuyerCTA';
 
-// The 4 B2B money pages — must match routes shipped in PR #3.
+// The B2B money pages — sizzleReel/howToPitch/prodCo/pitchDeck must match
+// routes shipped in PR #3. /tv-distribution-company added 2026-07-01: it is
+// the PRIMARY distribution money-keyword pillar (sitemap priority 1.0) but
+// was missing from this relatedLink structured-data signal on every one of
+// the ~60 show pages — the same gap fixed in BuyerCTA.tsx and SiteFooter.tsx.
 // Listed here as a const so they appear in one canonical place and
 // are trivially auditable if slugs ever change.
 const MONEY_PAGE_URLS = [
@@ -39,6 +43,7 @@ const MONEY_PAGE_URLS = [
   'https://www.myentertainment.tv/how-to-pitch-a-tv-show',
   'https://www.myentertainment.tv/tv-production-company',
   'https://www.myentertainment.tv/tv-show-pitch-deck',
+  'https://www.myentertainment.tv/tv-distribution-company',
 ] as const;
 
 interface Props {

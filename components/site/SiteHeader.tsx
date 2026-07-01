@@ -37,7 +37,12 @@ const NAV_LINKS = [
 // Mobile nav gets the full list because it's a vertical stack with no overflow risk.
 // The desktop nav already has /available which provides one crawlable sitewide
 // entry point to the buyer cluster from the header.
+// Updated 2026-07-01: /tv-distribution-company added — same gap as
+// SiteFooter.tsx BUYER_LINKS and BuyerCTA.tsx MONEY_PAGES (see those files'
+// comments). This is the PRIMARY distribution money-keyword pillar and had
+// no sitewide nav/footer feeder at all until this fix.
 const BUYER_NAV_LINKS = [
+  { href: '/tv-distribution-company', label: 'TV DISTRIBUTION COMPANY' },
   { href: '/tv-show-pitch',          label: 'TV SHOW PITCH' },
   { href: '/sizzle-reel',            label: 'SIZZLE REELS' },
   { href: '/how-to-pitch-a-tv-show', label: 'HOW TO PITCH A TV SHOW' },

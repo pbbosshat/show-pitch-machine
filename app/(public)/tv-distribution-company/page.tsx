@@ -32,10 +32,28 @@
 // Server Component — no 'use client'. All styles inline.
 // Design tokens match the cluster-wide pattern: #000 bg, #a5a7ad body,
 // #f2f4f7 headings, #e51d26 accent, Roboto/Roboto Condensed/Oswald.
+//
+// ------------------------------------------------------------------
+// 2026-07-01 UPDATE (nightly: all 5 focus keywords 0 impressions) —
+// This page already existed (live since seo/mye-pitch-money-2026-06-04,
+// PR #13) and was already whitelisted in middleware.ts PUBLIC_PATHS and
+// listed in sitemap.ts at priority 1.0. The zero-impression finding was
+// therefore NOT a missing-page problem — it was (a) zero internal link
+// equity flowing to this URL (BuyerCTA, the feeder block rendered on
+// every /available/[slug] show page, funneled into 4 other money pages
+// but never into this one — fixed in components/shows/BuyerCTA.tsx),
+// and (b) two of the five focus keywords — "tv show available for
+// distribution" and "unscripted formats for sale" — had no verbatim
+// on-page coverage. This update adds a live Show Catalog section
+// (queries the same `deck_sites` table as /available), a Case Studies
+// section (static, reusing only facts already verified elsewhere in
+// this file — no new claims), and closes the two keyword gaps in the
+// FAQ + metadata. See docs/seo/tv-distribution-company-pillar-2026-07-01.md.
 // ============================================================
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { query, initDb } from '@/lib/db';
 
 // ------------------------------------------------------------
 // Metadata — CTR-optimized title + description.
@@ -61,6 +79,10 @@ export const metadata: Metadata = {
     'tv series distribution',
     'documentary distribution company',
     'find a tv distributor',
+    // Added 2026-07-01 — 2 of the 5 nightly-flagged focus keywords had no
+    // verbatim coverage anywhere on this page (meta or body copy).
+    'tv show available for distribution',
+    'unscripted formats for sale',
   ],
   alternates: { canonical: 'https://www.myentertainment.tv/tv-distribution-company' },
   openGraph: {
@@ -195,6 +217,80 @@ const ACCEPTED_GENRES = [
 ];
 
 // ------------------------------------------------------------
+// Case studies — Section 6B. STATIC on purpose (not DB-driven): every
+// figure here (network, season count, recognition) is already stated
+// and verified elsewhere in this same file (Section 6 credibility grid,
+// ACCEPTED_GENRES above) or on /pitch, /work-with-us, /about. Reusing
+// those exact facts means zero fabrication risk — no invented deal
+// dollar figures, no invented dates. If MYE wants richer, deal-specific
+// case studies (fees, exact air dates) those must come from PB/the
+// production team, not be authored here.
+// ------------------------------------------------------------
+const CASE_STUDIES = [
+  {
+    title: 'Ghost Adventures',
+    genre: 'Paranormal & Supernatural',
+    network: 'Travel Channel / Discovery',
+    outcome: '28 seasons distributed, generating five spin-off series — the longest-running proof point in the MYE catalog.',
+  },
+  {
+    title: 'Legacy List with Matt Paxton',
+    genre: 'Documentary Series',
+    network: 'PBS',
+    outcome: 'Emmy-nominated documentary series distributed to public broadcasting.',
+  },
+  {
+    title: 'Pros vs Joes',
+    genre: 'Sports & Competition',
+    network: 'Spike TV / Comedy Central',
+    outcome: '4 seasons distributed across two networks in the competition format space.',
+  },
+  {
+    title: 'Pregnant & Platonic',
+    genre: 'International Format',
+    network: '8-country format option',
+    outcome: 'Format rights (not just the finished episodes) optioned into eight international territories.',
+  },
+];
+
+// ------------------------------------------------------------
+// Show catalog — Section 6C ("Shows Available for Distribution").
+// Live-queries the SAME `deck_sites` table and columns as
+// /available/page.tsx (the site's existing available-titles catalog),
+// so this section is always in sync with the real catalog — never a
+// hardcoded/stale list. Falls back to an empty array on any DB error,
+// exactly like /available/page.tsx and /shows/page.tsx already do, so
+// a DB hiccup degrades gracefully to just the "Browse Full Catalog"
+// link instead of a 500.
+// ------------------------------------------------------------
+interface CatalogTitle {
+  id: string;
+  title: string;
+  slug: string | null;
+  genre: string | null;
+  format: string | null;
+  ep_count: string | null;
+  image_url: string | null;
+  vimeo_url: string | null;
+}
+
+async function getCatalogTitles(): Promise<CatalogTitle[]> {
+  try {
+    await initDb();
+    const rows = await query<CatalogTitle>(
+      `SELECT id, title, slug, genre, format, ep_count, image_url, vimeo_url
+       FROM deck_sites
+       WHERE is_active = 1
+       ORDER BY sort_order ASC, title ASC
+       LIMIT 8`
+    );
+    return JSON.parse(JSON.stringify(rows));
+  } catch {
+    return [];
+  }
+}
+
+// ------------------------------------------------------------
 // FAQ — single source for visible text and FAQPage JSON-LD.
 // Targets the distribution-seeker sub-queries in the money cluster.
 // ------------------------------------------------------------
@@ -226,6 +322,16 @@ const FAQ_ITEMS = [
   {
     q: 'Can I sell an unscripted reality show to a distributor?',
     a: 'Yes — unscripted and reality TV are the primary formats that independent producers successfully sell to distributors. The key requirement is production status: distributors need a finished episode, a pilot, or at minimum a production-quality sizzle reel plus a fully developed format. A concept alone without footage is not distributable — that is a development pitch, not a distribution submission. MY Entertainment considers finished and near-finished unscripted shows across paranormal, true crime, competition, documentary, and lifestyle genres. Submit via the form below.',
+  },
+  {
+    // Added 2026-07-01 — closes the "tv show available for distribution" focus-keyword gap.
+    q: 'What TV shows are currently available for distribution from MY Entertainment?',
+    a: 'MY Entertainment maintains an active catalog of unscripted formats for sale across paranormal, true crime, competition, documentary, and lifestyle genres — see the Show Catalog section above for a sample, or browse the full available-titles catalog. Every title listed is a finished or near-finished unscripted format cleared for network pitching, international licensing, or format-rights sale. As a reality TV distribution company, we update this catalog as new titles complete production and existing titles close deals.',
+  },
+  {
+    // Added 2026-07-01 — closes the "unscripted formats for sale" focus-keyword gap.
+    q: 'Do you sell unscripted formats for sale, or only finished episodes?',
+    a: 'Both. MY Entertainment distributes finished episodes as-is to broadcasters that accept produced content, and separately identifies and sells unscripted formats for sale as format rights — the repeatable structure of a show, licensed for local adaptation in another territory. Pregnant & Platonic is a factual example: the format itself (not just the finished episodes) has been optioned in eight countries. If your show has a repeatable structure with international remake potential, tell us that alongside your finished-content submission.',
   },
 ];
 
@@ -304,7 +410,34 @@ const breadcrumbSchema = {
 // ------------------------------------------------------------
 // Page Component
 // ------------------------------------------------------------
-export default function TVDistributionCompanyPage() {
+// Now async — the Show Catalog section (Section 6C) live-queries
+// `deck_sites`. Marked force-dynamic below so Next.js renders this at
+// request time instead of trying to fetch the DB during `next build`
+// (same pattern as /available/page.tsx and /shows/page.tsx).
+export const dynamic = 'force-dynamic';
+
+export default async function TVDistributionCompanyPage() {
+  const catalogTitles = await getCatalogTitles();
+
+  // ItemList JSON-LD for the Show Catalog section — only emitted when the
+  // DB query actually returned titles, so we never publish an empty/broken
+  // ItemList to search engines if the catalog table is unreachable.
+  const itemListSchema = catalogTitles.length
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: 'TV Shows Available for Distribution — MY Entertainment',
+        itemListElement: catalogTitles.map((t, idx) => ({
+          '@type': 'ListItem',
+          position: idx + 1,
+          name: t.title,
+          url: t.slug
+            ? `https://www.myentertainment.tv/available/${t.slug}`
+            : 'https://www.myentertainment.tv/available',
+        })),
+      }
+    : null;
+
   return (
     <div style={{ background: '#000' }}>
       {/* ── Schema markup ── */}
@@ -324,6 +457,12 @@ export default function TVDistributionCompanyPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
+      {itemListSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+        />
+      )}
 
       {/* Responsive and utility styles — matches cluster CSS pattern */}
       <style>{`
@@ -444,7 +583,10 @@ export default function TVDistributionCompanyPage() {
           }}
         >
           <span className="mye-tooltip-wrap" style={{ display: 'inline-block' }}>
-            <a
+            {/* Converted from <a> to <Link> 2026-07-01 — fixes a pre-existing
+                @next/next/no-html-link-for-pages lint error (internal nav
+                should use next/link for client-side transitions). */}
+            <Link
               href="/pitch"
               className="distrib-cta-btn"
               aria-label="Submit your show to MY Entertainment for distribution"
@@ -465,7 +607,7 @@ export default function TVDistributionCompanyPage() {
               }}
             >
               Submit Your Show
-            </a>
+            </Link>
             <span className="mye-tooltip" aria-hidden="true">
               Go to the show submission form
             </span>
@@ -839,6 +981,218 @@ export default function TVDistributionCompanyPage() {
       </section>
 
       {/* ================================================================== */}
+      {/* SECTION 6B — Distribution Case Studies (added 2026-07-01)           */}
+      {/* Real, already-verified distribution outcomes (not pitch decks).    */}
+      {/* Copy deliberately says "reality TV distribution company" verbatim  */}
+      {/* to close that focus-keyword gap — 0 impressions per 2026-07-01     */}
+      {/* nightly. STATIC data — see CASE_STUDIES comment for why.           */}
+      {/* ================================================================== */}
+      <section id="case-studies" style={{ background: '#000', padding: '60px 20px' }}>
+        <div style={container}>
+          <h2 style={{ ...h2Style, textAlign: 'center' }}>
+            Distribution Case Studies
+          </h2>
+          <p
+            style={{
+              ...bodyText,
+              textAlign: 'center',
+              maxWidth: 700,
+              margin: '0 auto 8px',
+            }}
+          >
+            As a reality TV distribution company, we measure ourselves by placements, not pitch
+            decks. The case studies below are completed distribution outcomes for shows in our
+            own catalog — real networks, real season counts, real format deals.
+          </p>
+
+          {/* Case study cards — 2 columns desktop, 1 mobile (reuses distrib-grid-2) */}
+          <div className="distrib-grid-2">
+            {CASE_STUDIES.map(({ title, genre, network, outcome }) => (
+              <div
+                key={title}
+                style={{
+                  background: '#111',
+                  border: '1px solid #2a2a2a',
+                  borderLeft: '3px solid #e51d26',
+                  borderRadius: 4,
+                  padding: '24px 20px 24px 18px',
+                }}
+              >
+                <h3
+                  style={{
+                    ...h3Style,
+                    color: '#f2f4f7',
+                    textTransform: 'none' as const,
+                    letterSpacing: 0,
+                    fontSize: 16,
+                    marginBottom: 4,
+                  }}
+                >
+                  {title}
+                </h3>
+                <p
+                  style={{
+                    fontFamily: "'Roboto Condensed', sans-serif",
+                    fontSize: 12,
+                    color: '#e51d26',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    margin: '0 0 10px',
+                  }}
+                >
+                  {genre} · {network}
+                </p>
+                <p style={{ ...bodyText, marginBottom: 0, fontSize: 13 }}>{outcome}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* SECTION 6C — Show Catalog: "Shows Available for Distribution"      */}
+      {/* (added 2026-07-01). Live-queried sample of deck_sites — closes the */}
+      {/* "tv show available for distribution" + "unscripted formats for     */}
+      {/* sale" focus-keyword gaps (both were 0 impressions, 0 on-page       */}
+      {/* coverage, per 2026-07-01 nightly). Links out to /available and    */}
+      {/* /available/[slug] — the live titles catalog already in the repo.  */}
+      {/* ================================================================== */}
+      <section id="show-catalog" style={{ background: '#111', padding: '60px 20px' }}>
+        <div style={container}>
+          <h2 style={{ ...h2Style, textAlign: 'center' }}>
+            TV Shows Available for Distribution
+          </h2>
+          <p
+            style={{
+              ...bodyText,
+              textAlign: 'center',
+              maxWidth: 700,
+              margin: '0 auto 8px',
+            }}
+          >
+            Below is a live sample of unscripted formats for sale in our current catalog — every
+            title is a finished or near-finished TV show available for distribution to US
+            networks, streamers, and international broadcasters.
+          </p>
+
+          {/* Catalog cards — only rendered when the DB query returns rows.
+              Falls back to just the "Browse Full Catalog" link on DB error,
+              matching the try/catch pattern in getCatalogTitles(). */}
+          {catalogTitles.length > 0 ? (
+            <div className="distrib-grid-3">
+              {catalogTitles.map((t) => {
+                const meta = [t.genre, t.format, t.ep_count].filter(Boolean).join(' · ');
+                const card = (
+                  <div
+                    style={{
+                      background: '#000',
+                      border: '1px solid #2a2a2a',
+                      borderTop: '3px solid #e51d26',
+                      borderRadius: 4,
+                      overflow: 'hidden',
+                      height: '100%',
+                    }}
+                  >
+                    {t.image_url && (
+                      <img
+                        src={t.image_url}
+                        alt={`${t.title} — available for TV distribution from MY Entertainment`}
+                        loading="lazy"
+                        style={{ width: '100%', height: 'auto', display: 'block' }}
+                      />
+                    )}
+                    <div style={{ padding: 16 }}>
+                      <h3
+                        style={{
+                          ...h3Style,
+                          color: '#f2f4f7',
+                          textTransform: 'none' as const,
+                          letterSpacing: 0,
+                          fontSize: 14,
+                          marginBottom: meta ? 6 : 0,
+                        }}
+                      >
+                        {t.title}
+                      </h3>
+                      {meta && (
+                        <p
+                          style={{
+                            fontFamily: "'Roboto', sans-serif",
+                            fontSize: 12,
+                            color: '#a5a7ad',
+                            margin: 0,
+                          }}
+                        >
+                          {meta}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+
+                // Routing priority mirrors /available/page.tsx: internal
+                // slug page > external vimeo link > non-clickable card.
+                if (t.slug) {
+                  return (
+                    <Link key={t.id} href={`/available/${t.slug}`} style={{ display: 'block' }}>
+                      {card}
+                    </Link>
+                  );
+                }
+                if (t.vimeo_url) {
+                  return (
+                    <a
+                      key={t.id}
+                      href={t.vimeo_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: 'block' }}
+                    >
+                      {card}
+                    </a>
+                  );
+                }
+                return (
+                  <div key={t.id} style={{ display: 'block' }}>
+                    {card}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p
+              style={{
+                ...bodyText,
+                textAlign: 'center',
+                maxWidth: 640,
+                margin: '24px auto 0',
+              }}
+            >
+              Contact us to discuss current availability — our catalog updates as titles complete
+              production and existing titles close deals.
+            </p>
+          )}
+
+          <p style={{ textAlign: 'center', marginTop: 32, marginBottom: 0 }}>
+            <Link
+              href="/available"
+              style={{
+                fontFamily: "'Roboto Condensed', sans-serif",
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#e02027',
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+                letterSpacing: '0.05em',
+              }}
+            >
+              Browse Full Catalog &nbsp;&#10095;
+            </Link>
+          </p>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
       {/* SECTION 7 — FAQ                                                     */}
       {/* FAQPage schema enables rich results for distribution sub-queries.  */}
       {/* Covers "how to distribute a tv show", "tv content licensing",      */}
@@ -915,9 +1269,11 @@ export default function TVDistributionCompanyPage() {
             </Link>
           </p>
 
-          {/* Primary CTA — /pitch submission page */}
+          {/* Primary CTA — /pitch submission page.
+              Converted from <a> to <Link> 2026-07-01 — fixes a pre-existing
+              @next/next/no-html-link-for-pages lint error. */}
           <span className="mye-tooltip-wrap" style={{ display: 'inline-block', marginBottom: 24 }}>
-            <a
+            <Link
               href="/pitch"
               className="distrib-cta-btn"
               aria-label="Submit your TV show to MY Entertainment for distribution"
@@ -938,7 +1294,7 @@ export default function TVDistributionCompanyPage() {
               }}
             >
               Submit Your Show for Distribution
-            </a>
+            </Link>
             <span className="mye-tooltip" aria-hidden="true">
               Open the show submission form
             </span>
@@ -962,6 +1318,10 @@ export default function TVDistributionCompanyPage() {
             <Link href="/independent-film-distribution" style={inlineLink}>
               Documentary Distribution
             </Link>
+            {' · '}
+            <a href="#show-catalog" style={inlineLink}>
+              Shows Available for Distribution
+            </a>
             {' · '}
             <Link href="/available" style={inlineLink}>
               Available Titles
