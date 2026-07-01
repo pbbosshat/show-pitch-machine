@@ -4,10 +4,11 @@
  * WHY THIS EXISTS:
  * Individual show pages at /available/[slug] are long-tail brand queries that
  * bring qualified eyeballs (TV buyers searching a specific title) to the site.
- * This block converts that traffic into PageRank flow toward the 4 B2B money
+ * This block converts that traffic into PageRank flow toward the B2B money
  * pages (/sizzle-reel, /how-to-pitch-a-tv-show, /tv-production-company,
- * /tv-show-pitch-deck) by placing contextual, varied internal links below the
- * show's own content (not above — we don't interrupt the show experience).
+ * /tv-show-pitch-deck, /tv-distribution-company) by placing contextual,
+ * varied internal links below the show's own content (not above — we don't
+ * interrupt the show experience).
  *
  * ANCHOR TEXT VARIATION STRATEGY:
  * Google's Penguin algorithm penalizes site-wide identical anchor text.
@@ -17,24 +18,34 @@
  * stable across renders and does not require a DB column.
  *
  * PAGE RANK FLOW:
- * Every indexed show page links to the same 4 money pages → the money pages
+ * Every indexed show page links to the same money pages → the money pages
  * accumulate strong internal PageRank from many unique referring show pages.
  * The show pages themselves do not compete with the money pages because they
  * target show-title brand queries, not buyer-intent queries.
+ *
+ * 2026-07-01 FIX: /tv-distribution-company is the PRIMARY distribution
+ * money-keyword pillar (priority 1.0 in sitemap.ts, live since 2026-06-04)
+ * but was never added here when it shipped — every /available/[slug] show
+ * page fed link equity into the original 4 PR #3 pages and never into the
+ * pillar that is supposed to be the commercial spine of the whole cluster.
+ * That is a real, checkable cause of its 0-impression nightly finding.
+ * Added as a 5th feeder link across all 4 variants below.
  *
  * Usage: <BuyerCTA title="Gone Viral" slug="gone-viral" />
  */
 
 import Link from 'next/link';
 
-// The 4 B2B money pages this component funnels link equity into.
-// DO NOT change slugs — these must match the routes shipped in PR #3.
+// The B2B money pages this component funnels link equity into.
+// DO NOT change slugs — sizzleReel/howToPitch/prodCo/pitchDeck/catalog must
+// match the routes shipped in PR #3; distributionCompany added 2026-07-01.
 const MONEY_PAGES = {
-  sizzleReel:    '/sizzle-reel',
-  howToPitch:    '/how-to-pitch-a-tv-show',
-  prodCo:        '/tv-production-company',
-  pitchDeck:     '/tv-show-pitch-deck',
-  catalog:       '/available',
+  sizzleReel:          '/sizzle-reel',
+  howToPitch:          '/how-to-pitch-a-tv-show',
+  prodCo:              '/tv-production-company',
+  pitchDeck:           '/tv-show-pitch-deck',
+  catalog:             '/available',
+  distributionCompany: '/tv-distribution-company',
 } as const;
 
 // ── Deterministic variation seed ─────────────────────────────────────────────
@@ -65,6 +76,7 @@ interface Variant {
   howToPitchAnchor: string;
   prodCoAnchor: string;
   pitchDeckAnchor: string;
+  distributionAnchor: string; // added 2026-07-01 — feeds /tv-distribution-company
 }
 
 const VARIANTS: Variant[] = [
@@ -72,41 +84,45 @@ const VARIANTS: Variant[] = [
   {
     intro:
       'Looking to license or acquire shows like this? Explore our full',
-    catalogAnchor:    'available titles catalog',
-    sizzleAnchor:     'watch sizzle reels',
-    howToPitchAnchor: 'learn how TV pitches work',
-    prodCoAnchor:     'meet our production company',
-    pitchDeckAnchor:  'see a sample pitch deck',
+    catalogAnchor:      'available titles catalog',
+    sizzleAnchor:       'watch sizzle reels',
+    howToPitchAnchor:   'learn how TV pitches work',
+    prodCoAnchor:       'meet our production company',
+    pitchDeckAnchor:    'see a sample pitch deck',
+    distributionAnchor: 'our TV distribution company services',
   },
   // ── Variant 1: pitch / production framing ───────────────────────────────
   {
     intro:
       'Interested in how shows like this get developed and sold to networks? Browse our',
-    catalogAnchor:    'full slate of available programming',
-    sizzleAnchor:     'production sizzle reels',
-    howToPitchAnchor: 'TV show pitching guide',
-    prodCoAnchor:     'TV production company background',
-    pitchDeckAnchor:  'pitch deck examples',
+    catalogAnchor:      'full slate of available programming',
+    sizzleAnchor:       'production sizzle reels',
+    howToPitchAnchor:   'TV show pitching guide',
+    prodCoAnchor:       'TV production company background',
+    pitchDeckAnchor:    'pitch deck examples',
+    distributionAnchor: 'how our TV distribution company works',
   },
   // ── Variant 2: distributor / sizzle framing ──────────────────────────────
   {
     intro:
       'Distributors and international buyers: our complete',
-    catalogAnchor:    'catalog of available titles',
-    sizzleAnchor:     'sizzle reel library',
-    howToPitchAnchor: 'pitching process overview',
-    prodCoAnchor:     'unscripted TV production company',
-    pitchDeckAnchor:  'TV pitch deck format',
+    catalogAnchor:      'catalog of available titles',
+    sizzleAnchor:       'sizzle reel library',
+    howToPitchAnchor:   'pitching process overview',
+    prodCoAnchor:       'unscripted TV production company',
+    pitchDeckAnchor:    'TV pitch deck format',
+    distributionAnchor: 'our reality TV distribution company',
   },
   // ── Variant 3: buyer / deal framing ─────────────────────────────────────
   {
     intro:
       'Ready to make a deal? Network buyers can explore the entire',
-    catalogAnchor:    'programming catalog',
-    sizzleAnchor:     'series sizzle reels',
-    howToPitchAnchor: 'how to pitch a TV show',
-    prodCoAnchor:     'about our production company',
-    pitchDeckAnchor:  'TV show pitch decks',
+    catalogAnchor:      'programming catalog',
+    sizzleAnchor:       'series sizzle reels',
+    howToPitchAnchor:   'how to pitch a TV show',
+    prodCoAnchor:       'about our production company',
+    pitchDeckAnchor:    'TV show pitch decks',
+    distributionAnchor: 'full TV distribution company details',
   },
 ];
 
@@ -182,6 +198,13 @@ export default function BuyerCTA({ title, slug }: { title: string; slug: string 
           {/* Link 5: pitch deck — bottom-of-funnel buyer asset */}
           <Link href={MONEY_PAGES.pitchDeck} style={linkStyle}>
             {v.pitchDeckAnchor}
+          </Link>
+          {'. Need full-service representation? See '}
+          {/* Link 6: distribution company pillar — added 2026-07-01 to fix
+              the 0-impression finding; this is the PRIMARY money page and
+              every show page should feed it link equity like the other 5. */}
+          <Link href={MONEY_PAGES.distributionCompany} style={linkStyle}>
+            {v.distributionAnchor}
           </Link>
           .
         </p>

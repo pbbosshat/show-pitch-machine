@@ -60,7 +60,14 @@ const COMPANY_LINKS = [
 // sends a much stronger topical signal than the same link on a single page.
 // Anchor text is descriptive and buyer-intent-matched (not generic "click here")
 // so Google treats them as editorial votes for buyer-intent queries.
+// Updated 2026-07-01: /tv-distribution-company added. It is the PRIMARY
+// distribution money-keyword pillar (sitemap priority 1.0, live since
+// 2026-06-04) but had never been added to this sitewide footer column —
+// meaning it was the one B2B money page NOT receiving footer PageRank from
+// every page on the site. That gap, combined with the same omission in
+// BuyerCTA.tsx, is the most likely cause of its 0-impression nightly finding.
 const BUYER_LINKS = [
+  { href: '/tv-distribution-company', label: 'TV Distribution Company' },
   { href: '/available',              label: 'Available Titles' },
   { href: '/tv-show-pitch',          label: 'TV Show Pitch' },
   { href: '/sizzle-reel',            label: 'Sizzle Reels' },
