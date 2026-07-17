@@ -117,6 +117,8 @@ export async function PUT(
       'ep_count', 'network_target', 'ep_name', 'status', 'visibility', 'gate_password',
       'image_url', 'vimeo_url', 'description', 'runtime_mins', 'episode_count',
       'theme_color', // migration 028: per-deck accent colour for the viewer
+      'sort_order',  // migration 042: controls ordering in /available catalog
+      'is_active',   // migration 036: 1 = show in catalog, 0 = hidden
     ] as const;
 
     const setClauses: string[] = [];
