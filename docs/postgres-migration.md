@@ -201,3 +201,60 @@ These are explicit non-goals — Phase 1B owns them:
 - Migrating `lib/auth.ts` (`getDb().exec(...)` calls).
 - Migrating `lib/mcp/tools/shows.ts` (FTS5 MATCH queries).
 - Migrating any `scripts/*.ts` that runs on Bang (those stay SQLite by design).
+
+---
+
+## Incident: /available/[slug] returned HTTP 500 — migration 042 (2026-07-17)
+
+### What broke
+
+Every request to `/available/[slug]` returned HTTP 500. The catalog page
+(`/available`) silently rendered empty (HTTP 200, no titles shown). Both pages
+SELECTed these columns from `deck_sites`:
+
+```
+image_url, vimeo_url, description, rights_type, markets,
+seasons, episode_count, runtime_mins, contact_email, sort_order
+```
+
+None of those columns existed in `deck_sites`. Postgres threw:
+
+```
+ERROR: column "image_url" does not exist
+```
+
+### Root cause
+
+Migration 002 added equivalent columns to `available_titles` but no migration
+ever added them to `deck_sites`. When the public pages were later built to
+query `deck_sites`, the schema gap was never caught because:
+
+- The list page (`app/(public)/available/page.tsx`) had a bare `catch {}`
+  that swallowed the Postgres error silently — the catalog appeared empty.
+- The detail page (`app/(public)/available/[slug]/page.tsx`) had no try/catch
+  at all — the Postgres error propagated as an unhandled rejection → HTTP 500.
+
+### Fix
+
+**`migrations/042_deck_sites_public_fields.sql`** — adds all 10 missing columns
+using `ADD COLUMN IF NOT EXISTS` so the migration is idempotent (safe whether
+the columns already exist in prod from a manual hotfix or not).
+
+**`app/(public)/available/[slug]/page.tsx`** — `fetchRow()` now wraps the DB
+call in try/catch with `console.error` logging, then re-throws so Next.js
+still emits the 500 (rather than silently returning `null` and triggering a
+confusing 404). Future schema gaps will appear in Railway logs with the slug.
+
+**`app/(public)/available/page.tsx`** — `getTitles()` changes `catch {}` to
+`catch (err) { console.error(...); return []; }` so schema errors surface in
+Railway logs instead of silently producing an empty catalog.
+
+### Deploy note
+
+Railway calls `initDb()` at boot, which runs every `migrations/*.sql` file not
+yet recorded in `schema_migrations`. Migration 042 therefore applies
+automatically on the next deploy — no manual SQL needed.
+
+**After merge:** confirm Railway shows the correct commit SHA before calling
+it resolved. Railway can silently build an ancestor commit when a new push
+arrives mid-build — verify the deployed commit == `master` tip.
