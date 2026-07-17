@@ -197,7 +197,18 @@ export default function ContactPage() {
                 >
                   info@myentertainment.tv
                 </a>{' '}
-                and someone will be in touch with you as soon as possible!
+                or call us at{' '}
+                {/* Click-to-call phone — added PR feature/cta-overhaul */}
+                <a
+                  href="tel:+18438846222"
+                  style={{
+                    color: '#e02027',
+                    textDecoration: 'none',
+                  }}
+                >
+                  843-884-6222
+                </a>
+                , and someone will be in touch with you as soon as possible!
               </p>
 
               {/*
