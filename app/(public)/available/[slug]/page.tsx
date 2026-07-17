@@ -123,17 +123,26 @@ export interface SafeTitle {
 
 // Fetch row helper — used by both generateMetadata and the page itself.
 // Async because initDb() and query() are now Postgres-backed Promises.
+// WHY try/catch: if a schema column is missing, Postgres throws "column does not
+// exist" immediately. Without this guard, that error propagates as an HTTP 500
+// for every slug request. Logging + re-throw surfaces the root cause in Railway
+// logs while still letting Next.js emit the 500 (rather than silently 404).
 async function fetchRow(slug: string): Promise<AvailableRow | null> {
-  await initDb();
-  const rows = await query<AvailableRow>(
-    `SELECT id, title, slug, rights_type, genre, seasons, episode_count,
-            runtime_mins, markets, description, contact_email,
-            image_url, vimeo_url, drive_file_id, gate_password AS password
-     FROM deck_sites
-     WHERE slug = ? AND is_active = 1 AND status = 'published'`,
-    [slug]
-  );
-  return rows.length ? rows[0] : null;
+  try {
+    await initDb();
+    const rows = await query<AvailableRow>(
+      `SELECT id, title, slug, rights_type, genre, seasons, episode_count,
+              runtime_mins, markets, description, contact_email,
+              image_url, vimeo_url, drive_file_id, gate_password AS password
+       FROM deck_sites
+       WHERE slug = ? AND is_active = 1 AND status = 'published'`,
+      [slug]
+    );
+    return rows.length ? rows[0] : null;
+  } catch (err) {
+    console.error('[available/[slug]] fetchRow failed for slug=%s:', slug, err);
+    throw err;
+  }
 }
 
 // Per-show Open Graph metadata — falls back to site defaults when not found.

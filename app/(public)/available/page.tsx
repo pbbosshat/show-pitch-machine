@@ -59,7 +59,8 @@ async function getTitles(): Promise<PublicTitle[]> {
       'SELECT id, title, slug, image_url, vimeo_url FROM deck_sites WHERE is_active = 1 ORDER BY sort_order ASC, title ASC'
     );
     return JSON.parse(JSON.stringify(rows));
-  } catch {
+  } catch (err) {
+    console.error('[available] getTitles failed:', err);
     return [];
   }
 }
