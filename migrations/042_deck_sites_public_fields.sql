@@ -19,4 +19,8 @@ ALTER TABLE deck_sites ADD COLUMN IF NOT EXISTS seasons         INTEGER;
 ALTER TABLE deck_sites ADD COLUMN IF NOT EXISTS episode_count   INTEGER;
 ALTER TABLE deck_sites ADD COLUMN IF NOT EXISTS runtime_mins    INTEGER;
 ALTER TABLE deck_sites ADD COLUMN IF NOT EXISTS contact_email   TEXT     DEFAULT 'info@myentertainment.tv';
+-- ADD COLUMN IF NOT EXISTS is a no-op when the column was manually hotfixed without
+-- a DEFAULT. These ensure the default is set for future inserts and existing NULLs backfilled.
+ALTER TABLE deck_sites ALTER COLUMN contact_email SET DEFAULT 'info@myentertainment.tv';
+UPDATE deck_sites SET contact_email = 'info@myentertainment.tv' WHERE contact_email IS NULL;
 ALTER TABLE deck_sites ADD COLUMN IF NOT EXISTS sort_order      INTEGER  DEFAULT 0;

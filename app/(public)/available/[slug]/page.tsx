@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
-import { query, initDb } from '@/lib/db';
+import { query, queryOne, initDb } from '@/lib/db';
 import { getSessionUser, SESSION_COOKIE } from '@/lib/auth';
 import type { Metadata } from 'next';
 import AvailablePackageClient from './AvailablePackageClient';
@@ -130,15 +130,15 @@ export interface SafeTitle {
 async function fetchRow(slug: string): Promise<AvailableRow | null> {
   try {
     await initDb();
-    const rows = await query<AvailableRow>(
+    return await queryOne<AvailableRow>(
       `SELECT id, title, slug, rights_type, genre, seasons, episode_count,
               runtime_mins, markets, description, contact_email,
               image_url, vimeo_url, drive_file_id, gate_password AS password
        FROM deck_sites
-       WHERE slug = ? AND is_active = 1 AND status = 'published'`,
+       WHERE slug = ? AND is_active = 1 AND status = 'published'
+       LIMIT 1`,
       [slug]
-    );
-    return rows.length ? rows[0] : null;
+    ) ?? null;
   } catch (err) {
     console.error('[available/[slug]] fetchRow failed for slug=%s:', slug, err);
     throw err;

@@ -46,7 +46,6 @@ interface PublicTitle {
   slug: string | null;
   image_url: string | null;
   vimeo_url: string | null;
-  is_active: number;
 }
 
 // Reads all active titles ordered by sort_order then title.
@@ -56,7 +55,7 @@ async function getTitles(): Promise<PublicTitle[]> {
   try {
     await initDb();
     const rows = await query<PublicTitle>(
-      'SELECT id, title, slug, image_url, vimeo_url FROM deck_sites WHERE is_active = 1 ORDER BY sort_order ASC, title ASC'
+      'SELECT id, title, slug, image_url, vimeo_url FROM deck_sites WHERE is_active = 1 AND status = \'published\' ORDER BY sort_order ASC, title ASC'
     );
     return JSON.parse(JSON.stringify(rows));
   } catch (err) {

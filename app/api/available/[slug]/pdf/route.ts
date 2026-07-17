@@ -19,10 +19,12 @@ export async function POST(
   try {
     const { slug } = await params;
 
-    initDb();
+    // Both initDb and queryOne are async — without await, title is a Promise
+    // (always truthy), the 404 guard is bypassed, and Puppeteer fires for every slug.
+    await initDb();
 
     // Verify the title exists and is active before spinning up Puppeteer
-    const title = queryOne<{ id: string; title: string }>(
+    const title = await queryOne<{ id: string; title: string }>(
       `SELECT id, title FROM deck_sites WHERE slug = ? AND is_active = 1 AND status = 'published'`,
       [slug]
     );
