@@ -30,13 +30,16 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const id = randomUUID();
     const now = Math.floor(Date.now() / 1000);
+    // site_show_id was referenced here but the column was never added to deck_sites
+    // (it lives in available_titles per migration 002, not deck_sites). Removed to
+    // prevent "column does not exist" 500 errors on every create.
     await run(
       `INSERT INTO deck_sites
          (id, title, slug, genre, rights_type, markets, seasons, episode_count,
           runtime_mins, description, contact_email, is_active, sort_order,
-          image_url, vimeo_url, gate_password, site_show_id,
+          image_url, vimeo_url, gate_password,
           status, visibility, slide_count, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?)`,
       [
         id,
         body.title,
@@ -54,7 +57,6 @@ export async function POST(req: NextRequest) {
         body.image_url ?? null,
         body.vimeo_url ?? null,
         body.password ?? null,
-        body.site_show_id ?? null,
         body.status ?? 'published',
         body.visibility ?? 'public',
         now,
