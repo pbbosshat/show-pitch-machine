@@ -119,6 +119,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/tv-distribution-deal`,          lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE_URL}/independent-film-distribution`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
 
+    // ── Master pillar (seo/mye-how-to-sell-a-tv-show-2026-07-17) ──────────
+    // /how-to-sell-a-tv-show — spans the full journey from pitch package
+    // through distribution deal; hub page linking into the narrower spokes
+    // above. Priority 0.9 alongside the rest of the buyer-intent cluster.
+    { url: `${BASE_URL}/how-to-sell-a-tv-show`,          lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+
     { url: `${BASE_URL}/shows`,          lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE_URL}/genres`,         lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE_URL}/about`,          lastModified: now, changeFrequency: 'monthly', priority: 0.7 },

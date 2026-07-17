@@ -70,6 +70,14 @@ const PUBLIC_PATHS = new Set([
   // Both must be public or Googlebot gets 307'd to /login and the pages can't rank.
   '/tv-distribution-deal',
   '/independent-film-distribution',
+  // /how-to-sell-a-tv-show — master pillar spanning pitch through distribution
+  // deal (seo/mye-how-to-sell-a-tv-show-2026-07-17). Re-angled from the
+  // nightly's original "how to distribute a tv show" proposal (near-zero
+  // volume, creator-seeking-distribution framing already owned by
+  // /tv-distribution-deal) to the seller-side query cluster real searchers
+  // use: "how to sell a tv show" / "how to distribute a tv show" / "how to
+  // pitch a tv show". Must be public or Googlebot gets 307'd to /login.
+  '/how-to-sell-a-tv-show',
 ]);
 
 // Path prefixes that are always public
