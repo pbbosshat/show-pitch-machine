@@ -67,6 +67,7 @@ const COMPANY_LINKS = [
 // every page on the site. That gap, combined with the same omission in
 // BuyerCTA.tsx, is the most likely cause of its 0-impression nightly finding.
 const BUYER_LINKS = [
+  { href: '/how-to-sell-a-tv-show',   label: 'How to Sell a TV Show' },
   { href: '/tv-distribution-company', label: 'TV Distribution Company' },
   { href: '/available',              label: 'Available Titles' },
   { href: '/tv-show-pitch',          label: 'TV Show Pitch' },

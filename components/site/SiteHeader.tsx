@@ -42,6 +42,7 @@ const NAV_LINKS = [
 // comments). This is the PRIMARY distribution money-keyword pillar and had
 // no sitewide nav/footer feeder at all until this fix.
 const BUYER_NAV_LINKS = [
+  { href: '/how-to-sell-a-tv-show',   label: 'HOW TO SELL A TV SHOW' },
   { href: '/tv-distribution-company', label: 'TV DISTRIBUTION COMPANY' },
   { href: '/tv-show-pitch',          label: 'TV SHOW PITCH' },
   { href: '/sizzle-reel',            label: 'SIZZLE REELS' },
