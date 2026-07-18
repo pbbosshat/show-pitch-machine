@@ -29,9 +29,21 @@ async function safeQuery<T>(sql: string): Promise<T[]> {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Pull all non-archived show slugs from the CMS table
+  // Pull /available/[slug] one-sheet slugs from `deck_sites` — the SAME table
+  // and SAME filter (is_active = 1 AND status = 'published') that the public
+  // /available catalog page and the /available/[slug] route itself query
+  // (see app/(public)/available/page.tsx and app/(public)/available/[slug]/page.tsx).
+  //
+  // FIX (2026-07-18): this previously queried `site_shows` — a DIFFERENT table
+  // used by the unrelated /shows catalog (on-air show pages, not licensing
+  // one-sheets). Because /available/[slug] only has DB rows in `deck_sites`,
+  // every site_shows slug the sitemap emitted here 404'd (43 legacy franchise
+  // slugs like ghost-adventures, destination-fear, baggage-battles, etc. were
+  // never real /available/[slug] pages). Sourcing from deck_sites keeps this
+  // list automatically in sync with the live one-sheet catalog as titles are
+  // published/unpublished — no code deploy needed when the catalog changes.
   const showRows = await safeQuery<SlugRow>(
-    "SELECT slug FROM site_shows WHERE status != 'archived' ORDER BY sort_order ASC, title ASC"
+    "SELECT slug FROM deck_sites WHERE is_active = 1 AND status = 'published' ORDER BY sort_order ASC, title ASC"
   );
 
   // Pull all genre slugs — the table is small and stable (6 genres seeded in 002_marketing.sql)
