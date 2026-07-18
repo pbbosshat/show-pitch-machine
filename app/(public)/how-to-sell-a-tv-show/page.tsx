@@ -487,7 +487,6 @@ export default function HowToSellATVShowPage() {
 
       {/* ================================================================== */}
       {/* SECTION 3 — The Pitch Package: Deck, Sizzle, One-Sheet              */}
-      {/* Links to 2–3 live one-sheets as real examples + spoke pages.       */}
       {/* ================================================================== */}
       <section style={{ background: '#111', padding: '60px 20px' }}>
         <div style={container}>
@@ -508,42 +507,22 @@ export default function HowToSellATVShowPage() {
               <strong style={{ color: '#f2f4f7' }}>One-sheet</strong> — a single-page leave-behind
               a buyer can review after the meeting, without needing you in the room to explain it.
             </p>
+            {/*
+              FIX (2026-07-18): removed the 3 hardcoded "Live One-Sheet" example cards
+              (haunted-world, pvj, home-game) — none of the 3 has a live row in the
+              `deck_sites` table, so all 3 linked to a 404. Rather than hand-pick
+              replacement slugs (which would go stale again the moment deck_sites
+              changes), this now points to the /available catalog itself, which is
+              always in sync with what's actually published. See app/(public)/available/
+              page.tsx for the live catalog and app/sitemap.ts for the same fix applied
+              to the sitemap's /available/[slug] entries.
+            */}
             <p style={{ ...bodyText, marginBottom: 24 }}>
               For a finished or near-finished show, the one-sheet becomes the primary selling
-              document — here are three real examples from MY Entertainment&rsquo;s current
-              catalog, live on this site today:
+              document. See{' '}
+              <Link href="/available" style={inlineLink}>real examples from MY Entertainment&rsquo;s current catalog</Link>,
+              live on this site today.
             </p>
-
-            <div className="sell-onesheet-grid">
-              {[
-                { slug: 'haunted-world', title: 'Haunted World', note: 'Paranormal format — franchise one-sheet' },
-                { slug: 'pvj', title: 'Pros vs Joes', note: 'Sports & competition — flagship catalog title' },
-                { slug: 'home-game', title: 'Home Game', note: 'Home & lifestyle — format one-sheet' },
-              ].map(({ slug, title, note }) => (
-                <Link
-                  key={slug}
-                  href={`/available/${slug}`}
-                  className="sell-onesheet-card"
-                  style={{
-                    display: 'block',
-                    background: '#000',
-                    border: '1px solid #2a2a2a',
-                    borderRadius: 4,
-                    padding: '16px 18px',
-                    textDecoration: 'none',
-                    transition: 'border-color 150ms',
-                  }}
-                >
-                  <p style={{ ...accentLabel, marginBottom: 8 }}>Live One-Sheet</p>
-                  <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 15, fontWeight: 500, color: '#f2f4f7', margin: '0 0 6px' }}>
-                    {title}
-                  </p>
-                  <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: '#a5a7ad', margin: 0, lineHeight: 1.5 }}>
-                    {note}
-                  </p>
-                </Link>
-              ))}
-            </div>
 
             <p style={{ ...bodyText, marginTop: 24, marginBottom: 0 }}>
               Want the full step-by-step process for building your own pitch package?{' '}
