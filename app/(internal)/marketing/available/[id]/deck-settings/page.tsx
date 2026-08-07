@@ -3,7 +3,7 @@
 // Returns 404 if the row is not found, matching Next.js convention.
 
 import { notFound } from 'next/navigation';
-import { queryOne, initDb } from '@/lib/db';
+import { queryOne, query, initDb } from '@/lib/db';
 import DeckSettingsClient, { type AvailableTitle } from './DeckSettingsClient';
 import Link from 'next/link';
 
@@ -43,11 +43,24 @@ async function getTitle(id: string): Promise<AvailableTitle | null> {
   }
 }
 
+// Read all marketing shows for the "link to show" picker in the deck editor.
+// Same direct-query + JSON serialization pattern as marketing/shows/page.tsx's
+// getShows(). Returns [] on any DB error so the page still renders (the picker
+// just shows no options rather than 500ing the whole deck-settings page).
+async function getShows(): Promise<{ id: string; title: string }[]> {
+  try {
+    const rows = await query<{ id: string; title: string }>(
+      'SELECT id, title FROM site_shows ORDER BY title ASC'
+    );
+    return JSON.parse(JSON.stringify(rows));
+  } catch { return []; }
+}
+
 export default async function DeckSettingsPage(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const title = await getTitle(id);
+  const [title, shows] = await Promise.all([getTitle(id), getShows()]);
 
   // Hard 404 — Next.js renders the nearest not-found.tsx boundary.
   if (!title) notFound();
@@ -76,7 +89,7 @@ export default async function DeckSettingsPage(
       </div>
 
       {/* Full client-side editor — receives the hydrated row */}
-      <DeckSettingsClient title={title} />
+      <DeckSettingsClient title={title} shows={shows} />
     </div>
   );
 }
