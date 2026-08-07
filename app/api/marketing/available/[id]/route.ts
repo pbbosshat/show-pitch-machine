@@ -97,7 +97,12 @@ export async function PUT(
   const body = await req.json().catch(() => ({})) as Record<string, unknown>;
 
   const rawSlug = (body.slug as string | undefined) ?? (body.title as string | undefined) ?? existing.title;
-  const slug = slugify(rawSlug);
+  // Only recompute the slug when the caller actually sent a new slug or title.
+  // Otherwise a status-only or is_active-only toggle (e.g. the admin Draft/Private
+  // buttons) would silently rewrite the deck's slug from its current title via
+  // the existing.title fallback above, breaking any already-shared public URL.
+  const slugProvided = body.slug !== undefined || body.title !== undefined;
+  const slug = slugProvided ? slugify(rawSlug) : null;
 
   let markets: string | null = null;
   if (body.markets !== undefined && body.markets !== null) {
@@ -144,7 +149,7 @@ export async function PUT(
     await run(
       `UPDATE deck_sites SET
         title            = COALESCE(?, title),
-        slug             = ?,
+        slug             = COALESCE(?, slug),
         rights_type      = COALESCE(?, rights_type),
         genre            = COALESCE(?, genre),
         seasons          = COALESCE(?, seasons),
@@ -159,7 +164,6 @@ export async function PUT(
         vimeo_url        = COALESCE(?, vimeo_url),
         drive_file_id    = COALESCE(?, drive_file_id),
         gate_password    = COALESCE(?, gate_password),
-        site_show_id     = COALESCE(?, site_show_id),
         status           = COALESCE(?, status),
         visibility       = COALESCE(?, visibility),
         sizzle_history   = ?,
@@ -182,7 +186,6 @@ export async function PUT(
         body.vimeo_url    !== undefined ? String(body.vimeo_url)                    : null,
         body.drive_file_id !== undefined ? String(body.drive_file_id)               : null,
         body.password     !== undefined ? String(body.password)                     : null,
-        body.site_show_id !== undefined ? String(body.site_show_id)                 : null,
         body.status       !== undefined ? String(body.status)                       : null,
         body.visibility   !== undefined ? String(body.visibility)                   : null,
         // sizzle_history always written (even if null) to keep it in sync
@@ -192,10 +195,13 @@ export async function PUT(
       ]
     );
   } catch (err) {
-    if ((err as Error).message?.includes('UNIQUE constraint failed')) {
+    const e = err as { code?: string; message?: string };
+    // Postgres unique violation = code 23505; SQLite = 'UNIQUE constraint failed'
+    if (e.code === '23505' || (e.message ?? '').includes('duplicate key value') || (e.message ?? '').includes('UNIQUE constraint failed')) {
       return NextResponse.json({ error: 'Slug already in use' }, { status: 409 });
     }
-    throw err;
+    console.error('[available PUT] update failed:', err);
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
 
   const updated = await queryOne<Record<string, unknown>>(

@@ -39,10 +39,12 @@ export default function AvailableClient({ titles: initialTitles }: { titles: Ava
   const [statusFilter, setStatusFilter]   = useState<StatusFilter>('all');
   const [draggingId, setDraggingId]       = useState<string | null>(null);
   const [dragOverId, setDragOverId]       = useState<string | null>(null);
+  const [error, setError]                 = useState<string | null>(null);
 
   // ── Optimistic toggle for is_active (Public/Private) ──────────────────────
   async function toggleActive(t: AvailableTitle, e: React.MouseEvent) {
     e.stopPropagation();
+    setError(null);
     const nextActive = !t.is_active;
     setTitles((prev) => prev.map((row) => row.id === t.id ? { ...row, is_active: nextActive ? 1 : 0 } : row));
     try {
@@ -56,12 +58,14 @@ export default function AvailableClient({ titles: initialTitles }: { titles: Ava
     } catch (err) {
       console.error('toggleActive failed:', err);
       setTitles((prev) => prev.map((row) => row.id === t.id ? { ...row, is_active: t.is_active } : row));
+      setError(`Update failed: ${(err as Error).message}`);
     }
   }
 
   // ── Optimistic toggle for status (Published/Draft) ────────────────────────
   async function toggleStatus(t: AvailableTitle, e: React.MouseEvent) {
     e.stopPropagation();
+    setError(null);
     const nextStatus = t.status === 'published' ? 'draft' : 'published';
     setTitles((prev) => prev.map((row) => row.id === t.id ? { ...row, status: nextStatus } : row));
     try {
@@ -75,6 +79,7 @@ export default function AvailableClient({ titles: initialTitles }: { titles: Ava
     } catch (err) {
       console.error('toggleStatus failed:', err);
       setTitles((prev) => prev.map((row) => row.id === t.id ? { ...row, status: t.status } : row));
+      setError(`Update failed: ${(err as Error).message}`);
     }
   }
 
@@ -132,6 +137,25 @@ export default function AvailableClient({ titles: initialTitles }: { titles: Ava
 
   return (
     <>
+      {/* Error banner — surfaces the exact server error when a toggle PUT fails,
+          instead of silently reverting with only a console.error (project rule:
+          always show exact errors to the user). */}
+      {error && (
+        <div
+          role="alert"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16, padding: '10px 14px', borderRadius: 6, border: '1px solid #ef4444', background: 'rgba(239,68,68,0.12)', color: '#ef4444', fontSize: '0.8125rem' }}
+        >
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            aria-label="Dismiss error"
+            style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 700, lineHeight: 1, padding: 0 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       <style>{`
         .avail-grid {
           display: grid;
