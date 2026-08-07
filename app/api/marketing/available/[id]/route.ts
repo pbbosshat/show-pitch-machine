@@ -164,6 +164,11 @@ export async function PUT(
         vimeo_url        = COALESCE(?, vimeo_url),
         drive_file_id    = COALESCE(?, drive_file_id),
         gate_password    = COALESCE(?, gate_password),
+        -- site_show_id: links this deck to a site_shows row (marketing/shows
+        -- getDeckLinks() reads it back). Column added by migration 043, safe
+        -- to write now; was previously removed here because the column did
+        -- not exist (see commit f8ac9b7 / PR #27).
+        site_show_id     = COALESCE(?, site_show_id),
         status           = COALESCE(?, status),
         visibility       = COALESCE(?, visibility),
         sizzle_history   = ?,
@@ -186,6 +191,7 @@ export async function PUT(
         body.vimeo_url    !== undefined ? String(body.vimeo_url)                    : null,
         body.drive_file_id !== undefined ? String(body.drive_file_id)               : null,
         body.password     !== undefined ? String(body.password)                     : null,
+        body.site_show_id !== undefined ? String(body.site_show_id)                 : null,
         body.status       !== undefined ? String(body.status)                       : null,
         body.visibility   !== undefined ? String(body.visibility)                   : null,
         // sizzle_history always written (even if null) to keep it in sync

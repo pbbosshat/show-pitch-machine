@@ -58,6 +58,7 @@ interface FormState {
   image_url: string;
   vimeo_url: string;       // active sizzle URL; must match an entry in sizzle_history
   password: string;
+  site_show_id: string;    // site_shows.id this deck is linked to; '' = not linked
   sizzle_history: SizzleEntry[]; // full version list managed by the picker
 }
 
@@ -87,6 +88,7 @@ function toFormState(t: AvailableTitle): FormState {
     image_url:      t.image_url     ?? '',
     vimeo_url:      t.vimeo_url     ?? '',
     password:       t.password      ?? '',
+    site_show_id:   t.site_show_id  ?? '',
     sizzle_history: Array.isArray(t.sizzle_history) ? t.sizzle_history : [],
   };
 }
@@ -377,7 +379,16 @@ function SizzlePicker({ activeUrl, history, saving, onChange }: SizzlePickerProp
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export default function DeckSettingsClient({ title }: { title: AvailableTitle }) {
+export default function DeckSettingsClient({
+  title,
+  shows = [],
+}: {
+  title: AvailableTitle;
+  // Marketing shows available to link this deck to (site_shows.id/title), used
+  // to populate the "Linked Show" picker below. Defaults to [] so the component
+  // still renders if a caller omits the prop.
+  shows?: { id: string; title: string }[];
+}) {
   // Initialise form from the server-fetched row.
   const [form, setForm] = useState<FormState>(() => toFormState(title));
 
@@ -488,6 +499,7 @@ export default function DeckSettingsClient({ title }: { title: AvailableTitle })
         image_url:      form.image_url     || null,
         vimeo_url:      form.vimeo_url     || null,
         password:       form.password      || null,
+        site_show_id:   form.site_show_id  || null,
         sizzle_history: form.sizzle_history,
       };
 
@@ -541,6 +553,23 @@ export default function DeckSettingsClient({ title }: { title: AvailableTitle })
               </span>
             </p>
           )}
+        </div>
+
+        {/* Linked Show: associates this deck with a site_shows row so it can
+            surface as a deck chip on the public Shows page (see
+            marketing/shows/page.tsx's getDeckLinks() + MarketingShowsClient). */}
+        <div style={ROW}>
+          <label style={LABEL}>Linked Show</label>
+          <select
+            value={form.site_show_id}
+            onChange={(e) => set('site_show_id', e.target.value)}
+            style={FIELD}
+          >
+            <option value="">Not linked to a show</option>
+            {shows.map((s) => (
+              <option key={s.id} value={s.id}>{s.title}</option>
+            ))}
+          </select>
         </div>
 
         {/* "View Live Deck" button — only enabled when a slug exists */}
