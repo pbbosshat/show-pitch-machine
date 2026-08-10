@@ -589,7 +589,10 @@ function SizzleReelsCard({ siteId }: { siteId: string }) {
   useEffect(() => {
     fetch(`/api/deck-sites/${siteId}/sizzles`)
       .then((r) => r.json())
-      .then((json) => { if (json.error) throw new Error(json.error); setSizzles(json.data ?? []); })
+      // Guard the shape, not just null: a malformed `data` (e.g. an object) used
+      // to reach setSizzles and blow up the whole page on `.map()`. This card
+      // failing should never take down the deck editor.
+      .then((json) => { if (json.error) throw new Error(json.error); setSizzles(Array.isArray(json.data) ? json.data : []); })
       .catch((err: unknown) => setFetchError(err instanceof Error ? err.message : 'Load failed'))
       .finally(() => setLoading(false));
   }, [siteId]);

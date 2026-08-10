@@ -8,7 +8,7 @@
 //
 // All editing happens in the /decks flow, not here.
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 
 export interface AvailableTitle {
   id: string;
@@ -84,7 +84,27 @@ export default function AvailableClient({ titles: initialTitles }: { titles: Ava
   }
 
   // ── Drag-to-reorder ───────────────────────────────────────────────────────
+  // The whole card is draggable, but the Live/Draft and Public/Private buttons
+  // live inside it. Pressing a button and drifting a few px made the browser
+  // begin a native drag, which swallows mouseup/click entirely — so the toggle
+  // silently did nothing (no optimistic update, no PUT). That was the
+  // "buttons aren't clickable / won't stick" bug.
+  //
+  // Cancelling dragstart is too late: once the drag begins, the click is gone.
+  // Instead we turn OFF `draggable` while the pointer is over the toggle bar,
+  // so no drag can start there and the buttons behave like normal buttons.
+  // Dragging from the artwork/title still reorders as before.
+  const [noDragCardId, setNoDragCardId] = useState<string | null>(null);
+
+  // Belt-and-braces: if a drag somehow starts from the toggle bar, cancel it.
+  const noDragRef = useRef(false);
+
+  function handleMouseDownCapture(e: React.MouseEvent) {
+    noDragRef.current = !!(e.target as HTMLElement).closest?.('[data-no-drag]');
+  }
+
   function handleDragStart(e: React.DragEvent, id: string) {
+    if (noDragRef.current) { e.preventDefault(); return; }
     setDraggingId(id);
     e.dataTransfer.effectAllowed = 'move';
   }
@@ -221,7 +241,8 @@ export default function AvailableClient({ titles: initialTitles }: { titles: Ava
             <div
               key={t.id}
               className={`avail-card${draggingId === t.id ? ' dragging' : ''}${dragOverId === t.id ? ' drag-over' : ''}`}
-              draggable
+              draggable={noDragCardId !== t.id}
+              onMouseDownCapture={handleMouseDownCapture}
               onDragStart={(e) => handleDragStart(e, t.id)}
               onDragOver={(e) => handleDragOver(e, t.id)}
               onDrop={(e) => handleDrop(e, t.id)}
@@ -257,8 +278,14 @@ export default function AvailableClient({ titles: initialTitles }: { titles: Ava
                 </div>
               </a>
 
-              {/* Action bar — toggles only */}
-              <div style={{ padding: '8px 10px 10px', borderTop: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              {/* Action bar — toggles only. data-no-drag suppresses the card's
+                  drag gesture so a slightly-imperfect click still registers. */}
+              <div
+                data-no-drag
+                onMouseEnter={() => setNoDragCardId(t.id)}
+                onMouseLeave={() => setNoDragCardId((cur) => (cur === t.id ? null : cur))}
+                style={{ padding: '8px 10px 10px', borderTop: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
                 <button
                   onClick={(e) => toggleStatus(t, e)}
                   title={t.status === 'published' ? 'Click to unpublish (URL stops working)' : 'Click to publish (URL goes live)'}

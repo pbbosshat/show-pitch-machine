@@ -41,8 +41,13 @@ export async function GET(
   try {
     const { id: deckId } = await params;
 
-    // Verify the parent deck exists before returning sub-resources
-    const deck = queryOne<{ id: string }>(
+    // Verify the parent deck exists before returning sub-resources.
+    // NOTE: query/queryOne/run are async (Postgres). Without `await` this
+    // resolves to a Promise — always truthy, so the 404 check below never
+    // fired, and `rows` serialised to `{}` instead of an array. That made the
+    // deck editor's SizzleReelsCard call `.map()` on an object and crash the
+    // whole /decks/[id] page client-side.
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -51,7 +56,7 @@ export async function GET(
       return NextResponse.json({ error: 'Deck site not found' }, { status: 404 });
     }
 
-    const rows = query<DeckSizzle>(
+    const rows = await query<DeckSizzle>(
       `SELECT id, deck_id, vimeo_url, title, password, sort_order, created_at
          FROM deck_sizzles
         WHERE deck_id = ?
@@ -72,8 +77,9 @@ export async function POST(
   try {
     const { id: deckId } = await params;
 
-    // Verify the parent deck exists
-    const deck = queryOne<{ id: string }>(
+    // Verify the parent deck exists (see GET above — must be awaited or the
+    // check is dead and a sizzle can be attached to a non-existent deck)
+    const deck = await queryOne<{ id: string }>(
       `SELECT id FROM deck_sites WHERE id = ?`,
       [deckId]
     );
@@ -106,7 +112,7 @@ export async function POST(
       ]
     );
 
-    const newRow = queryOne<DeckSizzle>(
+    const newRow = await queryOne<DeckSizzle>(
       `SELECT id, deck_id, vimeo_url, title, password, sort_order, created_at
          FROM deck_sizzles WHERE id = ?`,
       [id]
