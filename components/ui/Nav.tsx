@@ -135,6 +135,10 @@ const showsNavGroups: NavGroup[] = [
     items: [
       { href: '/dashboard',     label: 'Intelligence', icon: <IconIntelligence /> },
       { href: '/network-intel', label: 'Net Intel',    icon: <IconNetIntel /> },
+      // Daily Connections tab — person-centric layer on top of the Intelligence
+      // feed (extract/tier/dedup/draft exec-move contacts). See
+      // docs/daily-connections-prd.html §2.2 for the wiring decision.
+      { href: '/connections',   label: 'Connections',  icon: <IconUsers /> },
     ],
   },
   {
