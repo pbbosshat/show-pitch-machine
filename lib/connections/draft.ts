@@ -49,6 +49,7 @@ VOICE RULES (non-negotiable):
 - Always end with ONE easy, flattering question about THEIR world or slate.
 - Sign-off: the bare word "Shawn". Email body ends with "Shawn" then a plain signature block (Shawn Moffatt, My Entertainment).
 - ZERO em dashes, ZERO en dashes. Commas and periods only.
+- li_note field MUST contain ALL THREE of: (1) "Hi [First]." opener, (2) one personalized sentence about their role/company move, (3) a specific question. Missing any part = wrong answer.
 - li_note MUST be 300 characters or fewer including the name and "Shawn".
 - NEVER say "We haven't met yet." Write as if you may have crossed paths before — warm, not cold-stranger.
 - NEVER say "I wanted to reach out."
@@ -72,13 +73,22 @@ Acknowledge the move in one natural clause, then ask about what they are buildin
 
   const text = await groqChat({
     temperature: 0.5, // a little warmth, still tight
-    max_tokens: 500,
+    max_tokens: 800, // increased from 500 — model was truncating li_note body mid-response
     messages: [
       { role: 'system', content: SYSTEM },
       { role: 'user', content: user },
     ],
   });
-  const parsed = JSON.parse(stripFences(text)) as Partial<DraftOutput>;
+
+  // Fix 2026-08-10: Groq sometimes embeds literal control characters (newlines,
+  // tabs) inside JSON string values when article text contains them. Strip all
+  // C0/DEL control chars except the ones JSON itself uses as whitespace between
+  // tokens (\n, \r, \t outside of strings are fine — inside strings they are
+  // the problem). Easiest safe fix: collapse them to a space before parsing.
+  const sanitized = text.replace(/[\x00-\x1F\x7F]/g, (c) =>
+    c === '\n' || c === '\r' || c === '\t' ? ' ' : ''
+  );
+  const parsed = JSON.parse(stripFences(sanitized)) as Partial<DraftOutput>;
 
   let li = stripDashes((parsed.li_note ?? '').trim());
   // Hard cap 200 chars: trim on a word boundary if we overshoot.
