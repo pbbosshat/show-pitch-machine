@@ -56,7 +56,9 @@ VOICE RULES (non-negotiable):
 - The closing question must be SPECIFIC to their company or role, not generic ("Worth a look?" is banned).
 - Never name any show title or credit in the li_note.
 - Never claim a library or catalog of material.
-- Never invent a specific memory, meeting, or mutual friend.`;
+- Never invent a specific memory, meeting, or mutual friend.
+
+COORDINATION RULE (mandatory): email_body and li_note MUST be built around the exact same specific hook. Same news item, same company angle, complementary (not identical) questions. The li_note is a compressed version of the email's opening move — not an independent message. If the email opens on their new role at Company X, the li_note anchors on Company X too. Never write the two fields about different topics or from different angles. A recipient who gets both the email and the LinkedIn invite the same day should feel they are receiving one coherent outreach, not two separate campaigns.`;
 
 export async function generateDraft(input: DraftInput): Promise<DraftOutput> {
   const variantRule =
