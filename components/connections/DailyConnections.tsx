@@ -438,6 +438,7 @@ function LeadRow({
   savingDraft,
   draftError,
   connectResult,
+  showDate,
 }: {
   lead: ConnectionLead;
   selected: boolean;
@@ -452,6 +453,8 @@ function LeadRow({
   savingDraft: boolean;
   draftError: string | null;
   connectResult: Partial<Record<'email' | 'linkedin', ChannelResult>> | undefined;
+  /** When true (All Pending mode), shows the lead_date so Shawn knows which day each row was pulled. */
+  showDate?: boolean;
 }) {
   const url = articleUrl(lead);
   const headline = articleHeadline(lead);
@@ -469,7 +472,7 @@ function LeadRow({
           />
         </div>
 
-        {/* Name — new title + company beneath */}
+        {/* Name — new title + company beneath; date badge in All Pending mode */}
         <div className="shrink-0" style={{ width: COL.name }}>
           <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>
             {lead.person_name}
@@ -477,6 +480,16 @@ function LeadRow({
           {(lead.person_title || lead.company) && (
             <p className="text-[11px] mt-0.5 leading-snug" style={{ color: 'var(--text-muted)' }}>
               {[lead.person_title, lead.company].filter(Boolean).join(' at ')}
+            </p>
+          )}
+          {/* Show the pull date when viewing the rolling uncleared stack so Shawn
+              can see at a glance which leads are fresh vs. carried over from prior days. */}
+          {showDate && (
+            <p
+              className="text-[9px] mt-0.5 font-mono"
+              style={{ color: 'var(--text-muted)', opacity: 0.7 }}
+            >
+              {lead.lead_date}
             </p>
           )}
         </div>
@@ -688,12 +701,21 @@ function ConnectConfirmDialog({
 // ─── Main component ───────────────────────────────────────────────────────
 
 export default function DailyConnections() {
-  // Date selector — defaults to today; Build/Refresh always builds "today"
-  // per the pipeline (lead_date bucket keys off the briefing's days=1
-  // window), so a successful build snaps this back to today.
+  // viewMode — 'pending' (default) shows the rolling 7-day uncleared stack so Shawn
+  // sees everything not yet sent without having to flip the date picker manually.
+  // 'date' falls back to the original single-day view for drilling into a specific day.
+  const [viewMode, setViewMode] = useState<'pending' | 'date'>('pending');
+
+  // Date selector — only active in 'date' mode. Defaults to today; Build/Refresh
+  // always builds "today" per the pipeline (lead_date bucket keys off days=1),
+  // so a successful build snaps this back to today when already in date mode.
   const [date, setDate] = useState<string>(todayLocalISO());
 
-  const apiUrl = `/api/connections?date=${date}`;
+  // SWR key changes automatically whenever viewMode or date changes, triggering
+  // a fresh fetch from the correct endpoint branch in /api/connections route.ts.
+  const apiUrl = viewMode === 'pending'
+    ? '/api/connections?mode=pending'
+    : `/api/connections?date=${date}`;
   const { data, error, isLoading, mutate } = useSWR<ConnectionsListResponse>(apiUrl, fetcher, {
     refreshInterval: 60_000, // picks up Bubba's LinkedIn queue resolutions without manual polling
   });
@@ -932,17 +954,60 @@ export default function DailyConnections() {
       {/* Header row — date selector, Build/Refresh, tier counts, connect controls */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
-          <label className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
-              Date
-            </span>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              style={{ ...inputStyle, width: 'auto', padding: '5px 9px', fontSize: 12 }}
-            />
-          </label>
+          {/* Mode toggle: All Pending (rolling 7-day uncleared stack) vs By Date (single-day picker).
+              Defaults to All Pending so Shawn never has to hunt for backlogged leads. */}
+          <div
+            className="flex items-center gap-0.5 rounded-md border p-0.5"
+            style={{ borderColor: 'var(--border-subtle)' }}
+          >
+            <button
+              onClick={() => setViewMode('pending')}
+              style={{
+                padding: '4px 10px',
+                borderRadius: 4,
+                fontSize: 11,
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                background: viewMode === 'pending' ? 'var(--accent)' : 'transparent',
+                color: viewMode === 'pending' ? '#fff' : 'var(--text-secondary)',
+              }}
+            >
+              All Pending
+            </button>
+            <button
+              onClick={() => setViewMode('date')}
+              style={{
+                padding: '4px 10px',
+                borderRadius: 4,
+                fontSize: 11,
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                background: viewMode === 'date' ? 'var(--accent)' : 'transparent',
+                color: viewMode === 'date' ? '#fff' : 'var(--text-secondary)',
+              }}
+            >
+              By Date
+            </button>
+          </div>
+
+          {/* Date picker — only visible in By Date mode */}
+          {viewMode === 'date' && (
+            <label className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                Date
+              </span>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                style={{ ...inputStyle, width: 'auto', padding: '5px 9px', fontSize: 12 }}
+              />
+            </label>
+          )}
 
           <button onClick={handleBuild} disabled={building} style={{ ...primaryButtonStyle, opacity: building ? 0.6 : 1 }}>
             {building ? 'Building…' : 'Build / Refresh'}
@@ -1043,7 +1108,9 @@ export default function DailyConnections() {
 
               {tier1And2.length === 0 ? (
                 <p className="py-8 text-sm text-center" style={{ color: 'var(--text-muted)' }}>
-                  No Tier 1/2 leads for {date} yet — click Build / Refresh to pull today&apos;s trades.
+                  {viewMode === 'pending'
+                    ? 'No uncleared Tier 1/2 leads from the past 7 days. Click Build / Refresh to pull today’s trades.'
+                    : `No Tier 1/2 leads for ${date} yet. Click Build / Refresh to pull today’s trades.`}
                 </p>
               ) : (
                 tier1And2.map((lead) => (
@@ -1062,6 +1129,7 @@ export default function DailyConnections() {
                     savingDraft={draftSaving.has(lead.id)}
                     draftError={draftErrors.get(lead.id) ?? null}
                     connectResult={connectResults.get(lead.id)}
+                    showDate={viewMode === 'pending'}
                   />
                 ))
               )}
