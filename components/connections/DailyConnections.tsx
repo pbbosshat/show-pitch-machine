@@ -37,6 +37,8 @@
 import useSWR from 'swr';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import Modal from '@/components/ui/Modal';
+import EmailComposeModal from './EmailComposeModal';
+import LinkedInConnectModal from './LinkedInConnectModal';
 
 // ─── Types (self-contained — the parallel /api/connections/* routes don't ──
 // exist yet in this checkout, so these mirror migration 044's schema from
@@ -155,9 +157,10 @@ const COL = {
   checkbox: 28,
   name: 190,
   dedup: 200,
-  email: 170,
-  linkedin: 120,
-  draft: 90,
+  // Both channel columns now carry data + their own action button, so they need
+  // a little more room than when the action lived in a separate column.
+  email: 190,
+  linkedin: 150,
   status: 160,
 };
 
@@ -234,45 +237,99 @@ function DedupChip({ status, evidence }: { status: string; evidence: string | nu
 }
 
 /** Verified-email badge or "none found". */
-function EmailCell({ email, status }: { email: string | null; status: string | null }) {
-  if (!email) {
-    return <span className="text-xs" style={{ color: 'var(--text-muted)' }}>none found</span>;
-  }
+// The two channel columns each show their own data AND their own action, so a
+// row reads left-to-right as "here is the address / here is the profile, and
+// here is the button that acts on it". They replaced a third generic action
+// column that sat apart from the data it acted on.
+
+/** Action link shared by both channel cells. */
+function CellAction({ label, onClick, disabled, title }: {
+  label: string; onClick: () => void; disabled?: boolean; title?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className="text-xs font-semibold w-fit"
+      style={{
+        color: disabled ? 'var(--text-muted)' : 'var(--accent)',
+        background: 'none', border: 'none', padding: 0,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function EmailCell({ email, status, onOpenEmail }: {
+  email: string | null; status: string | null; onOpenEmail: () => void;
+}) {
   const verified = status === 'verified';
+  // email_status can carry a long upstream error (e.g. an Apollo failure), which
+  // would blow out the column — show a short chip and keep the full text in the
+  // tooltip.
+  const chip = verified ? 'Verified' : (status ? status.split(':')[0].slice(0, 18) : 'unverified');
+
   return (
     <div className="flex flex-col gap-0.5 min-w-0">
-      <span
-        className="text-xs truncate"
-        style={{ color: 'var(--text-primary)', maxWidth: COL.email - 8 }}
-        title={email}
-      >
-        {email}
-      </span>
-      <span
-        className="text-[9px] font-bold tracking-wide uppercase w-fit px-1.5 py-0.5 rounded"
-        style={{
-          background: verified ? 'rgba(22,163,74,0.16)' : 'rgba(148,163,184,0.16)',
-          color: verified ? 'var(--status-greenlit)' : 'var(--text-muted)',
-        }}
-      >
-        {verified ? 'Verified' : (status ?? 'unverified')}
-      </span>
+      {email ? (
+        <>
+          <span className="text-xs truncate" style={{ color: 'var(--text-primary)', maxWidth: COL.email - 8 }} title={email}>
+            {email}
+          </span>
+          <span
+            className="text-[9px] font-bold tracking-wide uppercase w-fit px-1.5 py-0.5 rounded"
+            title={status ?? undefined}
+            style={{
+              background: verified ? 'rgba(22,163,74,0.16)' : 'rgba(148,163,184,0.16)',
+              color: verified ? 'var(--status-greenlit)' : 'var(--text-muted)',
+            }}
+          >
+            {chip}
+          </span>
+        </>
+      ) : (
+        <span className="text-xs" style={{ color: 'var(--text-muted)' }} title={status ?? undefined}>
+          none found
+        </span>
+      )}
+      {/* Always clickable: the compose modal lets you paste an address by hand
+          when Apollo found none. */}
+      <CellAction label="Email →" onClick={onOpenEmail} />
     </div>
   );
 }
 
-function LinkedInCell({ url }: { url: string | null }) {
-  if (!url) return <span className="text-xs" style={{ color: 'var(--text-muted)' }}>none</span>;
+function LinkedInCell({ url, hasNote, onOpenLinkedIn }: {
+  url: string | null; hasNote: boolean; onOpenLinkedIn: () => void;
+}) {
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-xs hover:underline"
-      style={{ color: 'var(--accent)' }}
-    >
-      View profile ↗
-    </a>
+    <div className="flex flex-col gap-0.5 min-w-0">
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="text-xs hover:underline truncate"
+          style={{ color: 'var(--accent)', maxWidth: COL.linkedin - 8 }}
+        >
+          View profile ↗
+        </a>
+      ) : (
+        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>none</span>
+      )}
+      <CellAction
+        label="LinkedIn →"
+        onClick={onOpenLinkedIn}
+        title={url ? 'Review the note and queue the invite' : 'No LinkedIn URL — invite cannot be queued'}
+      />
+      {!hasNote && url && (
+        <span className="text-[9px]" style={{ color: 'var(--status-deal)' }}>no note drafted</span>
+      )}
+    </div>
   );
 }
 
@@ -337,121 +394,24 @@ function TierCountPill({ label, count, color }: { label: string; count: number; 
   );
 }
 
-// ─── Draft panel (expandable, per-row) ───────────────────────────────────
-
-function DraftPanel({
-  subjectValue,
-  bodyValue,
-  noteValue,
-  onChange,
-  onBlurField,
-  saving,
-  error,
-}: {
-  subjectValue: string;
-  bodyValue: string;
-  noteValue: string;
-  onChange: (field: DraftField, value: string) => void;
-  onBlurField: (field: DraftField) => void;
-  saving: boolean;
-  error: string | null;
-}) {
-  const noteLen = noteValue.length;
-  const overCap = noteLen > 200;
-  const nearCap = noteLen > 180;
-
-  return (
-    <div
-      className="mt-2 rounded-md border p-3 space-y-3"
-      style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface-alt)' }}
-    >
-      {saving && <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Saving…</p>}
-      {error && <p className="text-[10px]" style={{ color: 'var(--status-pass)' }}>{error}</p>}
-
-      <div>
-        <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>
-          Email subject
-        </label>
-        <input
-          type="text"
-          value={subjectValue}
-          onChange={(e) => onChange('draft_email_subject', e.target.value)}
-          onBlur={() => onBlurField('draft_email_subject')}
-          style={inputStyle}
-        />
-      </div>
-
-      <div>
-        <label className="block text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>
-          Email body
-        </label>
-        <textarea
-          value={bodyValue}
-          onChange={(e) => onChange('draft_email_body', e.target.value)}
-          onBlur={() => onBlurField('draft_email_body')}
-          rows={4}
-          style={{ ...inputStyle, resize: 'vertical' as const }}
-        />
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
-            LinkedIn note
-          </label>
-          <span
-            className="text-[10px]"
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              color: overCap ? 'var(--status-pass)' : nearCap ? 'var(--status-deal)' : 'var(--text-muted)',
-            }}
-          >
-            {noteLen}/200
-          </span>
-        </div>
-        <textarea
-          value={noteValue}
-          onChange={(e) => onChange('draft_li_note', e.target.value)}
-          onBlur={() => onBlurField('draft_li_note')}
-          rows={3}
-          maxLength={200}
-          style={{ ...inputStyle, resize: 'vertical' as const, borderColor: overCap ? 'var(--status-pass)' : 'var(--border-subtle)' }}
-        />
-      </div>
-    </div>
-  );
-}
-
 // ─── Tier 1/2 lead row ────────────────────────────────────────────────────
 
 function LeadRow({
   lead,
   selected,
   onToggleSelect,
-  expanded,
-  onToggleExpand,
-  draftSubject,
-  draftBody,
-  draftNote,
-  onDraftChange,
-  onDraftBlur,
-  savingDraft,
-  draftError,
+  onOpenEmail,
+  onOpenLinkedIn,
   connectResult,
   showDate,
 }: {
   lead: ConnectionLead;
   selected: boolean;
   onToggleSelect: () => void;
-  expanded: boolean;
-  onToggleExpand: () => void;
-  draftSubject: string;
-  draftBody: string;
-  draftNote: string;
-  onDraftChange: (field: DraftField, value: string) => void;
-  onDraftBlur: (field: DraftField) => void;
-  savingDraft: boolean;
-  draftError: string | null;
+  /** Opens the email compose modal for this lead. */
+  onOpenEmail: () => void;
+  /** Opens the LinkedIn invite modal for this lead. */
+  onOpenLinkedIn: () => void;
   connectResult: Partial<Record<'email' | 'linkedin', ChannelResult>> | undefined;
   /** When true (All Pending mode), shows the lead_date so Shawn knows which day each row was pulled. */
   showDate?: boolean;
@@ -517,24 +477,18 @@ function LeadRow({
         </div>
 
         {/* Email */}
+        {/* Email — address + the action that composes to it */}
         <div className="shrink-0" style={{ width: COL.email }}>
-          <EmailCell email={lead.email} status={lead.email_status} />
+          <EmailCell email={lead.email} status={lead.email_status} onOpenEmail={onOpenEmail} />
         </div>
 
-        {/* LinkedIn */}
+        {/* LinkedIn — profile + the action that reviews/queues the invite */}
         <div className="shrink-0" style={{ width: COL.linkedin }}>
-          <LinkedInCell url={lead.linkedin_url} />
-        </div>
-
-        {/* Draft toggle */}
-        <div className="shrink-0" style={{ width: COL.draft }}>
-          <button
-            onClick={onToggleExpand}
-            className="text-xs font-semibold"
-            style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-          >
-            {expanded ? 'Hide draft' : 'Draft ▾'}
-          </button>
+          <LinkedInCell
+            url={lead.linkedin_url}
+            hasNote={!!lead.draft_li_note?.trim()}
+            onOpenLinkedIn={onOpenLinkedIn}
+          />
         </div>
 
         {/* Status — per-channel connect results (this session) take priority
@@ -553,19 +507,6 @@ function LeadRow({
         </div>
       </div>
 
-      {expanded && (
-        <div className="pb-3" style={{ marginLeft: COL.checkbox + 12 }}>
-          <DraftPanel
-            subjectValue={draftSubject}
-            bodyValue={draftBody}
-            noteValue={draftNote}
-            onChange={onDraftChange}
-            onBlurField={onDraftBlur}
-            saving={savingDraft}
-            error={draftError}
-          />
-        </div>
-      )}
     </div>
   );
 }
@@ -791,59 +732,28 @@ export default function DailyConnections() {
 
   const allSelected = tier1And2.length > 0 && tier1And2.every((l) => selectedIds.has(l.id));
 
-  // ── Draft expand/edit state ──────────────────────────────────────────
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  function toggleExpand(id: string) {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
+  // ── Compose-modal state ──────────────────────────────────────────────
+  // The old inline "Draft ▾" expander was replaced by EmailComposeModal. Only
+  // one row composes at a time, so a single id is all the state needed.
+  const [composeLeadId, setComposeLeadId] = useState<string | null>(null);
+  const composeLead = tier1And2.find((l) => l.id === composeLeadId) ?? null;
 
-  // Local edit buffer — only holds fields the user has actually touched.
-  // Unedited fields fall back to the server value via draftValue() below.
-  const [draftEdits, setDraftEdits] = useState<Map<string, Partial<Record<DraftField, string>>>>(new Map());
-  const [draftSaving, setDraftSaving] = useState<Set<string>>(new Set());
-  const [draftErrors, setDraftErrors] = useState<Map<string, string>>(new Map());
+  // LinkedIn invite modal — separate id so opening one never closes the other
+  // by accident, and so each column owns its own state.
+  const [linkedInLeadId, setLinkedInLeadId] = useState<string | null>(null);
+  const linkedInLead = tier1And2.find((l) => l.id === linkedInLeadId) ?? null;
 
-  function draftValue(lead: ConnectionLead, field: DraftField): string {
-    return draftEdits.get(lead.id)?.[field] ?? lead[field] ?? '';
-  }
-
-  function handleDraftChange(id: string, field: DraftField, value: string) {
-    setDraftEdits((prev) => {
-      const next = new Map(prev);
-      next.set(id, { ...next.get(id), [field]: value });
-      return next;
-    });
-  }
-
-  async function handleDraftBlur(lead: ConnectionLead, field: DraftField) {
-    const edited = draftEdits.get(lead.id)?.[field];
-    if (edited === undefined) return; // field was never touched
-    if (edited === (lead[field] ?? '')) return; // unchanged from server value, skip the network call
-
-    setDraftSaving((prev) => new Set(prev).add(lead.id));
-    setDraftErrors((prev) => {
-      const next = new Map(prev);
-      next.delete(lead.id);
-      return next;
-    });
-    try {
-      // PATCH body is a partial lead per PRD §4 ("Body is a partial lead").
-      await postJson(`/api/connections/${lead.id}`, { [field]: edited }, 'PATCH');
-      await mutate(); // pull the persisted row back so any server-side normalization shows
-    } catch (err) {
-      setDraftErrors((prev) => new Map(prev).set(lead.id, err instanceof Error ? err.message : String(err)));
-    } finally {
-      setDraftSaving((prev) => {
-        const next = new Set(prev);
-        next.delete(lead.id);
-        return next;
-      });
-    }
+  /**
+   * Persist edited draft fields. Same PATCH contract the inline panel used
+   * (PRD §4 — "body is a partial lead"), just several fields at once instead of
+   * one-per-blur. Used for both "Save draft" and the write-back after a send.
+   */
+  async function saveDraftFields(
+    leadId: string,
+    fields: Partial<Record<DraftField, string>>
+  ): Promise<void> {
+    await postJson(`/api/connections/${leadId}`, fields, 'PATCH');
+    await mutate(); // pull the persisted row back so server-side normalization shows
   }
 
   // ── Build / Refresh ──────────────────────────────────────────────────
@@ -1102,7 +1012,6 @@ export default function DailyConnections() {
                 <div className="shrink-0" style={{ width: COL.dedup }}>Dedup</div>
                 <div className="shrink-0" style={{ width: COL.email }}>Email</div>
                 <div className="shrink-0" style={{ width: COL.linkedin }}>LinkedIn</div>
-                <div className="shrink-0" style={{ width: COL.draft }}>Draft</div>
                 <div className="shrink-0" style={{ width: COL.status }}>Status</div>
               </div>
 
@@ -1119,15 +1028,8 @@ export default function DailyConnections() {
                     lead={lead}
                     selected={selectedIds.has(lead.id)}
                     onToggleSelect={() => toggleRow(lead.id)}
-                    expanded={expandedIds.has(lead.id)}
-                    onToggleExpand={() => toggleExpand(lead.id)}
-                    draftSubject={draftValue(lead, 'draft_email_subject')}
-                    draftBody={draftValue(lead, 'draft_email_body')}
-                    draftNote={draftValue(lead, 'draft_li_note')}
-                    onDraftChange={(field, value) => handleDraftChange(lead.id, field, value)}
-                    onDraftBlur={(field) => handleDraftBlur(lead, field)}
-                    savingDraft={draftSaving.has(lead.id)}
-                    draftError={draftErrors.get(lead.id) ?? null}
+                    onOpenEmail={() => setComposeLeadId(lead.id)}
+                    onOpenLinkedIn={() => setLinkedInLeadId(lead.id)}
                     connectResult={connectResults.get(lead.id)}
                     showDate={viewMode === 'pending'}
                   />
@@ -1173,6 +1075,48 @@ export default function DailyConnections() {
         connecting={connecting}
         error={connectError}
       />
+
+      {/* Email compose — replaces the old inline draft panel. Only the email
+          channel goes out from here; LinkedIn stays on the Connect Selected
+          queue path and is untouched. */}
+      {composeLead && (
+        <EmailComposeModal
+          lead={{
+            id: composeLead.id,
+            person_name: composeLead.person_name,
+            person_title: composeLead.person_title,
+            company_name: composeLead.company,
+            email: composeLead.email,
+            email_status: composeLead.email_status,
+            reason: composeLead.reason,
+            draft_email_subject: composeLead.draft_email_subject,
+            draft_email_body: composeLead.draft_email_body,
+          }}
+          onClose={() => setComposeLeadId(null)}
+          onSaveDraft={(fields) => saveDraftFields(composeLead.id, fields)}
+          onSent={() => { void mutate(); }}
+        />
+      )}
+
+      {/* LinkedIn invite — reviews the drafted note and queues it through the
+          existing /connect route for the Bubba poller. No direct LinkedIn call. */}
+      {linkedInLead && (
+        <LinkedInConnectModal
+          lead={{
+            id: linkedInLead.id,
+            person_name: linkedInLead.person_name,
+            person_title: linkedInLead.person_title,
+            company_name: linkedInLead.company,
+            linkedin_url: linkedInLead.linkedin_url,
+            reason: linkedInLead.reason,
+            draft_li_note: linkedInLead.draft_li_note,
+            status: linkedInLead.status,
+          }}
+          onClose={() => setLinkedInLeadId(null)}
+          onSaveDraft={(fields) => saveDraftFields(linkedInLead.id, fields)}
+          onQueued={() => { void mutate(); }}
+        />
+      )}
     </section>
   );
 }

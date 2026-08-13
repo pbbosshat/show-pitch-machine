@@ -9,14 +9,43 @@
 
 import fs from 'node:fs';
 
+// Local dev fallback only — the key file the apollo-enrich skill maintains on
+// PB's workstation. It does NOT exist on Railway (or on any other machine), so
+// production MUST provide APOLLO_API_KEY.
 const APOLLO_KEY_FILE =
   'C:/Users/pb/Documents/Claude Code Local/CT/Matt Manufacturing Campaign/campaign/.apollo_key';
 
+/**
+ * Resolve the Apollo key: env first, then the local key file.
+ *
+ * WHY THE EXPLICIT ERROR: when APOLLO_API_KEY was unset in production this fell
+ * through to readFileSync on a Windows path that cannot exist there. The raw
+ * ENOENT ("no such file or directory, open 'C:/Users/pb/...'") was caught
+ * upstream and written verbatim into connection_leads.email_status, so the UI
+ * showed a filesystem error where a contact status belonged, and every lead
+ * silently ended up with no email and no linkedin_url — which in turn made
+ * Connect Selected skip 100% of rows (email needs email_status='verified',
+ * LinkedIn needs a linkedin_url). Nothing ever queued and nothing ever sent.
+ *
+ * Naming the missing env var directly makes that a two-minute config fix
+ * instead of a filesystem red herring.
+ */
 function apolloKey(): string {
   const fromEnv = process.env.APOLLO_API_KEY;
   if (fromEnv && fromEnv.trim()) return fromEnv.trim();
-  // Local dev fallback: read the key file the apollo-enrich skill maintains.
-  return fs.readFileSync(APOLLO_KEY_FILE, 'utf-8').trim();
+
+  try {
+    const fromFile = fs.readFileSync(APOLLO_KEY_FILE, 'utf-8').trim();
+    if (fromFile) return fromFile;
+  } catch {
+    // fall through to the explicit error below
+  }
+
+  throw new Error(
+    'APOLLO_API_KEY is not set. Apollo enrichment cannot run without it, so no ' +
+      'lead will get an email address or LinkedIn URL. Set APOLLO_API_KEY in the ' +
+      'Railway service variables (Assignment Desk Apollo account — never 1@gototeam.com).'
+  );
 }
 
 export interface ApolloResult {
