@@ -63,6 +63,19 @@ export async function POST(request: Request) {
             });
             continue;
           }
+          // Draft gate: never send a blank email. A lead can hold a verified
+          // address but no draft yet (e.g. Apollo backfilled the email after the
+          // draft pass). Skip with a clear, actionable reason instead of firing an
+          // empty subject/body.
+          if (!lead.draft_email_subject?.trim() || !lead.draft_email_body?.trim()) {
+            results.push({
+              lead_id: leadId,
+              channel: 'email',
+              status: 'skipped',
+              detail: 'no email draft yet — enrich or redraft this lead before sending',
+            });
+            continue;
+          }
           const qid = randomUUID();
           await run(
             `INSERT INTO connect_queue (id, lead_id, channel, payload, status, queued_at)
@@ -83,6 +96,12 @@ export async function POST(request: Request) {
         } else if (channel === 'linkedin') {
           if (!lead.linkedin_url) {
             results.push({ lead_id: leadId, channel: 'linkedin', status: 'skipped', detail: 'no linkedin_url' });
+            continue;
+          }
+          // Draft gate: never queue a blank LinkedIn note. Same reason as email —
+          // a lead may carry a linkedin_url but no drafted note yet.
+          if (!lead.draft_li_note?.trim()) {
+            results.push({ lead_id: leadId, channel: 'linkedin', status: 'skipped', detail: 'no LinkedIn note yet — enrich or redraft this lead before sending' });
             continue;
           }
           const qid = randomUUID();
