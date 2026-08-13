@@ -46,7 +46,16 @@ export async function extractPeople(
             `{name, old_title, old_company, new_title, new_company, type}. ` +
             `Set type='exec-move' when the article is about them joining, leaving, ` +
             `being promoted, appointed, hired, exiting, or stepping down; else ` +
-            `type='mentioned'. Do NOT include musicians, recording artists, actors, ` +
+            `type='mentioned'. ` +
+            `ALWAYS identify each person's organization. For an exec-move, put the ` +
+            `company they are joining or now lead in new_company and their prior ` +
+            `company in old_company. For a 'mentioned' person (not changing roles), ` +
+            `put their CURRENT employer in old_company and leave new_company empty. ` +
+            `Never leave both old_company and new_company empty when any company, ` +
+            `network, studio, or streamer is named near the person. Use the specific ` +
+            `organization name (e.g. "Netflix", "ITVS", "SiriusXM", "PBS"), not a ` +
+            `generic descriptor like "the network" or "the studio". ` +
+            `Do NOT include musicians, recording artists, actors, ` +
             `athletes, or deceased people unless they hold a current executive role. ` +
             `Omit anyone whose full name is not stated. ` +
             `Return JSON: { "people": [...] }`,

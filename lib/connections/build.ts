@@ -161,7 +161,12 @@ export async function buildDailyConnections(
 
       const { tier, tier_reason } = tierFor(p, art);
       const reason = buildReason(p, art);
-      const company = p.new_company ?? art.buyer_company ?? null;
+      // Apollo people-match is anchored on organization_name, so a lead with no
+      // company is nearly unenrichable. A 'mentioned' exec's current employer
+      // lives in old_company (not new_company), and some exec-moves omit
+      // new_company, so fall back through old_company before the article's
+      // buyer_company. Only null when no company is known anywhere.
+      const company = p.new_company ?? p.old_company ?? art.buyer_company ?? null;
 
       // Fuzzy-match to an existing buyer contact (probably-known signal).
       let matchedId: string | null = null;
