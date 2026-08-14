@@ -33,14 +33,58 @@ const SEND_CAPABLE_SCOPES = [
   'https://mail.google.com/',
 ];
 
+/**
+ * RFC 2047 encoded-word for a header value.
+ *
+ * WHY: message HEADERS are ASCII-only. The body is fine — it declares
+ * charset=utf-8 — but a Subject containing any non-ASCII character (em dash,
+ * curly quote, accented name) is transmitted as raw UTF-8 bytes and rendered
+ * byte-per-character by the receiving client. "Machine — test" arrived as
+ * "Machine Ã¢Â€Â" test". Drafts are LLM-written and love em dashes, the compose
+ * modal accepts free text, and names like "Cuarón" are already in the lead
+ * list, so this is a matter of when, not if.
+ *
+ * Pure-ASCII values are returned untouched (encoding them would be legal but
+ * makes subjects unreadable in logs and some search tools).
+ *
+ * Encoded-words are capped at 75 chars by the spec. `=?UTF-8?B?` + `?=` costs
+ * 12, so we chunk at 45 UTF-8 bytes → 60 base64 chars → 72 total. Chunking
+ * walks CODE POINTS, never bytes: splitting mid-character would corrupt exactly
+ * the characters this is meant to protect.
+ */
+function encodeMimeHeader(value: string): string {
+  // eslint-disable-next-line no-control-regex
+  if (/^[\x00-\x7F]*$/.test(value)) return value;
+
+  const MAX_BYTES = 45;
+  const chunks: string[] = [];
+  let buf = '';
+  for (const ch of value) {
+    if (Buffer.byteLength(buf + ch, 'utf8') > MAX_BYTES) {
+      chunks.push(buf);
+      buf = ch;
+    } else {
+      buf += ch;
+    }
+  }
+  if (buf) chunks.push(buf);
+
+  // Continuation lines are joined with CRLF + a single space (folding).
+  return chunks
+    .map((c) => `=?UTF-8?B?${Buffer.from(c, 'utf8').toString('base64')}?=`)
+    .join('\r\n ');
+}
+
 /** Build an RFC-5322 message. Plain text — Shawn's voice is plain, not HTML. */
 function buildRaw(from: string, to: string, subject: string, body: string): string {
   return Buffer.from(
-    `From: Shawn Moffatt <${from}>\r\n` +
+    // Display name goes through the same encoder — it is a header too.
+    `From: ${encodeMimeHeader('Shawn Moffatt')} <${from}>\r\n` +
       `To: ${to}\r\n` +
-      `Subject: ${subject}\r\n` +
+      `Subject: ${encodeMimeHeader(subject)}\r\n` +
       `MIME-Version: 1.0\r\n` +
       `Content-Type: text/plain; charset=utf-8\r\n` +
+      `Content-Transfer-Encoding: 8bit\r\n` +
       `\r\n` +
       body
   ).toString('base64url');
