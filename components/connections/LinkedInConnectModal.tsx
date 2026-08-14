@@ -85,10 +85,11 @@ export default function LinkedInConnectModal({
   const overCap = noteLen > LI_NOTE_CAP;
   const hasUrl = !!lead.linkedin_url;
   const alreadyQueued = lead.status === 'queued';
-  // A LinkedIn invite may legitimately go out with no note, and /connect already
-  // queues regardless — so an empty note warns rather than blocks. Only a
-  // missing profile URL or an over-cap note can actually stop it.
-  const canQueue = hasUrl && !overCap && !queueing;
+  // /connect gained a draft gate (PR #30): it now SKIPS a lead with no
+  // draft_li_note rather than queueing a blank invite. Mirror that here so the
+  // button is disabled up front instead of firing a request that comes back
+  // "no LinkedIn note yet". Redraft note is the fix, and it is right there.
+  const canQueue = hasUrl && !overCap && !queueing && note.trim() !== '';
 
   async function handleSaveDraft() {
     setSavingDraft(true); setError(null); setNotice(null);
@@ -223,7 +224,7 @@ export default function LinkedInConnectModal({
 
           {hasUrl && !note.trim() && (
             <p style={{ fontSize: 12, color: 'var(--status-deal)' }}>
-              No note drafted — the invite will go out with no message. Use “Redraft note” to write one.
+              No note drafted — an invite cannot be queued without one. Use “Redraft note” above, or write it yourself.
             </p>
           )}
           {alreadyQueued && (
