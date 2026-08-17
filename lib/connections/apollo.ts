@@ -62,17 +62,49 @@ interface ApolloMatch {
 }
 
 interface ApolloResponse {
-  matches?: ApolloMatch[];
-  people?: ApolloMatch[];
+  /** people/match returns a single record here. */
+  person?: ApolloMatch | null;
+  /** bulk_match shapes — still parsed so a rollback needs no other edit. */
+  matches?: (ApolloMatch | null)[];
+  people?: (ApolloMatch | null)[];
   credits_consumed?: number;
 }
 
+/**
+ * Look up one person's email + LinkedIn URL.
+ *
+ * WHY people/match AND NOT people/bulk_match: this function has always sent
+ * exactly ONE person per request (bulk_match was called with a single-element
+ * `details` array), so nothing was gained from the bulk endpoint — and it
+ * matches noticeably worse. Measured 2026-08-17 against the Tier 1/2 leads then
+ * in the queue, same key, same names, same organizations, same minute:
+ *
+ *     people/bulk_match  matched 0 of 6   (matches:[null], credits_consumed:0)
+ *     people/match       matched 6 of 6
+ *
+ * Scott Greenstein / SiriusXM is the clean repro: bulk_match reports
+ * missing_records:1, people/match returns scott.greenstein@siriusxm.com with
+ * email_status 'verified'. bulk_match is not always wrong (it matched fine on
+ * 2026-08-13) — it is inconsistent, and the singular endpoint resolves the
+ * organization more forgivingly.
+ *
+ * Caveat worth keeping in mind: matching the PERSON is not the same as getting
+ * an ADDRESS. Of those 6, only 1 came back with an email — Apollo simply holds
+ * no address for the others. A null email here is a genuine miss, not a bug.
+ */
 export async function apolloMatch(
   first: string,
   last: string,
   organization: string
 ): Promise<ApolloResult> {
-  const res = await fetch('https://api.apollo.io/api/v1/people/bulk_match', {
+  // Omit organization_name entirely when blank. Sending an empty string is not
+  // the same as not sending the field — it narrows the search against nothing
+  // and costs matches. Callers pass `lead.company ?? ''`, so blanks do reach us.
+  const org = organization?.trim();
+  const body: Record<string, unknown> = { first_name: first, last_name: last };
+  if (org) body.organization_name = org;
+
+  const res = await fetch('https://api.apollo.io/api/v1/people/match', {
     method: 'POST',
     headers: {
       // x-api-key header auth (URL-param auth is deprecated per the skill).
@@ -80,10 +112,7 @@ export async function apolloMatch(
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache',
     },
-    body: JSON.stringify({
-      details: [{ first_name: first, last_name: last, organization_name: organization }],
-      reveal_personal_emails: false,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -92,14 +121,13 @@ export async function apolloMatch(
   }
 
   const json = (await res.json()) as ApolloResponse;
-  const m = json.matches?.[0] ?? json.people?.[0] ?? null;
-  const emailStatus = m?.email_status ?? null;
+  const m = json.person ?? json.matches?.[0] ?? json.people?.[0] ?? null;
 
   return {
     // Keep the email even if not verified so the UI can show status accurately;
     // the send gate (connect route) is what enforces verified-only.
     email: m?.email ?? null,
-    email_status: emailStatus,
+    email_status: m?.email_status ?? null,
     linkedin_url: m?.linkedin_url ?? null,
     credits_consumed: typeof json.credits_consumed === 'number' ? json.credits_consumed : null,
   };
