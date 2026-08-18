@@ -128,6 +128,18 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Also skip common public-folder static assets (images, fonts, etc.)
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf|eot)).*)'],
+  // Also skip common public-folder static assets (images, fonts, documents).
+  //
+  // pdf/txt/xml MUST stay in this list. Anything served from public/ that is not
+  // excluded here falls through to the session check below and is 307'd to
+  // /login — so a public download link silently sends visitors to the staff
+  // login screen instead of the file. That is exactly what happened to
+  // /submission-release-form.pdf (linked from /contact, /work-with-us and the
+  // Submissions Release block) and to /pitch-deck-template.pdf (linked from
+  // /tv-show-pitch-deck): both existed in public/ and both were unreachable.
+  //
+  // txt and xml cover public/llms.txt, public/llms-full.txt and any static XML;
+  // robots.txt and sitemap.xml are generated routes rather than files, but are
+  // covered here too so crawlers can never be bounced to /login.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf|eot|pdf|txt|xml)).*)'],
 };
