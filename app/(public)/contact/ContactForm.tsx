@@ -77,7 +77,6 @@ export default function ContactForm({ source }: { source?: string } = {}) {
   const [phone,          setPhone]          = useState('');
   const [materialTitle,  setMaterialTitle]  = useState('');
   const [materialNature, setMaterialNature] = useState('');
-  const [materialPages,  setMaterialPages]  = useState('');
   const [materialLink,   setMaterialLink]   = useState('');
   const [releaseAccepted, setReleaseAccepted] = useState(false);
   const [signature,       setSignature]       = useState('');
@@ -103,11 +102,6 @@ export default function ContactForm({ source }: { source?: string } = {}) {
         setError(
           'Your typed signature must include the first and last name you entered above.'
         );
-        return;
-      }
-      const pages = Number(materialPages);
-      if (!Number.isInteger(pages) || pages < 1) {
-        setError('Please enter the number of pages as a whole number (1 or more).');
         return;
       }
       if (materialLink.trim() && !normalizeMaterialLink(materialLink)) {
@@ -142,7 +136,6 @@ export default function ContactForm({ source }: { source?: string } = {}) {
                 phone,
                 material_title:  materialTitle,
                 material_nature: materialNature,
-                material_pages:  Number(materialPages),
                 // Normalized ("drive.google.com/…" → "https://drive.google.com/…")
                 // or omitted entirely when blank — the field is optional.
                 material_link:   normalizeMaterialLink(materialLink) ?? undefined,
@@ -312,9 +305,12 @@ export default function ContactForm({ source }: { source?: string } = {}) {
       {requiresRelease && (
         <>
           {/* ── The Material being submitted ──────────────────────────────────
-              These three fields are not extra marketing questions: the release
-              itself identifies the Material by title, nature and page count, so
-              an agreement recorded without them would not say what it covers. */}
+              Title and nature are not extra marketing questions: the release
+              needs to identify WHAT it covers, or the recorded agreement would
+              not say what was submitted. (The paper form also asks for a page
+              count; deliberately dropped from the web form on 2026-08-18 — it
+              read as silly for tape/reel submissions. The server still stores
+              material_pages when a client sends it, so stale tabs keep working.) */}
           <fieldset
             style={{
               border: '1px solid #2a2a2a',
@@ -350,36 +346,20 @@ export default function ContactForm({ source }: { source?: string } = {}) {
               />
             </div>
 
-            <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-                <label htmlFor="material-nature" style={LABEL_STYLE}>Nature of the Material</label>
-                <select
-                  id="material-nature"
-                  required
-                  value={materialNature}
-                  onChange={(e) => setMaterialNature(e.target.value)}
-                  style={{ ...INPUT_STYLE, appearance: 'auto' }}
-                >
-                  <option value="" disabled>Select one…</option>
-                  {MATERIAL_NATURE_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ flex: '1 1 140px', minWidth: 0 }}>
-                <label htmlFor="material-pages" style={LABEL_STYLE}>Number of Pages</label>
-                <input
-                  id="material-pages"
-                  type="number"
-                  min={1}
-                  step={1}
-                  placeholder="e.g. 12"
-                  required
-                  value={materialPages}
-                  onChange={(e) => setMaterialPages(e.target.value)}
-                  style={INPUT_STYLE}
-                />
-              </div>
+            <div style={{ marginBottom: 16 }}>
+              <label htmlFor="material-nature" style={LABEL_STYLE}>Nature of the Material</label>
+              <select
+                id="material-nature"
+                required
+                value={materialNature}
+                onChange={(e) => setMaterialNature(e.target.value)}
+                style={{ ...INPUT_STYLE, appearance: 'auto' }}
+              >
+                <option value="" disabled>Select one…</option>
+                {MATERIAL_NATURE_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
             </div>
 
             {/* The material itself arrives as a shareable link — decks live in

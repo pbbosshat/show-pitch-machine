@@ -522,11 +522,14 @@ export async function POST(request: NextRequest) {
     if (!material_title)  return reject('A title for the submitted Material is required.');
     if (!material_nature) return reject('The nature of the submitted Material is required.');
 
-    const pages = Number(material_pages_raw);
-    if (!Number.isInteger(pages) || pages < 1) {
-      return reject('The number of pages must be a whole number of 1 or more.');
+    // Page count is OPTIONAL as of 2026-08-18 — the field was dropped from the
+    // form (meaningless for tape/reel submissions), but browser tabs loaded
+    // before that deploy still send it, so accept and store a valid value and
+    // silently ignore anything else rather than rejecting.
+    if (material_pages_raw) {
+      const pages = Number(material_pages_raw);
+      if (Number.isInteger(pages) && pages >= 1) material_pages = pages;
     }
-    material_pages = pages;
 
     if (!phone) return reject('A phone number is required for the Submissions Release.');
 

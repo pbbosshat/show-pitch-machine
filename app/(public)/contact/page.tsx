@@ -3,8 +3,8 @@
 // paddingTop 100px on the heading section clears the fixed navbar.
 
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import ContactForm from './ContactForm';
-import SubmissionDownloadLink from './SubmissionDownloadLink';
 
 const OG_IMAGE = 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/67c9c4bc80ecce7a341a501c_MYE%20Banner%20.png';
 
@@ -176,7 +176,13 @@ export default function ContactPage() {
                 While we mostly develop our own internally generated ideas, we recognize that a great idea can come from anywhere, and people with great ideas may not have the kind of access we have to get those ideas sold and made.
               </p>
 
-              {/* Body paragraph 3 — submission instructions */}
+              {/* Body paragraph 3 — points to the online submission form.
+                  REPLACED 2026-08-18: this used to instruct people to download
+                  the release PDF and email a summary to info@ (or phone). The
+                  /pitch form now handles the whole flow — material details,
+                  the Submissions Release, signature, and an optional materials
+                  link — so the download-and-email instructions were retired at
+                  Courtney's request. #submit anchors to the form section. */}
               <p
                 style={{
                   fontFamily: "'Roboto', sans-serif",
@@ -187,48 +193,29 @@ export default function ContactPage() {
                   marginTop: 0,
                 }}
               >
-                Have an idea you&#39;d like to submit? Please download and fill out the Submission Release Form and then email your contact information and a brief summary over to{' '}
-                <a
-                  href="mailto:info@myentertainment.tv"
-                  style={{
-                    color: '#e02027',
-                    textDecoration: 'none',
-                  }}
-                >
-                  info@myentertainment.tv
-                </a>{' '}
-                or call us at{' '}
-                {/* Click-to-call phone — added PR feature/cta-overhaul */}
-                <a
-                  href="tel:+18438846222"
-                  style={{
-                    color: '#e02027',
-                    textDecoration: 'none',
-                  }}
-                >
-                  843-884-6222
-                </a>
-                , and someone will be in touch with you as soon as possible!
+                Have an idea you&#39;d like to submit? Our online submission form walks you
+                through everything in a couple of minutes — tell us about your show, sign
+                the Submissions Release electronically, and share a link to your materials.
               </p>
 
-              {/*
-                Download link — Webflow: inline link styled with color #e02027 and underline.
-                href points to /submission-release-form.pdf (placeholder — file not yet uploaded).
-                SubmissionDownloadLink wraps the anchor in a 'use client' component so the
-                onClick handler can fire the download_epk GA4 conversion event. Mark
-                download_epk as a Key Event in GA4 Admin for properties/486537975.
-              */}
-              <SubmissionDownloadLink
-                href="/submission-release-form.pdf"
+              <Link
+                href="/pitch#submit"
                 style={{
-                  fontFamily: "'Roboto', sans-serif",
+                  display: 'inline-block',
+                  fontFamily: "'Roboto Condensed', sans-serif",
                   fontSize: 14,
-                  color: '#e02027',
-                  textDecoration: 'underline',
+                  fontWeight: 400,
+                  color: '#fff',
+                  background: '#e51d26',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  padding: '12px 32px',
+                  borderRadius: 2,
+                  textDecoration: 'none',
                 }}
               >
-                Download Submission Release Form
-              </SubmissionDownloadLink>
+                Submit Your Show
+              </Link>
             </div>
 
             {/*
