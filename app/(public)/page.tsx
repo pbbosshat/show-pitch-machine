@@ -73,9 +73,15 @@ const websiteSchema = {
 // Network logos data — Webflow section "customer-logos" / "AS SEEN ON"
 // Exactly 28 logos in the order they appear on the live site.
 // ---------------------------------------------------------------------------
+// Nearly all of these files are pure-black artwork on a transparent background,
+// so they must be inverted to white to be visible on this section's dark ground.
+// The two exceptions carry their OWN opaque black box with white artwork already
+// inside it — inverting those would flip them to black-on-white and break them.
+// `noInvert: true` marks that exception. Verified by measuring each PNG: the two
+// flagged files have 0% transparent pixels; every other file is 40-94% transparent.
 const NETWORK_LOGOS = [
-  { name: 'Max', src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/67338f27b5955306e07fff21_Max.png', href: 'https://www.max.com/' },
-  { name: 'Discovery+', src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/67338f160eee1494bfa27a75_Discovery%20%2B.png', href: 'https://www.discoveryplus.com/' },
+  { name: 'Max', src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/67338f27b5955306e07fff21_Max.png', href: 'https://www.max.com/', noInvert: true },
+  { name: 'Discovery+', src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/67338f160eee1494bfa27a75_Discovery%20%2B.png', href: 'https://www.discoveryplus.com/', noInvert: true },
   { name: 'PBS', src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8e8aed58056074c5cde7_PBS.png', href: 'https://www.pbs.org/' },
   { name: 'Vice', src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/636ec39bc3c481e421226453_vice.png', href: 'https://www.vice.com/' },
   { name: 'Animal Planet', src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8e8860e2140ec34beaf1_ANIMAL%20PLANET.png', href: 'https://www.animalplanet.com/' },
@@ -406,7 +412,14 @@ export default function HomePage() {
                   alt={logo.name}
                   width={120}
                   loading="lazy"
-                  style={{ display: 'block', height: 'auto' }}
+                  // See the note on NETWORK_LOGOS: black-on-transparent artwork is
+                  // invisible here without inverting, but the `noInvert` logos ship
+                  // their own opaque box and must be left alone.
+                  style={{
+                    display: 'block',
+                    height: 'auto',
+                    ...(logo.noInvert ? {} : { filter: 'invert(1)' }),
+                  }}
                 />
               </a>
             ))}

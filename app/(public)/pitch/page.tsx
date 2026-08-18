@@ -128,7 +128,7 @@ const NETWORK_LOGOS = [
     alt: 'Comedy Central',
   },
   {
-    src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8e8bc22fc742523829f1_national%20geographic%20channel.png',
+    src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8e8aa7bb587d184d554b_national%20geographic.png',
     alt: 'National Geographic',
   },
   {
@@ -533,27 +533,26 @@ export default function PitchPage() {
             leading international broadcasters. Your show will be pitched to the right
             room, not a generic list.
           </p>
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 32,
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-            }}
-          >
+          {/*
+            The source PNGs are pure-black artwork on a 400x400 transparent square.
+            That means they need inverting to be visible on this dark section, and
+            they must be sized by WIDTH (height auto) — sizing by height shrinks the
+            short, wide wordmark inside the square down to a few pixels tall.
+            Matches the "AS SEEN ON" grid in app/(public)/page.tsx.
+          */}
+          <div className="pitch-logos">
             {NETWORK_LOGOS.map((logo) => (
               <img
                 key={logo.src}
                 src={logo.src}
                 alt={logo.alt}
+                width={120}
                 loading="lazy"
                 style={{
-                  height: 40,
-                  width: 'auto',
-                  maxWidth: 160,
-                  objectFit: 'contain',
-                  opacity: 0.8,
+                  display: 'block',
+                  height: 'auto',
+                  filter: 'invert(1)',
+                  opacity: 0.85,
                 }}
               />
             ))}
@@ -629,7 +628,7 @@ export default function PitchPage() {
             all pages that import it. This is acceptable in V1 — a dedicated pitch form
             with a 'pitch-page' sourceSection can be built later if segmentation matters.
           */}
-          <ContactForm />
+          <ContactForm source="pitch" />
         </div>
       </section>
 
@@ -702,6 +701,14 @@ export default function PitchPage() {
         }
         @media (max-width: 479px) {
           .pitch-process-grid { grid-template-columns: 1fr !important; }
+        }
+
+        /* Network logo strip — mirrors .mye-logo-grid on the homepage */
+        .pitch-logos {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 24px 32px;
         }
       `}</style>
     </div>

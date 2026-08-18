@@ -43,6 +43,16 @@ export const metadata: Metadata = {
 // ─────────────────────────────────────────────────────────────────────────────
 // Network logos — reused from the same Webflow CDN URLs as the show pages.
 // These are the primary distribution partners shown throughout the site.
+//
+// IMPORTANT — two properties of these source PNGs drive the render styles below:
+//   1. The artwork is PURE BLACK on a transparent background (verified: every
+//      non-transparent pixel has luminance 0). They are therefore invisible on
+//      this page's dark background without `filter: invert(1)`.
+//   2. Every file is a 400x400 SQUARE canvas holding a short, wide wordmark —
+//      the artwork fills as little as 14% of it (Nickelodeon is 395x58). Sizing
+//      by height collapses the wordmark to a few pixels tall, so these must be
+//      sized by WIDTH with height auto, exactly as the homepage does.
+// Both are matched to the "AS SEEN ON" grid in app/(public)/page.tsx.
 // ─────────────────────────────────────────────────────────────────────────────
 const NETWORK_LOGOS = [
   { src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8e8853eb68c398dcf2ac_DISCOVERY%20CHANNEL.png', alt: 'Discovery Channel' },
@@ -53,7 +63,7 @@ const NETWORK_LOGOS = [
   { src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8e88d44a43a5c5a55109_investigation%20discovery.png', alt: 'Investigation Discovery' },
   { src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8e8a94d7ef1ce62aa6bc_NICKELODEON.png', alt: 'Nickelodeon' },
   { src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8e8834ed9efe05c943dc_COMEDY%20CENTRAL.png', alt: 'Comedy Central' },
-  { src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8e8bc22fc742523829f1_national%20geographic%20channel.png', alt: 'National Geographic' },
+  { src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8e8aa7bb587d184d554b_national%20geographic.png', alt: 'National Geographic' },
   { src: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e9e956e474e3f871d0ac4_bbc.png', alt: 'BBC' },
 ];
 
@@ -219,31 +229,23 @@ export default function WorkWithUsPage() {
             We have active relationships with buyers at every major US network and several leading
             international broadcasters. If your project needs a home, we know the right doors.
           </p>
-          {/* Responsive logo grid — 5 per row on desktop, wraps on mobile */}
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 32,
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-            }}
-          >
+          {/* Responsive logo grid — wraps naturally, matching the homepage grid */}
+          <div className="work-with-us-logos">
             {NETWORK_LOGOS.map((logo) => (
               <img
                 key={logo.src}
                 src={logo.src}
                 alt={logo.alt}
+                width={120}
                 loading="lazy"
                 style={{
-                  height: 40,
-                  width: 'auto',
-                  maxWidth: 160,
-                  objectFit: 'contain',
-                  // Webflow network logos are dark/color originals — filter inverts dark logos
-                  // for visibility on the dark background. Not applied universally since some
-                  // logos are already white.
-                  opacity: 0.8,
+                  display: 'block',
+                  height: 'auto',
+                  // The source PNGs are pure-black artwork on transparency (see note
+                  // above), so they render as invisible smudges on this dark section
+                  // without inverting them to white first.
+                  filter: 'invert(1)',
+                  opacity: 0.85,
                 }}
               />
             ))}
@@ -500,7 +502,7 @@ export default function WorkWithUsPage() {
             which persists to the contact_leads table and fires a notification email.
             No need to build a separate B2B form in V1.
           */}
-          <ContactForm />
+          <ContactForm source="work-with-us" />
         </div>
       </section>
 
@@ -511,6 +513,14 @@ export default function WorkWithUsPage() {
         }
         @media (min-width: 768px) and (max-width: 991px) {
           .work-with-us-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+
+        /* Network logo strip — mirrors .mye-logo-grid on the homepage */
+        .work-with-us-logos {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 24px 32px;
         }
       `}</style>
     </div>

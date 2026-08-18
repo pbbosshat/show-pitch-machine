@@ -19,6 +19,20 @@ interface Lead {
   show_title: string | null;          // joined from available_titles — the show they requested
   message: string | null;
   created_at: number; // milliseconds timestamp
+
+  // ─── Submissions Release ───────────────────────────────────────────────────
+  // Populated only for leads from gated entry points ('pitch', 'work-with-us').
+  // All optional: historical rows predate these columns and general enquiries
+  // never carry a release, so every consumer must handle undefined.
+  source?: string | null;
+  phone?: string | null;
+  material_title?: string | null;
+  material_nature?: string | null;
+  material_pages?: number | null;
+  release_accepted?: boolean;
+  release_signature?: string | null;
+  release_version?: string | null;
+  release_accepted_at?: number | null;
 }
 
 type SortCol = 'name' | 'email' | 'company' | 'message' | 'date';
@@ -714,15 +728,44 @@ function LeadRow({ lead, gridCols, visibleCols, onDelete }: LeadRowProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Name */}
+      {/* Name — with a Submissions Release badge for signed show submissions.
+          Shown here rather than as its own column so the release status is
+          visible without touching the column-visibility config, and so it
+          cannot be switched off and missed. Hovering reveals the full record:
+          what was submitted, who signed, and when. */}
       {visibleCols.name && (
-        <div className="px-4 py-3 flex items-center overflow-hidden">
+        <div className="px-4 py-3 flex items-center gap-2 overflow-hidden">
           <span
             className="font-medium text-sm truncate"
             style={{ color: 'var(--text-primary)' }}
           >
             {lead.first_name} {lead.last_name}
           </span>
+          {lead.release_accepted && (
+            <span
+              title={[
+                'Submissions Release signed',
+                lead.material_title ? `Material: ${lead.material_title}` : null,
+                [lead.material_nature, lead.material_pages != null ? `${lead.material_pages} pages` : null]
+                  .filter(Boolean).join(' · ') || null,
+                lead.release_signature ? `Signed: ${lead.release_signature}` : null,
+                lead.release_accepted_at ? `Date: ${new Date(lead.release_accepted_at).toLocaleString()}` : null,
+                lead.release_version ? `Version: ${lead.release_version}` : null,
+              ].filter(Boolean).join('\n')}
+              className="text-xs shrink-0"
+              style={{
+                color: '#16a34a',
+                border: '1px solid #16a34a',
+                borderRadius: 3,
+                padding: '1px 5px',
+                lineHeight: 1.4,
+                cursor: 'help',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              ✓ Release
+            </span>
+          )}
         </div>
       )}
 

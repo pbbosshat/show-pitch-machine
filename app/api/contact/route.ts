@@ -17,7 +17,9 @@
  * Auth: none — intentionally public
  * Body (JSON): { first_name, last_name, email, message?, company?, available_title_id?,
  *               utm_source?, utm_medium?, utm_campaign?, utm_term?, utm_content?,
- *               gclid?, fbclid?, landing_page?, referrer? }
+ *               gclid?, fbclid?, landing_page?, referrer?,
+ *               source?, phone?, material_title?, material_nature?, material_pages?,
+ *               release_accepted?, release_signature? }
  * Body (form): same fields as application/x-www-form-urlencoded
  * Response: { data: Lead } at 201, or HTTP redirect to /contact?submitted=true
  *   for form posts (to support browsers with no JS)
@@ -25,6 +27,19 @@
  * Persists the lead (including attribution fields), classifies the channel,
  * then fires a notification email to leads_email (from site_settings) in
  * fire-and-forget mode — mail failure must not block the 201 response.
+ *
+ * SUBMISSIONS RELEASE: when `source` is on the gated allow-list in
+ * lib/submission-release.ts ('pitch', 'work-with-us'), the request MUST carry an
+ * accepted release — checkbox, a signature matching the submitted name, and the
+ * material's title/nature/page count — or it is rejected with 400. This check
+ * lives here, not only in ContactForm, because this endpoint is public and a
+ * browser-only gate could simply be posted around. Sources not on the list
+ * (including absent) are unaffected, which is what keeps /contact and the ten
+ * /available/[slug] one-sheet request forms working unchanged.
+ *
+ * release_version and release_accepted_at are stamped from server-side values,
+ * never from the request, so a caller cannot claim agreement to other wording
+ * or backdate an acceptance.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -32,6 +47,11 @@ import { randomBytes } from 'node:crypto';
 import { query, queryOne, run } from '@/lib/db';
 import { getSessionUser, SESSION_COOKIE } from '@/lib/auth';
 import { sendEmail } from '@/lib/gmail';
+import {
+  SUBMISSION_RELEASE_VERSION,
+  isReleaseRequired,
+  signatureMatchesName,
+} from '@/lib/submission-release';
 
 interface Lead {
   id: string;
@@ -43,6 +63,58 @@ interface Lead {
   available_title_id: string | null;
   show_title: string | null;
   created_at: number;
+  // Submissions Release — populated only for gated sources (see isReleaseRequired).
+  source: string | null;
+  phone: string | null;
+  material_title: string | null;
+  material_nature: string | null;
+  material_pages: number | null;
+  release_accepted: boolean;
+  release_signature: string | null;
+  release_version: string | null;
+  release_accepted_at: number | null;
+}
+
+/**
+ * Best-effort client IP for the release record.
+ *
+ * The site sits behind Cloudflare in front of Railway, so request.ip is the
+ * proxy rather than the submitter. cf-connecting-ip is Cloudflare's own header
+ * and the most trustworthy value available here; x-forwarded-for is the
+ * standard fallback and may be a comma-separated chain, in which case the
+ * left-most entry is the original client.
+ *
+ * Returns null rather than a placeholder when nothing usable is present — an
+ * absent IP is honest, a fabricated one would poison an evidentiary record.
+ */
+function clientIp(request: NextRequest): string | null {
+  const cf = request.headers.get('cf-connecting-ip')?.trim();
+  if (cf) return cf;
+
+  const xff = request.headers.get('x-forwarded-for');
+  const first = xff?.split(',')[0]?.trim();
+  if (first) return first;
+
+  const real = request.headers.get('x-real-ip')?.trim();
+  return real || null;
+}
+
+/**
+ * Escape untrusted text for interpolation into the notification email's HTML.
+ *
+ * Every value below originates from a public, unauthenticated form, so all of it
+ * is attacker-controlled. The previous inline escaping handled only < and >, and
+ * was not applied to the name or email fields at all — meaning a submitter could
+ * inject markup into the mail that staff read. Ampersand must be replaced first,
+ * or it would double-escape the entities introduced by the later replacements.
+ */
+function esc(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // Accepts pre-fetched showTitle so the function stays synchronous.
@@ -80,37 +152,85 @@ function leadNotificationHtml(lead: Lead, showTitle?: string): string {
               <tr>
                 <td style="padding:10px 0;border-bottom:1px solid #f4f4f5;">
                   <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#a1a1aa;">Name</span><br>
-                  <span style="font-size:15px;color:#111;">${lead.first_name} ${lead.last_name}</span>
+                  <span style="font-size:15px;color:#111;">${esc(lead.first_name)} ${esc(lead.last_name)}</span>
                 </td>
               </tr>
               <tr>
                 <td style="padding:10px 0;border-bottom:1px solid #f4f4f5;">
                   <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#a1a1aa;">Email</span><br>
-                  <a href="mailto:${lead.email}" style="font-size:15px;color:#3b82f6;text-decoration:none;">${lead.email}</a>
+                  <!-- esc() escapes the quote characters that would otherwise let a
+                       crafted address break out of the href attribute; it leaves the
+                       @ intact, which encodeURIComponent would mangle into %40 and
+                       break the mailto: link in several mail clients. -->
+                  <a href="mailto:${esc(lead.email)}" style="font-size:15px;color:#3b82f6;text-decoration:none;">${esc(lead.email)}</a>
                 </td>
               </tr>
               ${lead.company ? `
               <tr>
                 <td style="padding:10px 0;border-bottom:1px solid #f4f4f5;">
                   <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#a1a1aa;">Company</span><br>
-                  <span style="font-size:15px;color:#111;">${lead.company.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+                  <span style="font-size:15px;color:#111;">${esc(lead.company)}</span>
                 </td>
               </tr>` : ''}
               ${showTitle ? `
               <tr>
                 <td style="padding:10px 0;border-bottom:1px solid #f4f4f5;">
                   <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#a1a1aa;">Show Requested</span><br>
-                  <span style="font-size:15px;color:#111;">${showTitle.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+                  <span style="font-size:15px;color:#111;">${esc(showTitle)}</span>
+                </td>
+              </tr>` : ''}
+              ${lead.phone ? `
+              <tr>
+                <td style="padding:10px 0;border-bottom:1px solid #f4f4f5;">
+                  <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#a1a1aa;">Phone</span><br>
+                  <span style="font-size:15px;color:#111;">${esc(lead.phone)}</span>
                 </td>
               </tr>` : ''}
               ${lead.message ? `
               <tr>
                 <td style="padding:10px 0;">
                   <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#a1a1aa;">Message</span><br>
-                  <span style="font-size:15px;color:#111;line-height:1.6;white-space:pre-wrap;">${lead.message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+                  <span style="font-size:15px;color:#111;line-height:1.6;white-space:pre-wrap;">${esc(lead.message)}</span>
                 </td>
               </tr>` : ''}
             </table>
+
+            ${lead.release_accepted ? `
+            <!-- Submissions Release record. Rendered only for gated sources, and
+                 kept in the notification itself so the signed agreement lands in
+                 the leads inbox at the same moment as the material it covers. -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;border:1px solid #e4e4e7;border-radius:8px;">
+              <tr>
+                <td style="padding:16px 18px 6px;">
+                  <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#16a34a;">✓ Submissions Release Signed</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 18px 16px;">
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding:8px 0;border-bottom:1px solid #f4f4f5;">
+                        <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#a1a1aa;">Material</span><br>
+                        <span style="font-size:15px;color:#111;">${esc(lead.material_title ?? '—')}</span><br>
+                        <span style="font-size:13px;color:#52525b;">${esc(lead.material_nature ?? '—')}${lead.material_pages != null ? ` · ${lead.material_pages} page${lead.material_pages === 1 ? '' : 's'}` : ''}</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:8px 0;border-bottom:1px solid #f4f4f5;">
+                        <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#a1a1aa;">Signed by</span><br>
+                        <span style="font-size:15px;color:#111;font-style:italic;">${esc(lead.release_signature ?? '—')}</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:8px 0;">
+                        <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#a1a1aa;">Accepted</span><br>
+                        <span style="font-size:13px;color:#52525b;">${lead.release_accepted_at ? new Date(lead.release_accepted_at).toUTCString() : '—'} · release version ${esc(lead.release_version ?? '—')}</span>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>` : ''}
           </td>
         </tr>
 
@@ -142,7 +262,9 @@ export async function GET(request: NextRequest) {
 
   const leads = await query<Lead>(
     `SELECT cl.id, cl.first_name, cl.last_name, cl.email, cl.message, cl.company,
-            cl.available_title_id, cl.created_at, at.title AS show_title
+            cl.available_title_id, cl.created_at, at.title AS show_title,
+            cl.source, cl.phone, cl.material_title, cl.material_nature, cl.material_pages,
+            cl.release_accepted, cl.release_signature, cl.release_version, cl.release_accepted_at
      FROM contact_leads cl
      LEFT JOIN deck_sites at ON cl.available_title_id = at.id
      ORDER BY cl.created_at DESC`
@@ -243,6 +365,16 @@ export async function POST(request: NextRequest) {
   let landing_page: string | undefined;
   let referrer:     string | undefined;
 
+  // Submissions Release fields. `source` identifies the entry point and is what
+  // decides whether the release is enforced at all.
+  let source:            string | undefined;
+  let phone:             string | undefined;
+  let material_title:    string | undefined;
+  let material_nature:   string | undefined;
+  let material_pages_raw: string | undefined;
+  let release_accepted_raw: boolean;
+  let release_signature: string | undefined;
+
   if (isFormPost) {
     const text = await request.text();
     const params = new URLSearchParams(text);
@@ -262,6 +394,17 @@ export async function POST(request: NextRequest) {
     fbclid              = params.get('fbclid')?.trim() || undefined;
     landing_page        = params.get('landing_page')?.trim() || undefined;
     referrer            = params.get('referrer')?.trim() || undefined;
+    // Release (no-JS form path)
+    source              = params.get('source')?.trim() || undefined;
+    phone               = params.get('phone')?.trim() || undefined;
+    material_title      = params.get('material_title')?.trim() || undefined;
+    material_nature     = params.get('material_nature')?.trim() || undefined;
+    material_pages_raw  = params.get('material_pages')?.trim() || undefined;
+    release_signature   = params.get('release_signature')?.trim() || undefined;
+    // An HTML checkbox posts 'on' (or its value) when ticked and is absent when not.
+    release_accepted_raw = ['on', 'true', '1', 'yes'].includes(
+      (params.get('release_accepted') ?? '').trim().toLowerCase()
+    );
   } else {
     const body = await request.json().catch(() => ({})) as {
       first_name?: string;
@@ -280,6 +423,14 @@ export async function POST(request: NextRequest) {
       fbclid?: string | null;
       landing_page?: string | null;
       referrer?: string | null;
+      // Submissions Release
+      source?: string | null;
+      phone?: string | null;
+      material_title?: string | null;
+      material_nature?: string | null;
+      material_pages?: number | string | null;
+      release_accepted?: boolean | null;
+      release_signature?: string | null;
     };
     first_name          = body.first_name?.trim() ?? '';
     last_name           = body.last_name?.trim() ?? '';
@@ -297,6 +448,14 @@ export async function POST(request: NextRequest) {
     fbclid              = body.fbclid?.trim() || undefined;
     landing_page        = body.landing_page?.trim() || undefined;
     referrer            = body.referrer?.trim() || undefined;
+    // Release (JSON path)
+    source              = body.source?.trim() || undefined;
+    phone               = body.phone?.trim() || undefined;
+    material_title      = body.material_title?.trim() || undefined;
+    material_nature     = body.material_nature?.trim() || undefined;
+    material_pages_raw  = body.material_pages == null ? undefined : String(body.material_pages).trim() || undefined;
+    release_signature   = body.release_signature?.trim() || undefined;
+    release_accepted_raw = body.release_accepted === true;
   }
 
   if (!first_name || !last_name || !email) {
@@ -304,6 +463,54 @@ export async function POST(request: NextRequest) {
       return NextResponse.redirect(new URL('/contact?error=missing_fields', request.url));
     }
     return NextResponse.json({ error: 'first_name, last_name, and email are required' }, { status: 400 });
+  }
+
+  /* ── Submissions Release enforcement ────────────────────────────────────────
+     THIS is the gate, not the checkbox in the browser. This endpoint is public
+     and documented as callable directly with JSON, so a release enforced only
+     in ContactForm would be decoration: anyone could POST around it.
+
+     Only sources on the allow-list are gated (see lib/submission-release.ts).
+     /contact and the ten /available/[slug] one-sheets send no source and are
+     deliberately unaffected — the one-sheets are buyers requesting materials
+     FROM MY Entertainment, which a submissions release should never block.
+
+     LIMITATION, stated plainly: a determined party can still omit `source` and
+     post as though they were a general enquiry. No server-side check can tell
+     which page a caller *meant* to use. What this guarantees is that anything
+     arriving through the gated channels carries a signed release, and that
+     everything else is recorded with release_accepted = false and its source,
+     so an ungated submission is visible as such rather than silently mixed in. */
+  const releaseRequired = isReleaseRequired(source);
+  let material_pages: number | undefined;
+
+  if (releaseRequired) {
+    const reject = (msg: string) =>
+      isFormPost
+        ? NextResponse.redirect(new URL('/contact?error=release_required', request.url))
+        : NextResponse.json({ error: msg }, { status: 400 });
+
+    if (!release_accepted_raw) {
+      return reject('You must agree to the Submissions Release before submitting material.');
+    }
+    if (!release_signature) {
+      return reject('An electronic signature is required to accept the Submissions Release.');
+    }
+    // Re-run the same check the browser ran, from the same shared function, so
+    // the two can never diverge and a crafted request cannot skip it.
+    if (!signatureMatchesName(release_signature, first_name, last_name)) {
+      return reject('The typed signature must include the first and last name given on the form.');
+    }
+    if (!material_title)  return reject('A title for the submitted Material is required.');
+    if (!material_nature) return reject('The nature of the submitted Material is required.');
+
+    const pages = Number(material_pages_raw);
+    if (!Number.isInteger(pages) || pages < 1) {
+      return reject('The number of pages must be a whole number of 1 or more.');
+    }
+    material_pages = pages;
+
+    if (!phone) return reject('A phone number is required for the Submissions Release.');
   }
 
   // Classify the channel BEFORE insert so it's stored atomically with the lead.
@@ -317,12 +524,26 @@ export async function POST(request: NextRequest) {
   const id = randomBytes(16).toString('hex');
   const created_at = Date.now(); // milliseconds — existing behavior for contact_leads
 
+  /* Release provenance is stamped SERVER-side.
+     • release_version comes from the server's own constant, never from the
+       request — otherwise a crafted POST could claim it agreed to some other
+       wording than the one actually shown.
+     • release_accepted_at reuses `created_at` so the agreement timestamp and
+       the submission timestamp cannot disagree.
+     • release_ip is best-effort and may be null; see clientIp(). */
+  const release_accepted   = releaseRequired;
+  const release_version    = releaseRequired ? SUBMISSION_RELEASE_VERSION : null;
+  const release_accepted_at = releaseRequired ? created_at : null;
+  const release_ip         = releaseRequired ? clientIp(request) : null;
+
   await run(
     `INSERT INTO contact_leads
        (id, first_name, last_name, email, message, company, available_title_id, created_at,
         utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-        gclid, fbclid, landing_page, referrer, channel)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        gclid, fbclid, landing_page, referrer, channel,
+        source, phone, material_title, material_nature, material_pages,
+        release_accepted, release_signature, release_version, release_accepted_at, release_ip)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id, first_name, last_name, email,
       message ?? null, company ?? null, available_title_id ?? null, created_at,
@@ -336,6 +557,16 @@ export async function POST(request: NextRequest) {
       landing_page  ?? null,
       referrer      ?? null,
       channel,
+      source            ?? null,
+      phone             ?? null,
+      material_title    ?? null,
+      material_nature   ?? null,
+      material_pages    ?? null,
+      release_accepted,
+      release_signature ?? null,
+      release_version,
+      release_accepted_at,
+      release_ip,
     ]
   );
 
@@ -349,6 +580,15 @@ export async function POST(request: NextRequest) {
     available_title_id: available_title_id ?? null,
     show_title: null, // not needed in POST response; only populated by GET's JOIN
     created_at,
+    source: source ?? null,
+    phone: phone ?? null,
+    material_title: material_title ?? null,
+    material_nature: material_nature ?? null,
+    material_pages: material_pages ?? null,
+    release_accepted,
+    release_signature: release_signature ?? null,
+    release_version,
+    release_accepted_at,
   };
 
   const settingRow = await queryOne<{ value: string }>('SELECT value FROM site_settings WHERE key = ?', ['leads_email']);
@@ -363,7 +603,13 @@ export async function POST(request: NextRequest) {
   }
 
   // Fire-and-forget — a mail failure must not break form submission
-  sendEmail(leadsEmail, `New Contact Lead: ${first_name} ${last_name}`, leadNotificationHtml(lead, showTitle))
+  // Distinct subject for signed submissions so they're filterable in the inbox
+  // and don't read as ordinary enquiries.
+  const subject = release_accepted
+    ? `New Show Submission (release signed): ${first_name} ${last_name}${material_title ? ` — ${material_title}` : ''}`
+    : `New Contact Lead: ${first_name} ${last_name}`;
+
+  sendEmail(leadsEmail, subject, leadNotificationHtml(lead, showTitle))
     .catch((err) => console.error('[contact] notification email failed:', err));
 
   if (isFormPost) {
