@@ -263,8 +263,15 @@ function CellAction({ label, onClick, disabled, title }: {
   );
 }
 
-function EmailCell({ email, status, onOpenEmail }: {
-  email: string | null; status: string | null; onOpenEmail: () => void;
+function EmailCell({ email, status, onOpenEmail, onRetry, retrying, retried }: {
+  email: string | null;
+  status: string | null;
+  onOpenEmail: () => void;
+  /** Re-runs Apollo for this lead, in place, without opening the modal. */
+  onRetry: () => void;
+  retrying: boolean;
+  /** True once a retry has run this session, so the label reflects which pass we are on. */
+  retried: boolean;
 }) {
   const verified = status === 'verified';
   // email_status can carry a long upstream error (e.g. an Apollo failure), which
@@ -291,9 +298,29 @@ function EmailCell({ email, status, onOpenEmail }: {
           </span>
         </>
       ) : (
-        <span className="text-xs" style={{ color: 'var(--text-muted)' }} title={status ?? undefined}>
-          none found
-        </span>
+        <>
+          {/* Name which lookup pass produced the miss, so a blank cell reads as
+              "we tried and Apollo had nothing" rather than "nothing happened".
+              The retry is here on the row — the whole point is not having to
+              open the modal to run it. */}
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }} title={status ?? undefined}>
+            {retried ? '2nd pass — none found' : '1st pass — none found'}
+          </span>
+          <button
+            onClick={onRetry}
+            disabled={retrying}
+            title="Run the Apollo lookup again for this lead"
+            className="text-[11px] font-semibold w-fit"
+            style={{
+              color: retrying ? 'var(--text-muted)' : 'var(--accent)',
+              background: 'none', border: 'none', padding: 0,
+              cursor: retrying ? 'wait' : 'pointer',
+              textDecoration: 'underline',
+            }}
+          >
+            {retrying ? 'Retrying…' : 'Retry — second pass'}
+          </button>
+        </>
       )}
       {/* Always clickable: the compose modal lets you paste an address by hand
           when Apollo found none. */}
@@ -394,6 +421,55 @@ function TierCountPill({ label, count, color }: { label: string; count: number; 
   );
 }
 
+/**
+ * Dismiss control on a lead row.
+ *
+ * Reads as a real (if quiet) button rather than a text link: it is a
+ * destructive-ish action sitting next to a status pill, and as plain grey text
+ * it was easy to miss and easy to hit by accident. Muted at rest so it never
+ * competes with Email / LinkedIn, and turns red on hover/focus so its intent is
+ * unmistakable at the moment of clicking.
+ *
+ * Hover/focus is state rather than CSS because these rows are styled inline —
+ * there is no stylesheet class to hang :hover on.
+ */
+function DismissButton({ onClick }: { onClick: () => void }) {
+  const [hot, setHot] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      title="Remove this lead from the pending list"
+      aria-label="Dismiss lead"
+      onMouseEnter={() => setHot(true)}
+      onMouseLeave={() => setHot(false)}
+      onFocus={() => setHot(true)}
+      onBlur={() => setHot(false)}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        marginTop: 6,
+        padding: '3px 9px',
+        borderRadius: 5,
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: '0.04em',
+        textTransform: 'uppercase',
+        fontFamily: 'inherit',
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+        transition: 'color 120ms ease, border-color 120ms ease, background 120ms ease',
+        border: `1px solid ${hot ? 'var(--status-pass)' : 'var(--border-subtle)'}`,
+        background: hot ? 'rgba(220,38,38,0.10)' : 'transparent',
+        color: hot ? 'var(--status-pass)' : 'var(--text-muted)',
+      }}
+    >
+      <span aria-hidden style={{ fontSize: 11, lineHeight: 1 }}>×</span>
+      Dismiss
+    </button>
+  );
+}
+
 // ─── Tier 1/2 lead row ────────────────────────────────────────────────────
 
 function LeadRow({
@@ -403,6 +479,9 @@ function LeadRow({
   onOpenEmail,
   onOpenLinkedIn,
   onDismiss,
+  onRetry,
+  retrying,
+  retried,
   connectResult,
   showDate,
 }: {
@@ -415,6 +494,10 @@ function LeadRow({
   onOpenLinkedIn: () => void;
   /** Clears the lead out of the pending stack (status -> 'skipped'). */
   onDismiss: () => void;
+  /** Re-runs Apollo enrichment for this lead from the row. */
+  onRetry: () => void;
+  retrying: boolean;
+  retried: boolean;
   connectResult: Partial<Record<'email' | 'linkedin', ChannelResult>> | undefined;
   /** When true (All Pending mode), shows the lead_date so Shawn knows which day each row was pulled. */
   showDate?: boolean;
@@ -482,7 +565,14 @@ function LeadRow({
         {/* Email */}
         {/* Email — address + the action that composes to it */}
         <div className="shrink-0" style={{ width: COL.email }}>
-          <EmailCell email={lead.email} status={lead.email_status} onOpenEmail={onOpenEmail} />
+          <EmailCell
+            email={lead.email}
+            status={lead.email_status}
+            onOpenEmail={onOpenEmail}
+            onRetry={onRetry}
+            retrying={retrying}
+            retried={retried}
+          />
         </div>
 
         {/* LinkedIn — profile + the action that reviews/queues the invite */}
@@ -510,14 +600,7 @@ function LeadRow({
           {/* Not every lead is worth chasing (and some are uncontactable).
               Dismissing sets status='skipped' so it leaves the pending stack
               instead of sitting there forever. */}
-          <button
-            onClick={onDismiss}
-            title="Remove from the pending list"
-            className="text-[10px] mt-1"
-            style={{ color: 'var(--text-muted)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-          >
-            Dismiss
-          </button>
+          <DismissButton onClick={onDismiss} />
         </div>
       </div>
 
@@ -777,6 +860,30 @@ export default function DailyConnections() {
    * pending query already excludes, so this needs no schema change and the row
    * stays retrievable via By Date rather than being destroyed.
    */
+  // Which rows have an Apollo retry in flight, and which have already had one
+  // this session (drives the "1st pass" / "2nd pass" wording).
+  const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
+  const [retriedIds, setRetriedIds] = useState<Set<string>>(new Set());
+
+  /**
+   * Re-run enrichment for one lead straight from the row. Same endpoint the
+   * compose windows use; having it on the row means a miss can be retried
+   * without opening anything.
+   */
+  async function retryEnrich(leadId: string) {
+    setRetryingIds((prev) => new Set(prev).add(leadId));
+    setConnectError(null);
+    try {
+      await postJson(`/api/connections/${leadId}/enrich`);
+      setRetriedIds((prev) => new Set(prev).add(leadId));
+      await mutate();
+    } catch (err) {
+      setConnectError(err instanceof Error ? err.message : 'Lookup failed');
+    } finally {
+      setRetryingIds((prev) => { const n = new Set(prev); n.delete(leadId); return n; });
+    }
+  }
+
   async function dismissLead(leadId: string, name: string) {
     if (!window.confirm(`Dismiss ${name}? It leaves the pending list but is not deleted.`)) return;
     try {
@@ -1062,6 +1169,9 @@ export default function DailyConnections() {
                     onOpenEmail={() => setComposeLeadId(lead.id)}
                     onOpenLinkedIn={() => setLinkedInLeadId(lead.id)}
                     onDismiss={() => dismissLead(lead.id, lead.person_name)}
+                    onRetry={() => retryEnrich(lead.id)}
+                    retrying={retryingIds.has(lead.id)}
+                    retried={retriedIds.has(lead.id)}
                     connectResult={connectResults.get(lead.id)}
                     showDate={viewMode === 'pending'}
                   />
