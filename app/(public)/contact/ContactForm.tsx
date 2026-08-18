@@ -16,6 +16,7 @@ import {
   SUBMISSION_RELEASE_TITLE,
   SUBMISSION_RELEASE_VERSION,
   isReleaseRequired,
+  normalizeMaterialLink,
   signatureMatchesName,
 } from '@/lib/submission-release';
 
@@ -77,6 +78,7 @@ export default function ContactForm({ source }: { source?: string } = {}) {
   const [materialTitle,  setMaterialTitle]  = useState('');
   const [materialNature, setMaterialNature] = useState('');
   const [materialPages,  setMaterialPages]  = useState('');
+  const [materialLink,   setMaterialLink]   = useState('');
   const [releaseAccepted, setReleaseAccepted] = useState(false);
   const [signature,       setSignature]       = useState('');
 
@@ -108,6 +110,12 @@ export default function ContactForm({ source }: { source?: string } = {}) {
         setError('Please enter the number of pages as a whole number (1 or more).');
         return;
       }
+      if (materialLink.trim() && !normalizeMaterialLink(materialLink)) {
+        setError(
+          'The materials link doesn’t look like a web address. Paste the shareable link from Google Drive, Dropbox, Vimeo, or WeTransfer — or leave it blank and we’ll request materials by email.'
+        );
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -135,6 +143,9 @@ export default function ContactForm({ source }: { source?: string } = {}) {
                 material_title:  materialTitle,
                 material_nature: materialNature,
                 material_pages:  Number(materialPages),
+                // Normalized ("drive.google.com/…" → "https://drive.google.com/…")
+                // or omitted entirely when blank — the field is optional.
+                material_link:   normalizeMaterialLink(materialLink) ?? undefined,
                 release_accepted:  true,
                 release_signature: signature,
                 // Sent for transparency/debugging only — the server records its
@@ -369,6 +380,38 @@ export default function ContactForm({ source }: { source?: string } = {}) {
                   style={INPUT_STYLE}
                 />
               </div>
+            </div>
+
+            {/* The material itself arrives as a shareable link — decks live in
+                Drive/Dropbox, screeners on Vimeo. Optional by design: a submitter
+                without a link ready shouldn't be blocked, so the copy tells them
+                what happens in that case instead. */}
+            <div style={{ marginBottom: 16 }}>
+              <label htmlFor="material-link" style={LABEL_STYLE}>
+                Link to Your Materials <span style={{ opacity: 0.6 }}>(optional)</span>
+              </label>
+              <input
+                id="material-link"
+                type="url"
+                inputMode="url"
+                placeholder="e.g. a Google Drive, Dropbox, Vimeo, or WeTransfer link"
+                value={materialLink}
+                onChange={(e) => setMaterialLink(e.target.value)}
+                style={INPUT_STYLE}
+              />
+              <p
+                style={{
+                  fontFamily: "'Roboto', sans-serif",
+                  fontSize: 12,
+                  color: '#8a8c92',
+                  margin: '6px 0 0',
+                  lineHeight: 1.6,
+                }}
+              >
+                Paste a shareable link to your deck, treatment, or screener and make sure
+                link access is set to &ldquo;anyone with the link.&rdquo; No link ready?
+                Submit anyway — our development team will reply and request materials.
+              </p>
             </div>
           </fieldset>
 

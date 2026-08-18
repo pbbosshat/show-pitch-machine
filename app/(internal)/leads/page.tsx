@@ -29,6 +29,7 @@ interface Lead {
   material_title?: string | null;
   material_nature?: string | null;
   material_pages?: number | null;
+  material_link?: string | null;
   release_accepted?: boolean;
   release_signature?: string | null;
   release_version?: string | null;
@@ -748,6 +749,7 @@ function LeadRow({ lead, gridCols, visibleCols, onDelete }: LeadRowProps) {
                 lead.material_title ? `Material: ${lead.material_title}` : null,
                 [lead.material_nature, lead.material_pages != null ? `${lead.material_pages} pages` : null]
                   .filter(Boolean).join(' · ') || null,
+                lead.material_link ? `Materials: ${lead.material_link}` : 'Materials: no link provided',
                 lead.release_signature ? `Signed: ${lead.release_signature}` : null,
                 lead.release_accepted_at ? `Date: ${new Date(lead.release_accepted_at).toLocaleString()}` : null,
                 lead.release_version ? `Version: ${lead.release_version}` : null,

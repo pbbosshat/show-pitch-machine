@@ -97,6 +97,36 @@ export function isReleaseRequired(source: string | null | undefined): boolean {
 }
 
 /**
+ * Normalize + sanity-check the optional "link to your materials" URL.
+ *
+ * Returns the normalized URL string, or null when the value can't be a usable
+ * link. Permissive on purpose: submitters paste Drive/Dropbox/Vimeo/WeTransfer
+ * links in whatever shape their app copied, so we
+ *   • trim whitespace,
+ *   • prepend https:// when the scheme was left off ("drive.google.com/…"),
+ *   • require it to parse as http(s) with a dot in the hostname,
+ *   • cap length at 2048 so a public form can't stuff arbitrary blobs in.
+ * Anything else (javascript:, mailto:, plain words like "attached") → null.
+ *
+ * Shared by ContactForm (to normalize before sending) and /api/contact (to
+ * validate what actually arrives, since the endpoint is public).
+ */
+export function normalizeMaterialLink(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length > 2048 || /\s/.test(trimmed)) return null;
+
+  const candidate = /^[a-z][a-z0-9+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(candidate);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+    if (!url.hostname.includes('.')) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Does the typed signature plausibly belong to the person named on the form?
  *
  * Requires the signature to contain both the first and last name given above it.

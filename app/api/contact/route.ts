@@ -19,7 +19,7 @@
  *               utm_source?, utm_medium?, utm_campaign?, utm_term?, utm_content?,
  *               gclid?, fbclid?, landing_page?, referrer?,
  *               source?, phone?, material_title?, material_nature?, material_pages?,
- *               release_accepted?, release_signature? }
+ *               material_link?, release_accepted?, release_signature? }
  * Body (form): same fields as application/x-www-form-urlencoded
  * Response: { data: Lead } at 201, or HTTP redirect to /contact?submitted=true
  *   for form posts (to support browsers with no JS)
@@ -50,6 +50,7 @@ import { sendEmail } from '@/lib/gmail';
 import {
   SUBMISSION_RELEASE_VERSION,
   isReleaseRequired,
+  normalizeMaterialLink,
   signatureMatchesName,
 } from '@/lib/submission-release';
 
@@ -69,6 +70,7 @@ interface Lead {
   material_title: string | null;
   material_nature: string | null;
   material_pages: number | null;
+  material_link: string | null;
   release_accepted: boolean;
   release_signature: string | null;
   release_version: string | null;
@@ -215,6 +217,16 @@ function leadNotificationHtml(lead: Lead, showTitle?: string): string {
                         <span style="font-size:13px;color:#52525b;">${esc(lead.material_nature ?? '—')}${lead.material_pages != null ? ` · ${lead.material_pages} page${lead.material_pages === 1 ? '' : 's'}` : ''}</span>
                       </td>
                     </tr>
+                    ${lead.material_link ? `
+                    <tr>
+                      <td style="padding:8px 0;border-bottom:1px solid #f4f4f5;">
+                        <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#a1a1aa;">Materials Link</span><br>
+                        <!-- href is safe to interpolate: material_link is not raw user text —
+                             it has passed normalizeMaterialLink(), which only lets through
+                             parseable http(s) URLs. esc() still applied for defense in depth. -->
+                        <a href="${esc(lead.material_link)}" style="font-size:14px;color:#3b82f6;text-decoration:none;word-break:break-all;">${esc(lead.material_link)}</a>
+                      </td>
+                    </tr>` : ''}
                     <tr>
                       <td style="padding:8px 0;border-bottom:1px solid #f4f4f5;">
                         <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#a1a1aa;">Signed by</span><br>
@@ -264,6 +276,7 @@ export async function GET(request: NextRequest) {
     `SELECT cl.id, cl.first_name, cl.last_name, cl.email, cl.message, cl.company,
             cl.available_title_id, cl.created_at, at.title AS show_title,
             cl.source, cl.phone, cl.material_title, cl.material_nature, cl.material_pages,
+            cl.material_link,
             cl.release_accepted, cl.release_signature, cl.release_version, cl.release_accepted_at
      FROM contact_leads cl
      LEFT JOIN deck_sites at ON cl.available_title_id = at.id
@@ -372,6 +385,7 @@ export async function POST(request: NextRequest) {
   let material_title:    string | undefined;
   let material_nature:   string | undefined;
   let material_pages_raw: string | undefined;
+  let material_link_raw: string | undefined;
   let release_accepted_raw: boolean;
   let release_signature: string | undefined;
 
@@ -400,6 +414,7 @@ export async function POST(request: NextRequest) {
     material_title      = params.get('material_title')?.trim() || undefined;
     material_nature     = params.get('material_nature')?.trim() || undefined;
     material_pages_raw  = params.get('material_pages')?.trim() || undefined;
+    material_link_raw   = params.get('material_link')?.trim() || undefined;
     release_signature   = params.get('release_signature')?.trim() || undefined;
     // An HTML checkbox posts 'on' (or its value) when ticked and is absent when not.
     release_accepted_raw = ['on', 'true', '1', 'yes'].includes(
@@ -429,6 +444,7 @@ export async function POST(request: NextRequest) {
       material_title?: string | null;
       material_nature?: string | null;
       material_pages?: number | string | null;
+      material_link?: string | null;
       release_accepted?: boolean | null;
       release_signature?: string | null;
     };
@@ -454,6 +470,7 @@ export async function POST(request: NextRequest) {
     material_title      = body.material_title?.trim() || undefined;
     material_nature     = body.material_nature?.trim() || undefined;
     material_pages_raw  = body.material_pages == null ? undefined : String(body.material_pages).trim() || undefined;
+    material_link_raw   = body.material_link?.trim() || undefined;
     release_signature   = body.release_signature?.trim() || undefined;
     release_accepted_raw = body.release_accepted === true;
   }
@@ -483,6 +500,7 @@ export async function POST(request: NextRequest) {
      so an ungated submission is visible as such rather than silently mixed in. */
   const releaseRequired = isReleaseRequired(source);
   let material_pages: number | undefined;
+  let material_link: string | undefined;
 
   if (releaseRequired) {
     const reject = (msg: string) =>
@@ -511,6 +529,20 @@ export async function POST(request: NextRequest) {
     material_pages = pages;
 
     if (!phone) return reject('A phone number is required for the Submissions Release.');
+
+    // Optional materials link. When present it must normalize to a plausible
+    // http(s) URL — this also rewrites scheme-less pastes ("drive.google.com/…")
+    // and rejects junk (javascript:, plain words), so what lands in the leads
+    // inbox is always safely clickable.
+    if (material_link_raw) {
+      const normalized = normalizeMaterialLink(material_link_raw);
+      if (!normalized) {
+        return reject(
+          'The materials link must be a web address (e.g. a Google Drive, Dropbox, Vimeo, or WeTransfer link), or left blank.'
+        );
+      }
+      material_link = normalized;
+    }
   }
 
   // Classify the channel BEFORE insert so it's stored atomically with the lead.
@@ -541,9 +573,9 @@ export async function POST(request: NextRequest) {
        (id, first_name, last_name, email, message, company, available_title_id, created_at,
         utm_source, utm_medium, utm_campaign, utm_term, utm_content,
         gclid, fbclid, landing_page, referrer, channel,
-        source, phone, material_title, material_nature, material_pages,
+        source, phone, material_title, material_nature, material_pages, material_link,
         release_accepted, release_signature, release_version, release_accepted_at, release_ip)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id, first_name, last_name, email,
       message ?? null, company ?? null, available_title_id ?? null, created_at,
@@ -562,6 +594,7 @@ export async function POST(request: NextRequest) {
       material_title    ?? null,
       material_nature   ?? null,
       material_pages    ?? null,
+      material_link     ?? null,
       release_accepted,
       release_signature ?? null,
       release_version,
@@ -585,6 +618,7 @@ export async function POST(request: NextRequest) {
     material_title: material_title ?? null,
     material_nature: material_nature ?? null,
     material_pages: material_pages ?? null,
+    material_link: material_link ?? null,
     release_accepted,
     release_signature: release_signature ?? null,
     release_version,
