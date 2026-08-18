@@ -26,12 +26,18 @@ export async function ensureAuthSchema(): Promise<void> {
 
   // Create the sessions table if it doesn't exist. Uses IF NOT EXISTS so it's
   // idempotent across container restarts and dev hot-reloads.
+  //
+  // Timestamp columns are BIGINT, and must stay BIGINT: they store Date.now()
+  // (~1.78T in 2026), which overflows INTEGER's 2.1B max. This lazy-create used
+  // to say INTEGER, which is the exact bug migration 037 was written to fix —
+  // any environment where this ran before 037's rewrite got overflowing
+  // sessions. Keep this definition in lockstep with migrations/037.
   await db.query(`
     CREATE TABLE IF NOT EXISTS sessions (
       token      TEXT PRIMARY KEY,
       user_id    TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      expires_at INTEGER NOT NULL,
+      created_at BIGINT NOT NULL,
+      expires_at BIGINT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES team_users(id) ON DELETE CASCADE
     )
   `);
@@ -39,13 +45,14 @@ export async function ensureAuthSchema(): Promise<void> {
   // Add auth columns to team_users — silently skip if they already exist.
   // Postgres doesn't support ADD COLUMN IF NOT EXISTS in older versions, so we
   // use a DO block to catch the duplicate-column error rather than failing the whole call.
+  // BIGINT for the same Date.now() reason as sessions above (was INTEGER; see 037).
   const authColumns: [string, string][] = [
     ['password_hash',           'TEXT'],
-    ['updated_at',              'INTEGER'],
+    ['updated_at',              'BIGINT'],
     ['password_reset_token',    'TEXT'],
-    ['password_reset_expires',  'INTEGER'],
+    ['password_reset_expires',  'BIGINT'],
     ['invite_token',            'TEXT'],
-    ['invite_expires',          'INTEGER'],
+    ['invite_expires',          'BIGINT'],
   ];
 
   for (const [col, type] of authColumns) {
