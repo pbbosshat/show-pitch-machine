@@ -5,10 +5,27 @@
 // between our paced calls, which surfaced as "Premature close" on every request
 // during the daily build. A fresh connection per call is rock-solid here.
 //
-// Key comes from GROQ_API_KEY (.env.local / .env). Model defaults to the 70b
-// versatile model, overridable via GROQ_MODEL.
-
-export const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+// Key comes from GROQ_API_KEY (.env.local / .env). Model is overridable via
+// GROQ_MODEL.
+//
+// MODEL CHOICE — read before changing. Groq retires hosted models on its own
+// schedule, and a retired model does not fail loudly here: extraction returns no
+// people, so buildDailyConnections reports `built: 0` with a 200, and the daily
+// build quietly produces nothing. That is exactly what happened between
+// 2026-08-13 and 2026-08-18, when `llama-3.3-70b-versatile` (the previous
+// default) began returning:
+//
+//   404 model_not_found — "The model `llama-3.3-70b-versatile` does not exist
+//   or you do not have access to it."
+//
+// It looked like a broken scheduler for five days. It was a dead model.
+//
+// openai/gpt-oss-120b is the largest general-purpose chat model available on
+// this account (verified 2026-08-18 against /v1/models) and returns the same
+// strict-JSON shape the extractor and drafter expect. If it disappears too,
+// list the live models with:
+//   curl -s https://api.groq.com/openai/v1/models -H "Authorization: Bearer $GROQ_API_KEY"
+export const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
 export interface GroqMessage {
   role: 'system' | 'user' | 'assistant';
@@ -56,6 +73,17 @@ export async function groqChat(opts: {
       });
       if (!res.ok) {
         const bodyText = (await res.text()).slice(0, 240);
+        // A retired/unavailable model is the highest-cost failure in this
+        // pipeline (silent empty builds), so name the cause and the fix rather
+        // than passing Groq's raw 404 up the stack.
+        if (res.status === 404 && /model/i.test(bodyText)) {
+          throw new Error(
+            `Groq model "${model}" is unavailable — Groq retires hosted models, and this ` +
+              `fails silently as empty extractions and zero-lead builds. List live models with ` +
+              `GET https://api.groq.com/openai/v1/models and set GROQ_MODEL (or update the ` +
+              `default in lib/connections/llm.ts). Groq said: ${bodyText}`
+          );
+        }
         // 4xx (bad key, bad request) will not get better on retry: throw now.
         if (res.status >= 400 && res.status < 500 && res.status !== 429) {
           throw new Error(`Groq ${res.status}: ${bodyText}`);
