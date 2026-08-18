@@ -43,6 +43,52 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const EXEC_SIGNAL_RE =
   /\b(appoint|apppoints|names?|named|hire[ds]?|join[eds]*|promot|exits?|exit(ed|ing)|departs?|depart(ed|ing)|steps? down|stepping down|to lead|takes over|succeed|commission(er|ed)?|president|\bceo\b|\bcoo\b|\bcfo\b|\bcco\b|\bevp\b|\bsvp\b|\bvp\b|chief|head of|executive|exec\b)\b/i;
 
+/**
+ * Same-person detection WITHIN one article.
+ *
+ * The lead table dedups on ON CONFLICT (article_id, person_name) — an exact
+ * string match. That is too strict: the extractor reads the headline on one run
+ * and the body on another, so the same person arrived twice as "Jessie Parker"
+ * and "Jessica Lynch Parker" from a single article, producing two rows for one
+ * human that then get emailed and invited separately.
+ *
+ * Rule: surnames must match exactly, AND either the first names are identical
+ * (so "Del Titus Bawuah" collapses into "Del Bawuah") or they share a prefix of
+ * at least 5 characters (jessie/jessica -> "jessi").
+ *
+ * 5, not 4, because 4 merges michelle/michael — two different people who share a
+ * surname. That is the failure that matters: a false merge silently destroys a
+ * real lead, whereas a missed merge only leaves a visible duplicate someone can
+ * dismiss. The same threshold means jenny/jennifer (prefix 4) is NOT merged;
+ * that is the trade accepted on purpose. Scoped to a single article, where two
+ * distinct people sharing a surname AND a first-name stem is vanishingly rare.
+ */
+function normalizeName(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function commonPrefixLen(a: string, b: string): number {
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  return i;
+}
+
+export function isSamePersonName(a: string, b: string): boolean {
+  const A = normalizeName(a).split(' ').filter(Boolean);
+  const B = normalizeName(b).split(' ').filter(Boolean);
+  if (!A.length || !B.length) return false;
+  if (A.join(' ') === B.join(' ')) return true;
+  if (A[A.length - 1] !== B[B.length - 1]) return false; // surname must match
+  if (A[0] === B[0]) return true; // same first name, differing middle names
+  return commonPrefixLen(A[0], B[0]) >= 5;
+}
+
 function looksExecRelevant(art: ArticleRow): boolean {
   if (art.item_type === 'exec-move' || art.item_type === 'mandate-statement') return true;
   const hay = `${art.headline ?? ''} ${(art.body ?? '').slice(0, 400)}`;
@@ -152,12 +198,29 @@ export async function buildDailyConnections(
     if (!looksExecRelevant(art)) continue;
 
     const people = await extractPeople(art.headline ?? '', art.body);
+
+    // Names already recorded for THIS article — used to collapse extractor name
+    // variants (see isSamePersonName). Seeded from the DB so a re-build does not
+    // create a second row under a different spelling, then appended to as we go
+    // so two variants inside one batch collapse too.
+    const seenNames: string[] = (
+      await query<{ person_name: string }>(
+        'SELECT person_name FROM connection_leads WHERE article_id = ?',
+        [art.id]
+      )
+    ).map((r) => r.person_name);
     // Pace to respect Groq's per-minute token cap.
     await sleep(EXTRACT_DELAY_MS);
 
     for (const p of people) {
       const name = (p.name ?? '').trim();
       if (name.length < 3) continue;
+
+      // Already have this human under a different spelling from this article.
+      if (seenNames.some((prev) => isSamePersonName(prev, name))) {
+        skipped++;
+        continue;
+      }
 
       const { tier, tier_reason } = tierFor(p, art);
       const reason = buildReason(p, art);
@@ -179,6 +242,8 @@ export async function buildDailyConnections(
         }
       }
       const matched_contact_id = best >= MATCH_THRESHOLD ? matchedId : null;
+
+      seenNames.push(name);
 
       const id = randomUUID();
       // ON CONFLICT DO NOTHING makes re-builds idempotent; changes === 0 means

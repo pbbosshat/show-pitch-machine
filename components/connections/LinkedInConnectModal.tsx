@@ -39,10 +39,12 @@ export default function LinkedInConnectModal({
 }: {
   lead: LinkedInLead;
   onClose: () => void;
-  onSaveDraft: (fields: Partial<Record<'draft_li_note', string>>) => Promise<void>;
+  onSaveDraft: (fields: Record<string, string | null>) => Promise<void>;
   onQueued: () => void;
 }) {
   const [note, setNote] = useState(lead.draft_li_note ?? '');
+  const [url, setUrl] = useState(lead.linkedin_url ?? '');
+  const [finding, setFinding] = useState(false);
   const [queueing, setQueueing] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [redrafting, setRedrafting] = useState(false);
@@ -83,7 +85,7 @@ export default function LinkedInConnectModal({
 
   const noteLen = note.length;
   const overCap = noteLen > LI_NOTE_CAP;
-  const hasUrl = !!lead.linkedin_url;
+  const hasUrl = !!url.trim();
   const alreadyQueued = lead.status === 'queued';
   // /connect gained a draft gate (PR #30): it now SKIPS a lead with no
   // draft_li_note rather than queueing a blank invite. Mirror that here so the
@@ -94,8 +96,8 @@ export default function LinkedInConnectModal({
   async function handleSaveDraft() {
     setSavingDraft(true); setError(null); setNotice(null);
     try {
-      await onSaveDraft({ draft_li_note: note });
-      setNotice('Note saved.');
+      await onSaveDraft({ draft_li_note: note, linkedin_url: url.trim() || null });
+      setNotice('Saved.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save note');
     } finally {
@@ -103,12 +105,36 @@ export default function LinkedInConnectModal({
     }
   }
 
+  /**
+   * Re-run enrichment for this single lead. Useful after correcting a company
+   * name: Apollo is anchored on organization_name, so a lead that arrived with
+   * a wrong or missing company is unenrichable until it is fixed and retried —
+   * previously that meant rebuilding everything.
+   */
+  async function handleFindContact() {
+    setFinding(true); setError(null); setNotice(null);
+    try {
+      const res = await fetch(`/api/connections/${lead.id}/enrich`, { method: 'POST' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error ?? `HTTP ${res.status}`);
+      const found = json.linkedin_url ?? null;
+      if (found) { setUrl(found); setNotice('Found a LinkedIn profile.'); }
+      else setNotice('Apollo has no LinkedIn profile for this person — paste one manually.');
+      if (json.draft_li_note && !note.trim()) setNote(json.draft_li_note);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Lookup failed');
+    } finally {
+      setFinding(false);
+    }
+  }
+
   async function handleQueue() {
     setQueueing(true); setError(null); setNotice(null);
     try {
-      // Persist the edited note FIRST — /connect reads draft_li_note straight
-      // from the row, so queueing without saving would send the stale note.
-      await onSaveDraft({ draft_li_note: note });
+      // Persist note AND profile URL FIRST — /connect reads both straight from
+      // the row, so queueing without saving would use stale values (or skip the
+      // lead entirely for a URL that only exists in this input).
+      await onSaveDraft({ draft_li_note: note, linkedin_url: url.trim() || null });
 
       const res = await fetch('/api/connections/connect', {
         method: 'POST',
@@ -158,22 +184,45 @@ export default function LinkedInConnectModal({
         </div>
 
         <div style={{ padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Who — mirrors the email modal's To block */}
-          <Field label="Profile">
-            {lead.linkedin_url ? (
+          {/* Profile URL — editable. Apollo resolves ~60% of exec-tier leads, and
+              before this a miss was a dead end: no way to record a profile found
+              by hand, so the lead sat in the list uncontactable forever. */}
+          <Field label="Profile URL">
+            <input
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://www.linkedin.com/in/…"
+              style={inputStyle}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
+              {url.trim() ? (
+                <a href={url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'var(--accent)' }}>
+                  Open profile ↗
+                </a>
+              ) : (
+                <span style={{ fontSize: 11, color: 'var(--status-deal)' }}>
+                  No profile found — search LinkedIn and paste the URL, or try Find contact.
+                </span>
+              )}
+              <button
+                onClick={handleFindContact}
+                disabled={finding || queueing}
+                style={{ background: 'none', border: 'none', padding: 0, fontSize: 11, fontWeight: 600, color: 'var(--accent)', cursor: finding ? 'wait' : 'pointer' }}
+              >
+                {finding ? 'Searching…' : 'Find contact'}
+              </button>
               <a
-                href={lead.linkedin_url}
+                href={`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(
+                  [lead.person_name, lead.company_name].filter(Boolean).join(' ')
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: 'var(--accent)', fontSize: 13, wordBreak: 'break-all' }}
+                style={{ fontSize: 11, color: 'var(--text-muted)' }}
               >
-                {lead.linkedin_url} ↗
+                Search LinkedIn ↗
               </a>
-            ) : (
-              <p style={{ fontSize: 13, color: 'var(--status-pass)' }}>
-                No LinkedIn URL on this lead — an invite cannot be queued until enrichment finds one.
-              </p>
-            )}
+            </div>
             {(lead.person_title || lead.company_name) && (
               <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>
                 {[lead.person_title, lead.company_name].filter(Boolean).join(' · ')}

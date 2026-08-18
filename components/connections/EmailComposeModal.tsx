@@ -42,7 +42,7 @@ export default function EmailComposeModal({
   lead: ComposeLead;
   onClose: () => void;
   /** Persists edits via the existing PATCH /api/connections/[id]. */
-  onSaveDraft: (fields: Partial<Record<'draft_email_subject' | 'draft_email_body', string>>) => Promise<void>;
+  onSaveDraft: (fields: Record<string, string | null>) => Promise<void>;
   /** Called after a confirmed send so the parent can refresh row status. */
   onSent: () => void;
 }) {
@@ -57,6 +57,7 @@ export default function EmailComposeModal({
   const [bodyText, setBodyText] = useState(aiDraft.body);
 
   const [sending, setSending] = useState(false);
+  const [finding, setFinding] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -100,12 +101,28 @@ export default function EmailComposeModal({
     setError(null);
     setNotice(null);
     try {
-      await onSaveDraft({ draft_email_subject: subject, draft_email_body: bodyText });
+      await onSaveDraft({ draft_email_subject: subject, draft_email_body: bodyText, email: to.trim() || null });
       setNotice('Draft saved.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save draft');
     } finally {
       setSavingDraft(false);
+    }
+  }
+
+  /** Re-run Apollo for this one lead (see the LinkedIn modal for the rationale). */
+  async function handleFindContact() {
+    setFinding(true); setError(null); setNotice(null);
+    try {
+      const res = await fetch(`/api/connections/${lead.id}/enrich`, { method: 'POST' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error ?? `HTTP ${res.status}`);
+      if (json.email) { setTo(json.email); setNotice(`Found ${json.email} (${json.email_status ?? 'unknown'}).`); }
+      else setNotice('Apollo has no email for this person — type one in if you find it.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Lookup failed');
+    } finally {
+      setFinding(false);
     }
   }
 
@@ -123,7 +140,7 @@ export default function EmailComposeModal({
       if (!res.ok) throw new Error(json?.error ?? `HTTP ${res.status}`);
       // Persist whatever was actually sent, plus any LinkedIn note edit, so the
       // row reflects the real copy afterwards.
-      await onSaveDraft({ draft_email_subject: subject, draft_email_body: bodyText }).catch(() => {});
+      await onSaveDraft({ draft_email_subject: subject, draft_email_body: bodyText, email: to.trim() || null }).catch(() => {});
       onSent();
       onClose();
     } catch (err) {
@@ -195,6 +212,13 @@ export default function EmailComposeModal({
                   ? 'No address found for this lead — paste one to send.'
                   : `Address is unverified (${(lead.email_status ?? 'unknown').split(':')[0]}) — it may bounce.`}
             </p>
+            <button
+              onClick={handleFindContact}
+              disabled={finding || sending}
+              style={{ background: 'none', border: 'none', padding: 0, marginTop: 4, fontSize: 11, fontWeight: 600, color: 'var(--accent)', cursor: finding ? 'wait' : 'pointer' }}
+            >
+              {finding ? 'Searching…' : 'Find contact'}
+            </button>
           </Field>
 
           {/* Subject */}

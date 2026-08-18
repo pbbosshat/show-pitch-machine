@@ -402,6 +402,7 @@ function LeadRow({
   onToggleSelect,
   onOpenEmail,
   onOpenLinkedIn,
+  onDismiss,
   connectResult,
   showDate,
 }: {
@@ -412,6 +413,8 @@ function LeadRow({
   onOpenEmail: () => void;
   /** Opens the LinkedIn invite modal for this lead. */
   onOpenLinkedIn: () => void;
+  /** Clears the lead out of the pending stack (status -> 'skipped'). */
+  onDismiss: () => void;
   connectResult: Partial<Record<'email' | 'linkedin', ChannelResult>> | undefined;
   /** When true (All Pending mode), shows the lead_date so Shawn knows which day each row was pulled. */
   showDate?: boolean;
@@ -504,6 +507,17 @@ function LeadRow({
           ) : (
             <StatusPill status={lead.status} />
           )}
+          {/* Not every lead is worth chasing (and some are uncontactable).
+              Dismissing sets status='skipped' so it leaves the pending stack
+              instead of sitting there forever. */}
+          <button
+            onClick={onDismiss}
+            title="Remove from the pending list"
+            className="text-[10px] mt-1"
+            style={{ color: 'var(--text-muted)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          >
+            Dismiss
+          </button>
         </div>
       </div>
 
@@ -750,10 +764,27 @@ export default function DailyConnections() {
    */
   async function saveDraftFields(
     leadId: string,
-    fields: Partial<Record<DraftField, string>>
+    // Widened past DraftField: the compose windows also persist manually-entered
+    // contact details (email, linkedin_url), which the PATCH route validates.
+    fields: Record<string, string | null>
   ): Promise<void> {
     await postJson(`/api/connections/${leadId}`, fields, 'PATCH');
     await mutate(); // pull the persisted row back so server-side normalization shows
+  }
+
+  /**
+   * Drop a lead out of the pending stack. Uses status='skipped', which the
+   * pending query already excludes, so this needs no schema change and the row
+   * stays retrievable via By Date rather than being destroyed.
+   */
+  async function dismissLead(leadId: string, name: string) {
+    if (!window.confirm(`Dismiss ${name}? It leaves the pending list but is not deleted.`)) return;
+    try {
+      await postJson(`/api/connections/${leadId}`, { status: 'skipped' }, 'PATCH');
+      await mutate();
+    } catch (err) {
+      setConnectError(err instanceof Error ? err.message : 'Could not dismiss lead');
+    }
   }
 
   // ── Build / Refresh ──────────────────────────────────────────────────
@@ -1030,6 +1061,7 @@ export default function DailyConnections() {
                     onToggleSelect={() => toggleRow(lead.id)}
                     onOpenEmail={() => setComposeLeadId(lead.id)}
                     onOpenLinkedIn={() => setLinkedInLeadId(lead.id)}
+                    onDismiss={() => dismissLead(lead.id, lead.person_name)}
                     connectResult={connectResults.get(lead.id)}
                     showDate={viewMode === 'pending'}
                   />

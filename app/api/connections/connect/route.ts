@@ -54,7 +54,10 @@ export async function POST(request: Request) {
 
         if (channel === 'email') {
           // Send gate: verified emails only.
-          if (lead.email_status !== 'verified' || !lead.email) {
+          // 'manual' = an address a human typed into the compose window after Apollo
+          // missed. Deliberately trusted: someone looked it up on purpose, and the
+          // alternative is a lead that can never be contacted from this screen.
+          if (!lead.email || (lead.email_status !== 'verified' && lead.email_status !== 'manual')) {
             results.push({
               lead_id: leadId,
               channel: 'email',
