@@ -48,10 +48,34 @@ export async function groqChat(opts: {
   model?: string;
   temperature?: number;
   max_tokens?: number;
+  /** Override the reasoning budget. See REASONING NOTE below. */
+  reasoning_effort?: 'low' | 'medium' | 'high';
 }): Promise<string> {
   const key = process.env.GROQ_API_KEY;
   if (!key) throw new Error('GROQ_API_KEY is not set');
   const model = opts.model || GROQ_MODEL;
+
+  // ── REASONING NOTE (why reasoning_effort is forced low) ────────────────────
+  // gpt-oss models think before answering, and those reasoning tokens are billed
+  // against the SAME max_tokens budget as the visible answer. At the drafter's
+  // max_tokens=800 the model spent all 800 on reasoning and returned an EMPTY
+  // content string — surfacing as "Unexpected end of JSON input" at the
+  // JSON.parse, which reads like a malformed model response rather than a
+  // truncation. Measured on the real draft prompt:
+  //
+  //   max_tokens 800, default effort -> finish=length, content 0 chars, FAILS
+  //   max_tokens 800, effort=low     -> finish=stop,   content 547 chars, parses
+  //   max_tokens 2000, default effort-> finish=stop,   but burns 1358 tokens
+  //
+  // Low effort is not a quality compromise here: every call in this pipeline is
+  // structured extraction or short copy against an explicit rubric, not a task
+  // that benefits from long deliberation. It also matters for throughput — this
+  // account is capped at 8,000 tokens/minute, so a daily build at ~1,350 tokens
+  // per lead would rate-limit itself; at ~450 it does not.
+  //
+  // Only sent to models that accept it (Groq rejects the field on others).
+  const supportsReasoningEffort = /gpt-oss|^qwen\//i.test(model);
+  const reasoningEffort = opts.reasoning_effort ?? 'low';
 
   let lastErr: unknown;
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -69,6 +93,7 @@ export async function groqChat(opts: {
           temperature: opts.temperature ?? 0,
           max_tokens: opts.max_tokens ?? 700,
           messages: opts.messages,
+          ...(supportsReasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
         }),
       });
       if (!res.ok) {
@@ -91,8 +116,25 @@ export async function groqChat(opts: {
         // 429 / 5xx: retryable.
         throw new Error(`Groq ${res.status} (retryable): ${bodyText}`);
       }
-      const j = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-      return j.choices?.[0]?.message?.content?.trim() ?? '';
+      const j = (await res.json()) as {
+        choices?: { message?: { content?: string }; finish_reason?: string }[];
+      };
+      const choice = j.choices?.[0];
+      const content = choice?.message?.content?.trim() ?? '';
+
+      // An empty completion is never useful, and returning '' pushes the failure
+      // downstream to a JSON.parse that reports "Unexpected end of JSON input" —
+      // which reads like a malformed model response rather than the truncation it
+      // actually is. Name it here, where the finish_reason is still in hand.
+      if (!content) {
+        throw new Error(
+          choice?.finish_reason === 'length'
+            ? `Groq returned an empty completion (finish_reason=length): the token budget ` +
+              `was consumed before any output. Raise max_tokens or lower reasoning_effort.`
+            : `Groq returned an empty completion (finish_reason=${choice?.finish_reason ?? 'unknown'}).`
+        );
+      }
+      return content;
     } catch (err) {
       lastErr = err;
       if (attempt < 3) await new Promise((r) => setTimeout(r, 800 * attempt));
