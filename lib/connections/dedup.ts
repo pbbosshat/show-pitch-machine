@@ -149,11 +149,28 @@ export async function dedupPerson(name: string, email?: string | null): Promise<
       // one of the thread's participants to this person.
       const discovered = email ?? pickAddressFor(name, participants);
 
-      return {
-        dedup_status: 'known_gmail',
-        dedup_evidence: `Gmail ${shortDate(msg.internalDate)} "${subject.slice(0, 70)}"`,
-        discovered_email: discovered ?? null,
-      };
+      // ── Participation test — the difference between "Shawn knows them" and
+      //    "a newsletter mentioned them" ────────────────────────────────────
+      // A name-only search matches ANY message containing the name, including
+      // trade newsletters and press roundups that merely write about the person.
+      // Treating those as prior contact was wrong twice over: the DEDUP column
+      // claimed a relationship that does not exist, and voice_variant flipped to
+      // 'reconnect', so the draft opened "it's been a while" to a total stranger.
+      // Observed live on all four flagged leads — one was a 2013 list email.
+      //
+      // So a name-only hit only counts as known when the person is actually ON
+      // the thread. That is exactly the condition under which we can attribute
+      // an address, which is why the two checks collapse into one: no address
+      // attributable => not correspondence => fall through to Calendar/clear.
+      // A hand-supplied `email` skips this — a from:/to: search already proves it.
+      if (email || discovered) {
+        return {
+          dedup_status: 'known_gmail',
+          dedup_evidence: `Gmail ${shortDate(msg.internalDate)} "${subject.slice(0, 70)}"`,
+          discovered_email: discovered ?? null,
+        };
+      }
+      // Mentioned, not corresponded with — keep looking.
     }
   } catch (err) {
     return { dedup_status: 'unchecked', dedup_evidence: `Gmail lookup failed: ${(err as Error).message}` };
