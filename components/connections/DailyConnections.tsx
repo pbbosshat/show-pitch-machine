@@ -273,11 +273,26 @@ function EmailCell({ email, status, onOpenEmail, onRetry, retrying, retried }: {
   /** True once a retry has run this session, so the label reflects which pass we are on. */
   retried: boolean;
 }) {
-  const verified = status === 'verified';
+  // An address is usable if it came from a trusted source, not just Apollo's
+  // 'verified'. Show WHERE it came from — "from Gmail" tells Shawn he has
+  // already corresponded with them, which is more useful than a generic tick.
+  const SOURCE_LABEL: Record<string, string> = {
+    verified: 'Verified',
+    manual: 'Entered by hand',
+    gmail: 'From Gmail thread',
+    calendar: 'From calendar',
+    contact_book: 'Contact book',
+  };
+  const trusted = !!status && status in SOURCE_LABEL;
   // email_status can carry a long upstream error (e.g. an Apollo failure), which
   // would blow out the column — show a short chip and keep the full text in the
   // tooltip.
-  const chip = verified ? 'Verified' : (status ? status.split(':')[0].slice(0, 18) : 'unverified');
+  const chip = trusted
+    ? SOURCE_LABEL[status as string]
+    : status
+      ? status.split(':')[0].slice(0, 18)
+      : 'unverified';
+  const verified = trusted;
 
   return (
     <div className="flex flex-col gap-0.5 min-w-0">

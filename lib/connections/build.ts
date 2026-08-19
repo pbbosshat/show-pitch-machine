@@ -19,6 +19,7 @@ import { tierFor } from './tier';
 import { similarity, splitName } from './match';
 import { dedupPerson } from './dedup';
 import { apolloMatch } from './apollo';
+import { lookupContactBook } from './contact-book';
 import { generateDraft } from './draft';
 
 // Auto-match confidence to link a lead to an existing buyer_contacts row.
@@ -322,12 +323,40 @@ export async function enrichLead(id: string): Promise<ConnectionLeadRow> {
     email_status = `apollo error: ${(err as Error).message}`;
   }
 
-  // 2) Dedup against Shawn's Gmail + Calendar (read-only). Prefer the Apollo email
+  // 1b) Apollo missed — try My Entertainment's own contact book before giving up.
+  //     232 people / 181 addresses someone already researched by hand. Costs
+  //     nothing, and a curated address beats an inferred one.
+  if (!email || !linkedin_url) {
+    try {
+      const book = await lookupContactBook(lead.person_name);
+      if (book) {
+        if (!email && book.email) {
+          email = book.email;
+          email_status = 'contact_book';
+        }
+        if (!linkedin_url && book.linkedin_url) linkedin_url = book.linkedin_url;
+      }
+    } catch (err) {
+      console.error('[connections/enrich] contact book lookup failed:', (err as Error).message);
+    }
+  }
+
+  // 2) Dedup against Shawn's Gmail + Calendar (read-only). Prefer a known email
   //    for an exact match; fall back to a newsletter-excluded name search. Never throws.
   const dedup = await dedupPerson(lead.person_name, email ?? lead.email ?? undefined).catch((err) => ({
     dedup_status: 'unchecked' as const,
     dedup_evidence: `dedup error: ${(err as Error).message}`,
+    discovered_email: null as string | null,
   }));
+
+  // 2b) A Gmail thread or calendar event with this person CONTAINS their address.
+  //     If we still have none, take it — prior correspondence is the strongest
+  //     possible signal that an address is real and current, stronger than
+  //     anything Apollo infers.
+  if (!email && dedup.discovered_email) {
+    email = dedup.discovered_email;
+    email_status = dedup.dedup_status === 'known_calendar' ? 'calendar' : 'gmail';
+  }
 
   // Known people get the warm reconnect voice; strangers get the intro voice.
   const voice_variant: 'stranger' | 'reconnect' =

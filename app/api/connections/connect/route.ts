@@ -16,6 +16,9 @@ import { queryOne, run } from '@/lib/db';
 import { sendConnectEmail } from '@/lib/connections/send';
 
 export const runtime = 'nodejs';
+
+/** email_status values the send gate accepts. See the gate below for rationale. */
+const TRUSTED_EMAIL_SOURCES = new Set(['verified', 'manual', 'gmail', 'calendar', 'contact_book']);
 export const maxDuration = 120;
 
 interface LeadRow {
@@ -54,10 +57,15 @@ export async function POST(request: Request) {
 
         if (channel === 'email') {
           // Send gate: verified emails only.
-          // 'manual' = an address a human typed into the compose window after Apollo
-          // missed. Deliberately trusted: someone looked it up on purpose, and the
-          // alternative is a lead that can never be contacted from this screen.
-          if (!lead.email || (lead.email_status !== 'verified' && lead.email_status !== 'manual')) {
+          // Trusted address sources. 'verified' is Apollo's own confirmation;
+          // the rest are at least as strong and all beat an inferred guess:
+          //   manual       - a human typed it in deliberately
+          //   gmail        - taken from a real thread between Shawn and them
+          //   calendar     - taken from a meeting they attended
+          //   contact_book - curated by hand in buyer_contacts
+          // Apollo's 'extrapolated'/'guessed' stay excluded: those are patterns,
+          // not confirmations, and bouncing hurts sender reputation.
+          if (!lead.email || !TRUSTED_EMAIL_SOURCES.has(lead.email_status ?? '')) {
             results.push({
               lead_id: leadId,
               channel: 'email',
