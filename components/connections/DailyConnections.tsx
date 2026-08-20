@@ -209,20 +209,10 @@ const secondaryButtonStyle: React.CSSProperties = {
 function DedupChip({ status, evidence }: { status: string; evidence: string | null }) {
   const known = status === 'known_gmail' || status === 'known_calendar';
   if (known) {
-    // Say what the prior contact WAS, not the raw match. The old chip read
-    // "KNOWN: Gmail 2026-08-14 \"Subject…\"" — a date and a truncated subject
-    // line, which forced you to decode the evidence to learn the one thing that
-    // matters: has Shawn dealt with this person before, and how.
-    //
-    // Gmail and Calendar mean different things and change how he opens, so they
-    // get different labels. The raw evidence stays in the hover tooltip, since
-    // it is still the proof behind the claim.
-    const label =
-      status === 'known_calendar' ? 'Known & Met Previously' : 'Known & Emailed Previously';
     return (
       <span
         title={evidence ?? 'Known contact'}
-        className="inline-block px-2 py-0.5 rounded text-[10px] font-bold tracking-wide"
+        className="inline-block px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase"
         style={{
           background: 'rgba(217,119,6,0.16)',
           color: 'var(--status-deal)',
@@ -232,7 +222,7 @@ function DedupChip({ status, evidence }: { status: string; evidence: string | nu
           whiteSpace: 'nowrap',
         }}
       >
-        {label}
+        KNOWN{evidence ? `: ${evidence}` : ''}
       </span>
     );
   }
