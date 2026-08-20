@@ -273,13 +273,15 @@ function CellAction({ label, onClick, disabled, title }: {
   );
 }
 
-function EmailCell({ email, status, onOpenEmail, onRetry, retrying }: {
+function EmailCell({ email, status, onOpenEmail, onRetry, retrying, exhausted }: {
   email: string | null;
   status: string | null;
   onOpenEmail: () => void;
   /** Re-runs Apollo for this lead, in place, without opening the modal. */
   onRetry: () => void;
   retrying: boolean;
+  /** A lookup has already run and come back empty — pressing again is futile. */
+  exhausted: boolean;
 }) {
   // An address is usable if it came from a trusted source, not just Apollo's
   // 'verified'. Show WHERE it came from — "from Gmail" tells Shawn he has
@@ -331,19 +333,29 @@ function EmailCell({ email, status, onOpenEmail, onRetry, retrying }: {
           <span className="text-xs" style={{ color: 'var(--text-muted)' }} title={status ?? undefined}>
             No email found
           </span>
+          {/* Once a lookup has run and found nothing, pressing again re-runs the
+              IDENTICAL search over the same company-name variants and can only
+              fail the same way. Leaving it live invites pointless clicking and
+              implies something more might be tried. Disable it and say why —
+              the way forward is a different input (fix the company, or paste an
+              address in the Email window), not another press. */}
           <button
             onClick={onRetry}
-            disabled={retrying}
-            title="Run the full contact lookup again — useful after correcting the company name"
+            disabled={retrying || exhausted}
+            title={
+              exhausted
+                ? 'Already searched every company-name variant and found nothing. Correct the company or paste an address in the Email window.'
+                : 'Run the full contact lookup again — useful after correcting the company name'
+            }
             className="text-[11px] font-semibold w-fit"
             style={{
-              color: retrying ? 'var(--text-muted)' : 'var(--accent)',
+              color: retrying || exhausted ? 'var(--text-muted)' : 'var(--accent)',
               background: 'none', border: 'none', padding: 0,
-              cursor: retrying ? 'wait' : 'pointer',
-              textDecoration: 'underline',
+              cursor: retrying ? 'wait' : exhausted ? 'not-allowed' : 'pointer',
+              textDecoration: exhausted ? 'none' : 'underline',
             }}
           >
-            {retrying ? 'Looking up…' : 'Look up again'}
+            {retrying ? 'Looking up…' : exhausted ? 'Searched — nothing found' : 'Look up again'}
           </button>
         </>
       )}
@@ -506,6 +518,7 @@ function LeadRow({
   onDismiss,
   onRetry,
   retrying,
+  exhausted,
   connectResult,
   showDate,
 }: {
@@ -521,6 +534,7 @@ function LeadRow({
   /** Re-runs Apollo enrichment for this lead from the row. */
   onRetry: () => void;
   retrying: boolean;
+  exhausted: boolean;
   connectResult: Partial<Record<'email' | 'linkedin', ChannelResult>> | undefined;
   /** When true (All Pending mode), shows the lead_date so Shawn knows which day each row was pulled. */
   showDate?: boolean;
@@ -594,6 +608,7 @@ function LeadRow({
             onOpenEmail={onOpenEmail}
             onRetry={onRetry}
             retrying={retrying}
+            exhausted={exhausted}
           />
         </div>
 
@@ -884,6 +899,9 @@ export default function DailyConnections() {
    */
   // Which rows have a contact lookup in flight (drives the button's busy state).
   const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
+  // Rows where a lookup completed and still produced no address. Pressing again
+  // would repeat the same search, so the button is disabled for these.
+  const [exhaustedIds, setExhaustedIds] = useState<Set<string>>(new Set());
 
   /**
    * Re-run enrichment for one lead straight from the row. Same endpoint the
@@ -894,7 +912,12 @@ export default function DailyConnections() {
     setRetryingIds((prev) => new Set(prev).add(leadId));
     setConnectError(null);
     try {
-      await postJson(`/api/connections/${leadId}/enrich`);
+      const updated = await postJson(`/api/connections/${leadId}/enrich`);
+      // The route returns the refreshed lead — if it still has no address, the
+      // search is spent and the button should stop inviting clicks.
+      if (!updated?.email) {
+        setExhaustedIds((prev) => new Set(prev).add(leadId));
+      }
       await mutate();
     } catch (err) {
       setConnectError(err instanceof Error ? err.message : 'Lookup failed');
@@ -1190,6 +1213,7 @@ export default function DailyConnections() {
                     onDismiss={() => dismissLead(lead.id, lead.person_name)}
                     onRetry={() => retryEnrich(lead.id)}
                     retrying={retryingIds.has(lead.id)}
+                    exhausted={exhaustedIds.has(lead.id)}
                     connectResult={connectResults.get(lead.id)}
                     showDate={viewMode === 'pending'}
                   />
