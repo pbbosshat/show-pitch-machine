@@ -107,6 +107,7 @@ const PUBLIC_PREFIXES = [
   '/api/ingest/',         // Bang pushes classified articles here via INGEST_API_KEY (no session)
   '/api/cron/',             // cron endpoints protected by CRON_SECRET Bearer, not session cookie
   '/api/connections/queue', // Bubba LinkedIn engine polls the connect queue via INGEST_API_KEY Bearer, not a session cookie. Covers /queue and /queue/result. The session-gated connections routes (/build, /connect, list, /[id]) are NOT matched by this prefix.
+  '/api/connections/lookup-queue', // SPM LinkedIn lookup worker on Bang polls this with the same INGEST_API_KEY Bearer. A separate entry is required: '/api/connections/queue' is a startsWith prefix and 'lookup-queue' does not start with it. Without this the worker is 307'd to /login, follows the redirect, parses the HTML as JSON and reports "0 leads" — a silent no-op that looks exactly like having nothing to do.
   '/api/export/conversions', // SEO attribution export — protected by CONV_EXPORT_TOKEN Bearer auth inside the handler, not session cookie
 ];
 
