@@ -415,6 +415,28 @@ export async function enrichLead(id: string): Promise<ConnectionLeadRow> {
   }
 
   const now = Date.now();
+
+  // ── Never destroy contact details we already hold ──────────────────────────
+  // This UPDATE used to write email / email_status / linkedin_url
+  // unconditionally, so ANY lookup that came back empty erased what was already
+  // stored. Observed live: re-running enrichment wiped Scott Greenstein's
+  // verified address because that one Apollo call happened to miss.
+  //
+  // Worse, it silently destroyed HAND-ENTERED contacts — someone types an
+  // address into the compose window, presses "Retry — second pass", and their
+  // work is gone. Enrichment must only ever ADD information.
+  //
+  // So: keep the existing value whenever the lookup produced nothing, and only
+  // move email_status when we actually have a new address to describe (a stored
+  // address must never be left wearing another lookup's status).
+  const finalEmail = email ?? lead.email ?? null;
+  const finalLinkedIn = linkedin_url ?? lead.linkedin_url ?? null;
+  const finalEmailStatus = email
+    ? email_status                      // new address -> its own provenance
+    : lead.email
+      ? lead.email_status               // keeping the old address -> keep its status
+      : email_status;                   // nothing either way -> record the miss/error
+
   await run(
     `UPDATE connection_leads
         SET dedup_status = ?, dedup_evidence = ?, email = ?, email_status = ?,
@@ -425,9 +447,9 @@ export async function enrichLead(id: string): Promise<ConnectionLeadRow> {
     [
       dedup.dedup_status,
       dedup.dedup_evidence,
-      email,
-      email_status,
-      linkedin_url,
+      finalEmail,
+      finalEmailStatus,
+      finalLinkedIn,
       now, // apollo_checked_at: set even on miss, so we do not re-bill Apollo
       voice_variant,
       draft.email_subject || null,
