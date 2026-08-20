@@ -20,6 +20,7 @@ import { similarity, splitName } from './match';
 import { dedupPerson } from './dedup';
 import { apolloMatch } from './apollo';
 import { lookupContactBook } from './contact-book';
+import { companyCandidates } from './company-variants';
 import { generateDraft } from './draft';
 
 // Auto-match confidence to link a lead to an existing buyer_contacts row.
@@ -315,10 +316,38 @@ export async function enrichLead(id: string): Promise<ConnectionLeadRow> {
   let linkedin_url: string | null = null;
   try {
     const { first, last } = splitName(lead.person_name);
-    const a = await apolloMatch(first, last, lead.company ?? '');
-    email = a.email;
-    email_status = a.email_status;
-    linkedin_url = a.linkedin_url;
+
+    // The company name the trades print is often not the one Apollo indexes, and
+    // the extractor sometimes records none at all — so try alternatives rather
+    // than firing the same failing query twice. Misses cost 0 Apollo credits, so
+    // the extra attempts are effectively free; only a hit is billed.
+    const headline = (
+      await queryOne<{ headline: string | null }>(
+        'SELECT headline FROM trade_articles WHERE id = ?',
+        [lead.article_id]
+      )
+    )?.headline ?? null;
+
+    const candidates = companyCandidates(lead.company, lead.reason, headline);
+    // Always leave a company-less attempt as the final fallback: Apollo can
+    // still match a distinctive name on its own.
+    const attempts: string[] = candidates.length ? [...candidates, ''] : [''];
+
+    for (const org of attempts) {
+      const a = await apolloMatch(first, last, org);
+      // Keep the best of what we have: an address from one variant and a
+      // profile from another both count.
+      if (!email && a.email) {
+        email = a.email;
+        email_status = a.email_status;
+      }
+      if (!linkedin_url && a.linkedin_url) linkedin_url = a.linkedin_url;
+      // A verified address is the goal; stop paying attention once we have one.
+      if (email && a.email_status === 'verified') break;
+    }
+    // Nothing matched anywhere — record the miss rather than leaving it null,
+    // so the UI can distinguish "we looked" from "never ran".
+    if (!email && !email_status) email_status = null;
   } catch (err) {
     email_status = `apollo error: ${(err as Error).message}`;
   }
