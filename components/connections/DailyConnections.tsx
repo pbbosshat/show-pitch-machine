@@ -273,15 +273,13 @@ function CellAction({ label, onClick, disabled, title }: {
   );
 }
 
-function EmailCell({ email, status, onOpenEmail, onRetry, retrying, retried }: {
+function EmailCell({ email, status, onOpenEmail, onRetry, retrying }: {
   email: string | null;
   status: string | null;
   onOpenEmail: () => void;
   /** Re-runs Apollo for this lead, in place, without opening the modal. */
   onRetry: () => void;
   retrying: boolean;
-  /** True once a retry has run this session, so the label reflects which pass we are on. */
-  retried: boolean;
 }) {
   // An address is usable if it came from a trusted source, not just Apollo's
   // 'verified'. Show WHERE it came from — "from Gmail" tells Shawn he has
@@ -324,17 +322,19 @@ function EmailCell({ email, status, onOpenEmail, onRetry, retrying, retried }: {
         </>
       ) : (
         <>
-          {/* Name which lookup pass produced the miss, so a blank cell reads as
-              "we tried and Apollo had nothing" rather than "nothing happened".
-              The retry is here on the row — the whole point is not having to
-              open the modal to run it. */}
+          {/* Says plainly that we looked and found nothing, rather than leaving
+              a blank cell that could equally mean "never ran".
+              NOT "1st/2nd pass": enrichment already walks every company-name
+              variant on its first attempt (see companyCandidates), so there is
+              no second strategy left to hold back — the button below simply runs
+              that same full search again. */}
           <span className="text-xs" style={{ color: 'var(--text-muted)' }} title={status ?? undefined}>
-            {retried ? '2nd pass — none found' : '1st pass — none found'}
+            No email found
           </span>
           <button
             onClick={onRetry}
             disabled={retrying}
-            title="Run the Apollo lookup again for this lead"
+            title="Run the full contact lookup again — useful after correcting the company name"
             className="text-[11px] font-semibold w-fit"
             style={{
               color: retrying ? 'var(--text-muted)' : 'var(--accent)',
@@ -343,7 +343,7 @@ function EmailCell({ email, status, onOpenEmail, onRetry, retrying, retried }: {
               textDecoration: 'underline',
             }}
           >
-            {retrying ? 'Retrying…' : 'Retry — second pass'}
+            {retrying ? 'Looking up…' : 'Look up again'}
           </button>
         </>
       )}
@@ -506,7 +506,6 @@ function LeadRow({
   onDismiss,
   onRetry,
   retrying,
-  retried,
   connectResult,
   showDate,
 }: {
@@ -522,7 +521,6 @@ function LeadRow({
   /** Re-runs Apollo enrichment for this lead from the row. */
   onRetry: () => void;
   retrying: boolean;
-  retried: boolean;
   connectResult: Partial<Record<'email' | 'linkedin', ChannelResult>> | undefined;
   /** When true (All Pending mode), shows the lead_date so Shawn knows which day each row was pulled. */
   showDate?: boolean;
@@ -596,7 +594,6 @@ function LeadRow({
             onOpenEmail={onOpenEmail}
             onRetry={onRetry}
             retrying={retrying}
-            retried={retried}
           />
         </div>
 
@@ -885,10 +882,8 @@ export default function DailyConnections() {
    * pending query already excludes, so this needs no schema change and the row
    * stays retrievable via By Date rather than being destroyed.
    */
-  // Which rows have an Apollo retry in flight, and which have already had one
-  // this session (drives the "1st pass" / "2nd pass" wording).
+  // Which rows have a contact lookup in flight (drives the button's busy state).
   const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
-  const [retriedIds, setRetriedIds] = useState<Set<string>>(new Set());
 
   /**
    * Re-run enrichment for one lead straight from the row. Same endpoint the
@@ -900,7 +895,6 @@ export default function DailyConnections() {
     setConnectError(null);
     try {
       await postJson(`/api/connections/${leadId}/enrich`);
-      setRetriedIds((prev) => new Set(prev).add(leadId));
       await mutate();
     } catch (err) {
       setConnectError(err instanceof Error ? err.message : 'Lookup failed');
@@ -1196,7 +1190,6 @@ export default function DailyConnections() {
                     onDismiss={() => dismissLead(lead.id, lead.person_name)}
                     onRetry={() => retryEnrich(lead.id)}
                     retrying={retryingIds.has(lead.id)}
-                    retried={retriedIds.has(lead.id)}
                     connectResult={connectResults.get(lead.id)}
                     showDate={viewMode === 'pending'}
                   />
