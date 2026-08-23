@@ -32,7 +32,7 @@ function StormDivider() {
   );
 }
 
-function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
+function PasswordGate({ slug, onUnlock }: { slug: string; onUnlock: () => void }) {
   const [pw, setPw]   = useState('');
   const [err, setErr] = useState('');
 
@@ -41,7 +41,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
     const res = await fetch('/api/marketing/available/verify-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: 'storm-warriors', password: pw }),
+      body: JSON.stringify({ slug, password: pw }),
     });
     if (res.ok) {
       onUnlock();
@@ -91,7 +91,7 @@ export default function StormWarriorsOneSheet({ title }: { title: SafeTitle }) {
   const [unlocked, setUnlocked] = useState(!title.has_password);
 
   if (title.has_password && !unlocked) {
-    return <PasswordGate onUnlock={() => setUnlocked(true)} />;
+    return <PasswordGate slug={title.slug} onUnlock={() => setUnlocked(true)} />;
   }
 
   const embedUrl = pickDeckVideoEmbed(title.drive_file_id, title.vimeo_url);

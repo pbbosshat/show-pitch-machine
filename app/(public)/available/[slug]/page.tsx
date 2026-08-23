@@ -80,7 +80,6 @@ import WoodyStrodeOneSheet from './WoodyStrodeOneSheet';
 import LoriVallowOneSheet from './LoriVallowOneSheet';
 import ALittleChristmasSpiritOneSheet from './ALittleChristmasSpiritOneSheet';
 import MichelleReneeOneSheet from './MichelleReneeOneSheet';
-import StormWarriorsOneSheet from './StormWarriorsOneSheet';
 import TheArtOfMurderOneSheet from './TheArtOfMurderOneSheet';
 
 // Full DB row — password included here so we can compute has_password server-side.
