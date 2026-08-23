@@ -28,28 +28,28 @@ import Link from 'next/link';
 // ------------------------------------------------------------
 export const metadata: Metadata = {
   title: {
-    absolute: 'TV Show Pitch Deck Template (Free PDF) | MY Entertainment',
+    absolute: 'TV Show Pitch Deck Template: Free 8-Slide PDF | MY Entertainment',
   },
   description:
-    'Download a free TV show pitch deck template from MY Entertainment — an unscripted production company with 25+ years selling shows to Discovery, PBS, A&E, and 28+ networks. Eight slides, fully annotated.',
+    'Free 8-slide TV pitch deck template from a company with 25+ years selling shows to Discovery, A&E, PBS, and 28+ networks. Download instantly, no sign-up required.',
   keywords: [
     'tv show pitch deck', 'tv pitch template', 'pitch deck template', 'tv show pitch deck template',
     'how to make a tv pitch deck', 'tv show pitch document', 'pitch deck for tv show',
   ],
   alternates: { canonical: 'https://www.myentertainment.tv/tv-show-pitch-deck' },
   openGraph: {
-    title: 'TV Show Pitch Deck Template (Free PDF) | MY Entertainment',
+    title: 'TV Show Pitch Deck Template: Free 8-Slide PDF | MY Entertainment',
     description:
-      'Free TV show pitch deck template from MY Entertainment — 8 slides, fully annotated, built from 25 years of pitching to Discovery, PBS, A&E, and 28+ networks.',
+      'Free 8-slide TV pitch deck template from a company with 25+ years selling shows to Discovery, A&E, PBS, and 28+ networks. Download instantly, no sign-up required.',
     url: 'https://www.myentertainment.tv/tv-show-pitch-deck',
     siteName: 'MY Entertainment',
     type: 'article',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Free TV Show Pitch Deck Template | MY Entertainment',
+    title: 'TV Show Pitch Deck Template: Free 8-Slide PDF | MY Entertainment',
     description:
-      'Download our free 8-slide TV show pitch deck template, annotated from 25+ years pitching unscripted concepts to 28+ networks.',
+      'Free 8-slide TV pitch deck template from a company with 25+ years selling shows to Discovery, A&E, PBS, and 28+ networks. Download instantly, no sign-up required.',
   },
 };
 

@@ -4,25 +4,25 @@ import { useState } from 'react';
 import type { SafeTitle } from './page';
 import { pickDeckVideoEmbed } from '@/lib/vimeo';
 
-// Electric blue storm palette
-const BLUE  = '#1E88E5';
-const BLACK = '#0A0C10';
-const DARK  = '#0F1318';
-const PANEL = '#141820';
-const MUTED = '#5A6880';
-const WHITE = '#EEF2F8';
+// Deep red crime-thriller palette
+const RED   = '#CC2929';
+const BLACK = '#0D0A0A';
+const DARK  = '#130D0D';
+const PANEL = '#1A1010';
+const MUTED = '#7A5050';
+const WHITE = '#F5EEEE';
 
-function StormDivider() {
+function CrimeDivider() {
   return (
     <div style={{ position: 'relative', height: 24, background: BLACK, overflow: 'hidden' }}>
       <div style={{
         position: 'absolute', inset: 0,
-        backgroundImage: `repeating-linear-gradient(-70deg, ${BLUE}14 0px, ${BLUE}30 1px, transparent 1px, transparent 60px)`,
+        backgroundImage: `repeating-linear-gradient(90deg, ${RED}14 0px, ${RED}28 1px, transparent 1px, transparent 80px)`,
       }} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
         width: 64, height: 1,
-        background: `linear-gradient(to right, transparent, ${BLUE}99, transparent)`,
+        background: `linear-gradient(to right, transparent, ${RED}99, transparent)`,
       }} />
       <div style={{
         position: 'absolute', inset: 0,
@@ -41,7 +41,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
     const res = await fetch('/api/marketing/available/verify-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: 'storm-warriors', password: pw }),
+      body: JSON.stringify({ slug: 'the-art-of-murder', password: pw }),
     });
     if (res.ok) {
       onUnlock();
@@ -57,25 +57,25 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
       alignItems: 'center', justifyContent: 'center', fontFamily: "'Roboto Condensed', sans-serif",
     }}>
       <div style={{
-        background: PANEL, border: `1px solid ${BLUE}44`,
+        background: PANEL, border: `1px solid ${RED}44`,
         borderRadius: 8, padding: '48px 40px', maxWidth: 420, width: '100%', textAlign: 'center',
       }}>
-        <div style={{ fontSize: 48, marginBottom: 8 }}>⚡</div>
+        <div style={{ fontSize: 48, marginBottom: 8 }}>🔴</div>
         <h2 style={{ color: WHITE, fontSize: 22, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 8px' }}>
-          Storm Warriors
+          The Art of Murder
         </h2>
         <p style={{ color: MUTED, fontSize: 14, marginBottom: 28 }}>Enter password to view this package</p>
         <form onSubmit={submit}>
           <input
             type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Password"
             style={{
-              width: '100%', padding: '12px 16px', background: '#080A0E', border: `1px solid ${BLUE}55`,
+              width: '100%', padding: '12px 16px', background: '#0A0808', border: `1px solid ${RED}55`,
               borderRadius: 4, color: WHITE, fontSize: 16, marginBottom: 12, boxSizing: 'border-box',
             }}
           />
-          {err && <p style={{ color: '#E05050', fontSize: 13, marginBottom: 12 }}>{err}</p>}
+          {err && <p style={{ color: '#FF6060', fontSize: 13, marginBottom: 12 }}>{err}</p>}
           <button type="submit" style={{
-            width: '100%', padding: '12px', background: BLUE, color: WHITE,
+            width: '100%', padding: '12px', background: RED, color: WHITE,
             border: 'none', borderRadius: 4, fontSize: 15, fontWeight: 700,
             textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer',
           }}>
@@ -87,7 +87,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   );
 }
 
-export default function StormWarriorsOneSheet({ title }: { title: SafeTitle }) {
+export default function TheArtOfMurderOneSheet({ title }: { title: SafeTitle }) {
   const [unlocked, setUnlocked] = useState(!title.has_password);
 
   if (title.has_password && !unlocked) {
@@ -104,7 +104,7 @@ export default function StormWarriorsOneSheet({ title }: { title: SafeTitle }) {
         {title.image_url && (
           <img
             src={title.image_url}
-            alt="Storm Warriors"
+            alt="The Art of Murder"
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
           />
         )}
@@ -115,34 +115,34 @@ export default function StormWarriorsOneSheet({ title }: { title: SafeTitle }) {
         <div style={{ position: 'relative', padding: '0 48px 56px', width: '100%' }}>
           <span style={{
             display: 'inline-block', padding: '4px 12px',
-            background: `${BLUE}22`, border: `1px solid ${BLUE}66`,
-            borderRadius: 3, color: BLUE, fontSize: 11,
+            background: `${RED}22`, border: `1px solid ${RED}66`,
+            borderRadius: 3, color: RED, fontSize: 11,
             fontFamily: "'Roboto Condensed', sans-serif",
             fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: 12,
-          }}>Action Documentary</span>
+          }}>True Crime Documentary</span>
           <h1 style={{
             fontFamily: "'Roboto Condensed', sans-serif",
-            fontWeight: 900, fontSize: 'clamp(44px, 6vw, 88px)',
+            fontWeight: 900, fontSize: 'clamp(40px, 6vw, 84px)',
             textTransform: 'uppercase', lineHeight: 0.92,
             margin: '0 0 16px', color: WHITE,
             textShadow: '0 4px 20px rgba(0,0,0,0.9)',
           }}>
-            Storm<br /><span style={{ color: BLUE }}>Warriors</span>
+            The Art<br />of <span style={{ color: RED }}>Murder</span>
           </h1>
           <p style={{ color: `${WHITE}AA`, fontSize: 16, maxWidth: 520, margin: 0, fontStyle: 'italic' }}>
-            The men and women who chase storms, save lives, and face nature&apos;s fury head-on.
+            A deep-dive documentary series into killers who turned violence into craft.
           </p>
         </div>
       </section>
 
-      <StormDivider />
+      <CrimeDivider />
 
       {/* ── THE STORY ── */}
       <section style={{ background: DARK, padding: '72px 48px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <p style={{
             fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 900,
-            fontSize: 12, color: BLUE, letterSpacing: '0.22em',
+            fontSize: 12, color: RED, letterSpacing: '0.22em',
             textTransform: 'uppercase', marginBottom: 24,
           }}>The Story</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 56, alignItems: 'start' }}>
@@ -151,31 +151,32 @@ export default function StormWarriorsOneSheet({ title }: { title: SafeTitle }) {
               fontSize: 'clamp(22px, 2.5vw, 32px)', textTransform: 'uppercase',
               lineHeight: 1.1, margin: 0, color: WHITE,
             }}>
-              Into the storm.<br />
-              Against the odds.<br />
-              <span style={{ color: BLUE }}>For the mission.</span>
+              Method.<br />
+              Motive.<br />
+              <span style={{ color: RED }}>The truth beneath.</span>
             </h2>
             <div style={{ color: `${WHITE}CC`, fontSize: 15, lineHeight: 1.8 }}>
               <p style={{ marginTop: 0 }}>
-                <strong style={{ color: WHITE }}>Storm Warriors</strong> follows the elite responders,
-                chasers, and disaster-relief crews who run toward extreme weather events while everyone
-                else runs away. From hurricanes to tornadoes, these are the people who hold the line.
+                <strong style={{ color: WHITE }}>The Art of Murder</strong> is a true crime documentary
+                series that goes beyond the crime scene to examine the psychology, background, and methods
+                of killers whose crimes became notorious not just for their brutality, but for their
+                calculated precision.
               </p>
               <p>
-                The series puts viewers inside the action: real-time storm decisions, high-stakes rescues,
-                and the personal cost of a life spent chasing catastrophe. Equal parts adrenaline and
-                human story.
+                Each episode unravels the layers of a case through archival material, expert interviews,
+                and forensic analysis, asking what drives someone to commit violence they consider
+                a kind of craft.
               </p>
               <p style={{ marginBottom: 0 }}>
-                Produced by MY Entertainment, Storm Warriors is built for audiences who want authentic
-                action and genuine character in the same package.
+                A MY Entertainment production, The Art of Murder sits at the intersection of crime
+                investigation and character study, built for audiences who demand depth over sensationalism.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <StormDivider />
+      <CrimeDivider />
 
       {/* ── SIZZLE REEL ── */}
       {embedUrl && (
@@ -183,7 +184,7 @@ export default function StormWarriorsOneSheet({ title }: { title: SafeTitle }) {
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <p style={{
               fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 900,
-              fontSize: 12, color: BLUE, letterSpacing: '0.22em',
+              fontSize: 12, color: RED, letterSpacing: '0.22em',
               textTransform: 'uppercase', marginBottom: 16,
             }}>Sizzle Reel</p>
             <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, borderRadius: 4, overflow: 'hidden' }}>
@@ -198,25 +199,25 @@ export default function StormWarriorsOneSheet({ title }: { title: SafeTitle }) {
         </section>
       )}
 
-      <StormDivider />
+      <CrimeDivider />
 
       {/* ── FORMAT ── */}
       <section style={{ padding: '72px 48px', background: DARK }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <p style={{
             fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 900,
-            fontSize: 12, color: BLUE, letterSpacing: '0.22em',
+            fontSize: 12, color: RED, letterSpacing: '0.22em',
             textTransform: 'uppercase', marginBottom: 32,
           }}>Format &amp; Rights</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
             {[
-              { label: 'Format', value: 'Action Documentary Series' },
+              { label: 'Format', value: 'True Crime Documentary Series' },
               { label: 'Rights', value: 'All Rights Available' },
               { label: 'Contact', value: 'info@myentertainment.tv' },
             ].map(({ label, value }) => (
               <div key={label} style={{
                 background: PANEL, borderRadius: 6, padding: '24px 20px',
-                border: `1px solid ${BLUE}22`, textAlign: 'center',
+                border: `1px solid ${RED}22`, textAlign: 'center',
               }}>
                 <p style={{
                   fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700,
@@ -230,7 +231,7 @@ export default function StormWarriorsOneSheet({ title }: { title: SafeTitle }) {
         </div>
       </section>
 
-      <StormDivider />
+      <CrimeDivider />
 
       {/* ── CTA ── */}
       <section style={{ padding: '80px 48px', textAlign: 'center', background: BLACK }}>
@@ -239,7 +240,7 @@ export default function StormWarriorsOneSheet({ title }: { title: SafeTitle }) {
           fontSize: 32, textTransform: 'uppercase', letterSpacing: '0.08em',
           color: WHITE, margin: '0 0 12px',
         }}>
-          Interested in <span style={{ color: BLUE }}>Storm Warriors?</span>
+          Acquire <span style={{ color: RED }}>The Art of Murder</span>
         </h2>
         <p style={{ color: MUTED, fontSize: 15, maxWidth: 480, margin: '0 auto 32px' }}>
           Contact MY Entertainment to discuss licensing, co-production, and distribution rights.
@@ -248,7 +249,7 @@ export default function StormWarriorsOneSheet({ title }: { title: SafeTitle }) {
           href="mailto:info@myentertainment.tv"
           style={{
             display: 'inline-block', padding: '14px 36px',
-            background: BLUE, color: WHITE,
+            background: RED, color: WHITE,
             fontFamily: "'Roboto Condensed', sans-serif",
             fontWeight: 700, fontSize: 14, textTransform: 'uppercase',
             letterSpacing: '0.1em', textDecoration: 'none', borderRadius: 3,

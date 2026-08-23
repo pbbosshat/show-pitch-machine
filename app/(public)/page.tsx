@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   // "MY Entertainment" as brand anchor at the end matches the SERP pattern for known brands.
   title: 'TV Distribution Company | MY Entertainment',
   description:
-    'MY Entertainment is a New York TV distribution company connecting unscripted reality shows and formats with broadcasters and streaming services worldwide. Ghost Adventures, Destination Fear, Pros vs Joes, and 40+ titles distributed across Discovery, A&E, PBS, and 28+ networks.',
+    'NY TV distribution company. Ghost Adventures, Destination Fear, and 40+ shows sold to Discovery, A&E, PBS, and 28+ networks. Work with MY Entertainment.',
   keywords: [
     'TV distribution company', 'television distribution', 'unscripted TV distribution',
     'reality TV distribution', 'show distribution', 'TV format distribution',
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     url: 'https://www.myentertainment.tv/',
     siteName: 'MY Entertainment',
     type: 'website',
-    images: [{ url: OG_IMAGE, width: 1887, alt: 'MY Entertainment — New York TV distribution company' }],
+    images: [{ url: OG_IMAGE, width: 1887, alt: 'MY Entertainment, New York TV distribution company' }],
   },
   twitter: {
     card: 'summary_large_image',

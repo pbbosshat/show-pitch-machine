@@ -79,6 +79,9 @@ import JoseFernandezOneSheet from './JoseFernandezOneSheet';
 import WoodyStrodeOneSheet from './WoodyStrodeOneSheet';
 import LoriVallowOneSheet from './LoriVallowOneSheet';
 import ALittleChristmasSpiritOneSheet from './ALittleChristmasSpiritOneSheet';
+import MichelleReneeOneSheet from './MichelleReneeOneSheet';
+import StormWarriorsOneSheet from './StormWarriorsOneSheet';
+import TheArtOfMurderOneSheet from './TheArtOfMurderOneSheet';
 
 // Full DB row — password included here so we can compute has_password server-side.
 // The actual password value is never forwarded to the client component.
@@ -412,6 +415,15 @@ export default async function AvailablePackagePage(
   }
   if (slug === 'a-little-christmas-spirit') {
     return <ShowPageWrapper {...wrapperProps}><ALittleChristmasSpiritOneSheet title={safeTitle} /></ShowPageWrapper>;
+  }
+  if (slug === 'michelle-renee') {
+    return <ShowPageWrapper {...wrapperProps}><MichelleReneeOneSheet title={safeTitle} /></ShowPageWrapper>;
+  }
+  if (slug === 'storm-warriors') {
+    return <ShowPageWrapper {...wrapperProps}><StormWarriorsOneSheet title={safeTitle} /></ShowPageWrapper>;
+  }
+  if (slug === 'the-art-of-murder') {
+    return <ShowPageWrapper {...wrapperProps}><TheArtOfMurderOneSheet title={safeTitle} /></ShowPageWrapper>;
   }
 
   // Generic fallback — AvailablePackageClient already contains BuyerCTA

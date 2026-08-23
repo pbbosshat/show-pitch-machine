@@ -26,10 +26,10 @@ import Link from 'next/link';
 // ------------------------------------------------------------
 export const metadata: Metadata = {
   title: {
-    absolute: 'How to Pitch a TV Show (2026): Step-by-Step + Free Pitch Deck Template',
+    absolute: 'How to Pitch a TV Show: 2026 Guide + Free Template',
   },
   description:
-    'Learn how to pitch a TV show — and how to sell a TV show idea to networks and streamers in 2026. Step-by-step process, pitch deck structure, sizzle reel role, who buys, common mistakes, and a free TV show pitch deck template from MY Entertainment.',
+    'Step-by-step guide to pitching your TV show to networks in 2026. Covers pitch decks, sizzle reels, who buys, and a free template from MY Entertainment.',
   keywords: [
     'how to pitch a tv show', 'how to sell a tv show idea', 'pitch a tv show idea',
     'tv show pitch', 'pitch a tv show', 'tv show pitch deck',
@@ -38,18 +38,18 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: 'https://www.myentertainment.tv/how-to-pitch-a-tv-show' },
   openGraph: {
-    title: 'How to Pitch a TV Show (2026): Step-by-Step + Free Pitch Deck Template',
+    title: 'How to Pitch a TV Show: 2026 Guide + Free Template',
     description:
-      'Learn how to pitch a TV show — and how to sell a TV show idea — to networks and streamers in 2026. Step-by-step process, pitch deck structure, sizzle reel role, who buys, and a free pitch deck template from MY Entertainment.',
+      'Step-by-step guide to pitching your TV show to networks in 2026. Covers pitch decks, sizzle reels, who buys, and a free template from MY Entertainment.',
     url: 'https://www.myentertainment.tv/how-to-pitch-a-tv-show',
     siteName: 'MY Entertainment',
     type: 'article',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'How to Pitch a TV Show (2026): Step-by-Step + Free Pitch Deck Template',
+    title: 'How to Pitch a TV Show: 2026 Guide + Free Template',
     description:
-      'Step-by-step guide to pitching a TV show and selling a TV show idea — pitch deck structure, sizzle reel role, who buys, common mistakes, and a free template from MY Entertainment.',
+      'Step-by-step guide to pitching your TV show to networks in 2026. Covers pitch decks, sizzle reels, who buys, and a free template from MY Entertainment.',
   },
 };
 
