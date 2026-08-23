@@ -1,29 +1,17 @@
-// ============================================================
-// /how-to-pitch-a-reality-show — Pillar Page
-// Target keywords:
-//   "how to pitch a reality show"  (primary)
-//   "reality tv pitch"             (H2)
-//   "pitch a reality show idea"    (FAQ)
-//   "reality show pitch deck"      (H2 link target)
-//
-// Server Component — no 'use client'. Inline styles match site tokens.
-// ============================================================
-
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import Script from 'next/script';
+
+// Pillar page targeting "how to pitch a reality show" — 1.5k/mo search volume.
+// Covers what networks want, pitch deck structure, and finding a distribution partner.
+// Designed to capture mid-funnel buyers and route them to /work-with-us and /contact.
 
 export const metadata: Metadata = {
-  title: {
-    absolute: 'How to Pitch a Reality Show (2026 Complete Guide)',
-  },
+  title: { absolute: 'How to Pitch a Reality Show (2026 Complete Guide)' },
   description:
     'Step-by-step guide to pitching a reality show to networks and streamers in 2026. What networks want, pitch deck structure, finding a distribution partner.',
-  keywords: [
-    'how to pitch a reality show', 'reality tv pitch', 'pitch a reality show idea',
-    'reality show pitch deck', 'reality tv pitch deck', 'how to sell a reality show',
-    'unscripted tv pitch', 'reality format pitch',
-  ],
-  alternates: { canonical: 'https://www.myentertainment.tv/how-to-pitch-a-reality-show' },
+  alternates: {
+    canonical: 'https://www.myentertainment.tv/how-to-pitch-a-reality-show',
+  },
   openGraph: {
     title: 'How to Pitch a Reality Show (2026 Complete Guide)',
     description:
@@ -32,412 +20,418 @@ export const metadata: Metadata = {
     siteName: 'MY Entertainment',
     type: 'article',
   },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'How to Pitch a Reality Show (2026 Complete Guide)',
-    description:
-      'Step-by-step guide to pitching a reality show to networks and streamers in 2026. What networks want, pitch deck structure, finding a distribution partner.',
-  },
 };
 
+// HowTo JSON-LD schema — increases eligibility for rich results in Google Search.
 const howToSchema = {
   '@context': 'https://schema.org',
   '@type': 'HowTo',
   name: 'How to Pitch a Reality Show',
-  description: 'A step-by-step guide to pitching a reality TV show to networks and streaming platforms.',
+  description:
+    'A step-by-step guide to pitching a reality show concept to networks, cable channels, and streamers.',
   step: [
     {
       '@type': 'HowToStep',
-      name: 'Develop a clear format',
-      text: 'Define the core format: the premise, recurring structure per episode, cast or subject type, and what makes it repeatable.',
+      name: 'Identify your format and target network',
+      text: 'Define whether your show is competition, docuseries, or lifestyle. Match the format to the network that buys it.',
     },
     {
       '@type': 'HowToStep',
-      name: 'Build your pitch deck',
-      text: 'Create a pitch deck covering logline, format, episode breakdown, talent attachments, comparable shows, and visual look and feel.',
+      name: 'Build a pitch deck',
+      text: 'Create an 8-12 slide deck covering concept, format, talent, comparable shows, and why it works now.',
     },
     {
       '@type': 'HowToStep',
       name: 'Produce a sizzle reel',
-      text: 'Shoot a 2-5 minute sizzle reel that shows the concept in action, establishes tone, and proves the cast is compelling on camera.',
+      text: 'Shoot a 2-3 minute sizzle reel that shows the tone, talent chemistry, and visual world of the show.',
     },
     {
       '@type': 'HowToStep',
-      name: 'Find a distribution partner',
-      text: 'Approach a distribution company or production partner who has relationships with the networks buying in your genre.',
+      name: 'Find a distribution partner or attach a producer',
+      text: 'Partner with a distributor or established production company that has existing network relationships.',
     },
     {
       '@type': 'HowToStep',
       name: 'Submit and follow up',
-      text: 'Submit through proper industry channels and follow up consistently without being aggressive.',
+      text: 'Submit through the production company or directly to development executives. Follow up once after 4-6 weeks.',
     },
   ],
 };
 
-const container: React.CSSProperties = {
-  maxWidth: 780,
-  margin: '0 auto',
-  padding: '0 20px',
-};
-
-const bodyText: React.CSSProperties = {
-  fontFamily: "'Roboto', sans-serif",
-  fontSize: 15,
-  color: '#a5a7ad',
-  lineHeight: 1.8,
-  marginBottom: 20,
-  marginTop: 0,
-};
-
-const h2Style: React.CSSProperties = {
-  fontFamily: "'Roboto', sans-serif",
-  fontSize: 26,
-  fontWeight: 500,
-  color: '#f2f4f7',
-  marginTop: 56,
-  marginBottom: 16,
-};
-
-const h3Style: React.CSSProperties = {
-  fontFamily: "'Roboto', sans-serif",
-  fontSize: 18,
-  fontWeight: 500,
-  color: '#f2f4f7',
-  marginTop: 32,
-  marginBottom: 12,
-};
+// Site design tokens
+const BG    = '#000000';
+const TEXT  = '#a5a7ad';
+const WHITE = '#ffffff';
+const RED   = '#e51d26';
+const PANEL = '#111111';
 
 export default function HowToPitchARealityShowPage() {
   return (
-    <div style={{ background: '#000', color: '#a5a7ad' }}>
-
-      <script
+    <>
+      <Script
+        id="howto-schema"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
       />
 
-      {/* ── Header ── */}
-      <section style={{ paddingTop: 100, paddingBottom: 60, paddingLeft: 20, paddingRight: 20, textAlign: 'center', background: '#000' }}>
-        <h1
-          style={{
-            fontFamily: "'Roboto', sans-serif",
-            fontSize: 48,
-            fontWeight: 400,
-            color: '#e51d26',
-            textTransform: 'uppercase',
-            letterSpacing: '0.2em',
-            marginBottom: 24,
-            marginTop: 0,
-          }}
-        >
-          How to Pitch a Reality Show
-        </h1>
-        <p
-          style={{
-            fontFamily: "'Roboto', sans-serif",
-            fontSize: 16,
-            color: '#a5a7ad',
-            lineHeight: 1.7,
-            maxWidth: 660,
-            margin: '0 auto',
-          }}
-        >
-          Pitching a reality show is different from pitching scripted television. Networks and streamers
-          buy unscripted concepts based on format, repeatable structure, and casting viability, not on
-          the strength of a written pilot. This guide covers everything you need to know about
-          pitching a reality show in 2026.
-        </p>
-      </section>
+      <main style={{ background: BG, color: TEXT, fontFamily: "'Roboto', 'Helvetica Neue', sans-serif", lineHeight: 1.75 }}>
 
-      {/* ── Body ── */}
-      <section style={{ background: '#000', paddingBottom: 80, paddingLeft: 20, paddingRight: 20 }}>
-        <div style={container}>
+        {/* HERO */}
+        <section style={{ maxWidth: 860, margin: '0 auto', padding: '80px 24px 48px' }}>
+          <p style={{
+            fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700,
+            fontSize: 11, color: RED, letterSpacing: '0.22em',
+            textTransform: 'uppercase', margin: '0 0 20px',
+          }}>
+            MY Entertainment / Pitch Guide
+          </p>
+          <h1 style={{
+            fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 900,
+            fontSize: 'clamp(32px, 5vw, 56px)', textTransform: 'uppercase',
+            lineHeight: 1.05, color: RED, margin: '0 0 24px',
+          }}>
+            How to Pitch a Reality Show
+          </h1>
+          <p style={{ fontSize: 18, color: WHITE, maxWidth: 680, margin: '0 0 12px', lineHeight: 1.65 }}>
+            Reality television is still the most accessible genre for independent creators to sell to networks.
+            But most pitches fail before they reach a buyer. This guide covers what development executives
+            actually look for, what to put in your deck, and how to get your show in front of the right people.
+          </p>
+          <p style={{ fontSize: 14, color: TEXT }}>
+            Updated August 2026 — MY Entertainment has sold 40+ shows to Discovery, A&amp;E, PBS, and 28 other networks.
+          </p>
+        </section>
 
-          {/* Section 1 */}
-          <h2 style={h2Style}>What Makes Reality TV Different to Pitch</h2>
-          <p style={bodyText}>
-            In scripted television, buyers evaluate your pilot script and series bible. In reality TV,
-            they are buying a format: a structure that can repeat across episodes and seasons without
-            exhausting its premise. A great reality pitch shows that the engine of the show is
-            self-replenishing.
+        {/* SECTION 1 */}
+        <section style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px 56px' }}>
+          <h2 style={{
+            fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 900,
+            fontSize: 28, textTransform: 'uppercase', color: WHITE, margin: '0 0 20px',
+            borderBottom: `1px solid #222`, paddingBottom: 12,
+          }}>
+            1. What Networks Want in a Reality Pitch
+          </h2>
+          <p>
+            Every network development executive is solving the same problem: they need shows that attract
+            a specific audience, deliver strong ratings, and can sustain multiple seasons without ballooning
+            in production cost. Your pitch needs to answer all three before they ask.
           </p>
-          <p style={bodyText}>
-            That distinction changes everything about how you build your pitch materials. You need to
-            demonstrate that the concept scales, that the casting pool is deep, and that the format
-            produces emotion and conflict naturally rather than through scripted drama. If a buyer
-            cannot immediately picture ten episodes, you need to refine your format before you pitch.
-          </p>
-          <p style={bodyText}>
-            Reality TV also moves faster than scripted. Development conversations can go from initial
-            pitch to a greenlight order in months rather than years, but buyers receive hundreds of
-            pitches per year. The ones that move are specific, visual, and easy to explain in two
-            sentences.
+          <p>
+            The single biggest mistake independent creators make is pitching a concept without a clear
+            audience. "General audiences" is not an audience. Know exactly who watches your show, what
+            other shows they watch, and why your show belongs on the same schedule.
           </p>
 
-          {/* Section 2 */}
-          <h2 style={h2Style}>What Networks Want in a Reality Pitch</h2>
-          <p style={bodyText}>
-            Every network and streamer has a lane. Discovery buys adventure, science, and survival.
-            Bravo buys lifestyle and social competition. A&amp;E buys crime and investigation.
-            Lifetime buys relationship and family drama. The first job of any reality pitch is to
-            show the buyer that your concept belongs in their lane and competes with what is already
-            performing there.
+          <h3 style={{
+            fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700,
+            fontSize: 18, color: WHITE, textTransform: 'uppercase', letterSpacing: '0.08em',
+            margin: '32px 0 12px',
+          }}>
+            Format clarity
+          </h3>
+          <p>
+            Reality television covers a wide range of formats: competition, docuseries, lifestyle and
+            makeover, social experiment, true crime, and travel. Buyers think in formats, not just concepts.
+            Before you write a word of your pitch, define your format precisely. Is it elimination-based?
+            Is there a host? How many episodes per season? What is the production footprint?
           </p>
 
-          <h3 style={h3Style}>A castable, recurring cast or subject type</h3>
-          <p style={bodyText}>
-            Buyers need to believe you can fill the show repeatedly. If you have a fixed cast, they
-            want to know why these specific people are compelling enough to carry a series. If you
-            have a rotating cast format (dating shows, competition shows, intervention shows), they
-            need to see that the subject pool is broad enough to sustain multiple seasons.
+          <h3 style={{
+            fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700,
+            fontSize: 18, color: WHITE, textTransform: 'uppercase', letterSpacing: '0.08em',
+            margin: '32px 0 12px',
+          }}>
+            Comparable shows
+          </h3>
+          <p>
+            Comps are not admissions that your show is derivative. They are the fastest way to communicate
+            tone, budget, and audience to a buyer who reads 200 pitches a year. Pick two shows that your
+            concept resembles and one that it does not resemble but shares an audience with. That third
+            comp is often where the most interesting conversation happens.
           </p>
 
-          <h3 style={h3Style}>A clear hook that travels in a sentence</h3>
-          <p style={bodyText}>
-            The shows that get greenlit can be explained in one sentence that contains a built-in
-            tension. "Families swap lives for two weeks" is immediately visual and immediately
-            dramatic. "A show about different kinds of people" is not. Sharpen your logline until
-            the conflict is self-evident.
+          <h3 style={{
+            fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700,
+            fontSize: 18, color: WHITE, textTransform: 'uppercase', letterSpacing: '0.08em',
+            margin: '32px 0 12px',
+          }}>
+            The "why now" argument
+          </h3>
+          <p>
+            Networks greenlight shows that feel timely. Your pitch should have one paragraph that explains
+            why this show needs to exist in 2026 and not 2019. A cultural moment, a regulatory change, a
+            trend that has hit mainstream awareness but has not yet been documented on television — any of
+            these can power a convincing "why now."
           </p>
+        </section>
 
-          <h3 style={h3Style}>Comparable shows that are currently performing</h3>
-          <p style={bodyText}>
-            Your pitch should name two or three shows that are either on the target network or on a
-            competing network in the same genre, and explain why yours is the next evolution of that
-            format. Comps give buyers a familiar anchor. They also signal that you understand the
-            marketplace.
+        {/* SECTION 2 */}
+        <section style={{ background: PANEL, padding: '56px 24px' }}>
+          <div style={{ maxWidth: 860, margin: '0 auto' }}>
+            <h2 style={{
+              fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 900,
+              fontSize: 28, textTransform: 'uppercase', color: WHITE, margin: '0 0 20px',
+              borderBottom: `1px solid #333`, paddingBottom: 12,
+            }}>
+              2. What to Include in a Reality Show Pitch Deck
+            </h2>
+            <p>
+              A reality pitch deck is typically 8 to 12 slides. Buyers read them fast, often on a phone
+              between meetings. Every slide needs to earn its place. Here is the structure that works:
+            </p>
+
+            {[
+              { num: '01', title: 'Logline and Title', body: 'One sentence that says what the show is, who it follows, and what is at stake. The title should be memorable and searchable. Avoid clever puns — they read as amateurish to buyers.' },
+              { num: '02', title: 'The Concept', body: 'Two to four paragraphs expanding the logline. Cover the premise, the world the show lives in, and what makes it compelling on a weekly basis. Do not bury the hook.' },
+              { num: '03', title: 'Format Details', body: 'Episode count, runtime, structure (elimination vs. docuseries vs. hybrid), host or no host, recurring locations, and any notable production requirements. Be specific — vague format slides signal an underdeveloped concept.' },
+              { num: '04', title: 'Talent or Cast', body: 'If you have talent attached, show them here with a photo and one sentence on why they are right for this show. If you do not have talent yet, describe the casting profile precisely.' },
+              { num: '05', title: 'Comparable Shows', body: 'Three shows: two close comps and one tonal reference. Include network, premiere year, and a brief note on what each comp shares with your concept. Keep this slide to bullet points.' },
+              { num: '06', title: 'Episode or Season Arc', body: 'For docuseries: a brief description of two or three episodes that illustrate the variety and depth available. For competition: a season arc showing how conflict escalates toward the finale.' },
+              { num: '07', title: 'Target Audience', body: 'Demographics (age, gender skew, HHI if relevant), psychographics, and the shows this audience already watches. The more specific you are, the more credible you look.' },
+              { num: '08', title: 'The Ask', body: 'What you are looking for: a development deal, a co-production partnership, or a straight pickup. Be direct. Buyers respect clarity about what you need from them.' },
+            ].map(({ num, title, body }) => (
+              <div key={num} style={{
+                display: 'flex', gap: 24, marginBottom: 28,
+                borderLeft: `2px solid ${RED}`, paddingLeft: 20,
+              }}>
+                <div style={{
+                  fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 900,
+                  fontSize: 13, color: RED, minWidth: 28, paddingTop: 3,
+                }}>{num}</div>
+                <div>
+                  <p style={{ fontWeight: 700, color: WHITE, margin: '0 0 6px', fontSize: 15 }}>{title}</p>
+                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7 }}>{body}</p>
+                </div>
+              </div>
+            ))}
+
+            <p style={{ marginTop: 32 }}>
+              Need a template? MY Entertainment publishes a{' '}
+              <a href="/tv-show-pitch-deck" style={{ color: RED, textDecoration: 'none' }}>
+                free 8-slide TV pitch deck template
+              </a>{' '}
+              used by creators who have sold shows to Discovery, A&amp;E, and PBS. Download it before
+              you build your deck.
+            </p>
+          </div>
+        </section>
+
+        {/* SECTION 3 */}
+        <section style={{ maxWidth: 860, margin: '0 auto', padding: '56px 24px' }}>
+          <h2 style={{
+            fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 900,
+            fontSize: 28, textTransform: 'uppercase', color: WHITE, margin: '0 0 20px',
+            borderBottom: `1px solid #222`, paddingBottom: 12,
+          }}>
+            3. The Sizzle Reel: Your Most Important Asset
+          </h2>
+          <p>
+            A pitch deck gets you a meeting. A{' '}
+            <a href="/sizzle-reel" style={{ color: RED, textDecoration: 'none' }}>sizzle reel</a>{' '}
+            gets you a deal. For reality television, the sizzle reel is often more important than the deck
+            because it proves you can execute — that the tone translates to camera, that the talent is
+            compelling on screen, and that the production can deliver broadcast-quality content.
           </p>
-
-          <h3 style={h3Style}>Evidence of real-world demand</h3>
-          <p style={bodyText}>
-            If the show is based on a community, a movement, a trend, or a proven digital format,
-            include that evidence. A YouTube channel with 500,000 subscribers is proof of concept.
-            A viral social moment around your subject is proof of demand. Buyers are risk-averse.
-            Anything that reduces their perceived risk increases your chances.
+          <p>
+            A good reality sizzle reel is 2 to 3 minutes and structured like a trailer: a strong open
+            that establishes the world and the stakes, a middle that shows character chemistry and conflict,
+            and a close that leaves the buyer wanting more. It does not need to be a full episode. It needs
+            to feel like a show that already exists.
           </p>
-
-          {/* Section 3 */}
-          <h2 style={h2Style}>What to Include in a Reality Show Pitch Deck</h2>
-          <p style={bodyText}>
-            A reality show pitch deck is typically 10 to 20 slides. Every slide should earn its
-            place. Here is the standard structure that production companies and networks expect:
+          <p>
+            Budget considerations: a sizzle reel can be produced for as little as $5,000 or as much as
+            $200,000. The ceiling is set by the format. A docuseries about backyard inventors can shoot
+            cheaply. A competition show with elaborate set pieces cannot. Know your format's production
+            requirements before you set your sizzle budget.
           </p>
+        </section>
 
-          <h3 style={h3Style}>1. Logline and one-sentence hook</h3>
-          <p style={bodyText}>
-            The first slide tells buyers exactly what the show is. One sentence. No jargon. The
-            format is: [who] [does what] [with what built-in conflict]. If your logline requires
-            a paragraph to explain, the concept needs more work.
+        {/* SECTION 4 */}
+        <section style={{ background: PANEL, padding: '56px 24px' }}>
+          <div style={{ maxWidth: 860, margin: '0 auto' }}>
+            <h2 style={{
+              fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 900,
+              fontSize: 28, textTransform: 'uppercase', color: WHITE, margin: '0 0 20px',
+              borderBottom: `1px solid #333`, paddingBottom: 12,
+            }}>
+              4. How to Find a Distribution Partner
+            </h2>
+            <p>
+              Most networks will not accept unsolicited pitches from individual creators. They buy from
+              production companies and distributors with established relationships and the infrastructure
+              to deliver a finished show. If you do not have those relationships, you need a partner who does.
+            </p>
+
+            <h3 style={{
+              fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700,
+              fontSize: 18, color: WHITE, textTransform: 'uppercase', letterSpacing: '0.08em',
+              margin: '32px 0 12px',
+            }}>
+              What a distribution partner brings
+            </h3>
+            <p>
+              A distribution company with active network relationships can: present your concept in a pitch
+              meeting with a buyer they talk to regularly, attach their name to the project to give it
+              credibility, handle deal negotiations, manage delivery requirements, and collect and remit
+              licensing fees. In exchange, they take a distribution fee (typically 15 to 25 percent of
+              licensing revenue) and sometimes a co-production credit.
+            </p>
+
+            <h3 style={{
+              fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700,
+              fontSize: 18, color: WHITE, textTransform: 'uppercase', letterSpacing: '0.08em',
+              margin: '32px 0 12px',
+            }}>
+              What to look for in a partner
+            </h3>
+            <p>
+              Evaluate a potential distribution partner on three criteria: network relationships (which
+              buyers do they actually have meetings with, not just on their website roster), genre fit
+              (a company that sells adventure and travel shows is not the right home for a celebrity
+              relationship docuseries), and deal transparency (are the terms clear, are there examples
+              of deals they have closed in your format?).
+            </p>
+
+            <h3 style={{
+              fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700,
+              fontSize: 18, color: WHITE, textTransform: 'uppercase', letterSpacing: '0.08em',
+              margin: '32px 0 12px',
+            }}>
+              Working with MY Entertainment
+            </h3>
+            <p>
+              MY Entertainment is an independent production and distribution company with 25 years of
+              active network relationships across Discovery, A&amp;E, PBS, National Geographic, and 28 other
+              networks. We work with external creators on a project-by-project basis for shows that fit our
+              buyers.{' '}
+              <a href="/work-with-us" style={{ color: RED, textDecoration: 'none' }}>Learn how to work with us</a>{' '}
+              or{' '}
+              <a href="/contact" style={{ color: RED, textDecoration: 'none' }}>contact us directly</a>{' '}
+              to discuss your concept.
+            </p>
+          </div>
+        </section>
+
+        {/* SECTION 5 */}
+        <section style={{ maxWidth: 860, margin: '0 auto', padding: '56px 24px' }}>
+          <h2 style={{
+            fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 900,
+            fontSize: 28, textTransform: 'uppercase', color: WHITE, margin: '0 0 20px',
+            borderBottom: `1px solid #222`, paddingBottom: 12,
+          }}>
+            5. Common Mistakes That Kill Reality Pitches
+          </h2>
+          <p>
+            After decades of development meetings, the same mistakes appear across pitches that fail. Avoid these:
           </p>
+          <ul style={{ paddingLeft: 20, margin: '0 0 24px' }}>
+            <li style={{ marginBottom: 12 }}>
+              <strong style={{ color: WHITE }}>Pitching the wrong network.</strong> Sending a paranormal docuseries
+              to a lifestyle network is not a near miss — it is a signal that you have not done the work.
+              Research who greenlit shows in your genre in the past three years and pitch to those buyers.
+            </li>
+            <li style={{ marginBottom: 12 }}>
+              <strong style={{ color: WHITE }}>No existing materials.</strong> A pitch without a sizzle reel
+              or a pitch deck is a conversation, not a submission. Come prepared with both before you contact
+              a network or production company.
+            </li>
+            <li style={{ marginBottom: 12 }}>
+              <strong style={{ color: WHITE }}>Overselling the audience.</strong> Claiming your show will appeal
+              to 18-to-49-year-olds in all markets is not a sales argument. Networks are buying specific
+              audiences for specific dayparts. Know which one your show fits.
+            </li>
+            <li style={{ marginBottom: 12 }}>
+              <strong style={{ color: WHITE }}>Underestimating production cost.</strong> A budget estimate that
+              does not account for insurance, permits, post-production, and delivery requirements signals
+              inexperience. If you are not a producer, partner with one before you estimate cost.
+            </li>
+            <li style={{ marginBottom: 12 }}>
+              <strong style={{ color: WHITE }}>Following up too aggressively.</strong> One follow-up email after
+              four to six weeks is appropriate. Repeated calls or emails to a development executive will
+              close the door permanently.
+            </li>
+          </ul>
+        </section>
 
-          <h3 style={h3Style}>2. The format</h3>
-          <p style={bodyText}>
-            Describe the structure of a single episode. How does each episode begin? What is the
-            recurring structure that moves it forward? How does it end? If the show is episodic
-            (each episode a self-contained story), describe the recurring engine. If it is serial
-            (a story that continues across episodes), explain the season arc.
+        {/* FAQ */}
+        <section style={{ background: PANEL, padding: '56px 24px' }}>
+          <div style={{ maxWidth: 860, margin: '0 auto' }}>
+            <h2 style={{
+              fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 900,
+              fontSize: 28, textTransform: 'uppercase', color: WHITE, margin: '0 0 32px',
+              borderBottom: `1px solid #333`, paddingBottom: 12,
+            }}>
+              Frequently Asked Questions
+            </h2>
+
+            {[
+              {
+                q: 'Do I need an agent to pitch a reality show?',
+                a: 'Not necessarily. Many successful reality shows have been sold by independent producers working directly through a distribution company or production partner. An agent helps if you already have a track record — if you are pitching your first show, a strong distribution partner is more valuable than representation.',
+              },
+              {
+                q: 'How long does it take to sell a reality show?',
+                a: 'Development cycles vary by network. Cable channels typically move faster than broadcast networks — a development deal can close in 60 to 90 days, though greenlight to air can take 12 to 18 months after that. Streamers operate on different timelines depending on their release strategy. Plan for a 12-to-24-month process from first pitch to premiere.',
+              },
+              {
+                q: 'Can I pitch a reality show without a sizzle reel?',
+                a: 'You can get a meeting without one in some cases, particularly if you have existing credits or strong talent attached. But a sizzle reel dramatically increases your close rate. For first-time creators with no credits, it is essentially required. A 2-to-3 minute reel shot on modest production budget is more persuasive than a 20-page deck without footage.',
+              },
+            ].map(({ q, a }) => (
+              <div key={q} style={{ marginBottom: 32, borderLeft: `2px solid #333`, paddingLeft: 20 }}>
+                <p style={{ fontWeight: 700, color: WHITE, margin: '0 0 8px', fontSize: 16 }}>{q}</p>
+                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.75 }}>{a}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section style={{ maxWidth: 860, margin: '0 auto', padding: '72px 24px 96px', textAlign: 'center' }}>
+          <p style={{
+            fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 900,
+            fontSize: 11, color: RED, letterSpacing: '0.22em',
+            textTransform: 'uppercase', marginBottom: 16,
+          }}>MY Entertainment</p>
+          <h2 style={{
+            fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 900,
+            fontSize: 32, textTransform: 'uppercase', color: WHITE, margin: '0 0 16px',
+          }}>
+            Ready to pitch your show?
+          </h2>
+          <p style={{ fontSize: 16, maxWidth: 560, margin: '0 auto 36px', lineHeight: 1.7 }}>
+            MY Entertainment has active relationships with every major buyer in non-scripted television.
+            If your show is ready for a development conversation, we want to hear it.
           </p>
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a
+              href="/work-with-us"
+              style={{
+                display: 'inline-block', padding: '14px 32px',
+                background: RED, color: WHITE, borderRadius: 3,
+                fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700,
+                fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.1em',
+                textDecoration: 'none',
+              }}
+            >
+              Work With Us
+            </a>
+            <a
+              href="/tv-show-pitch-deck"
+              style={{
+                display: 'inline-block', padding: '14px 32px',
+                background: 'transparent', color: WHITE, borderRadius: 3,
+                fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700,
+                fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.1em',
+                textDecoration: 'none', border: '1px solid #444',
+              }}
+            >
+              Free Pitch Deck Template
+            </a>
+          </div>
+        </section>
 
-          <h3 style={h3Style}>3. Episode breakdown</h3>
-          <p style={bodyText}>
-            Pitch five to ten episode ideas that demonstrate the concept works repeatedly. These do
-            not need to be final episodes. They need to show the buyer that the format can sustain
-            a full season without running out of material. Each episode idea should be one to three
-            sentences: the subject, the setup, and the conflict.
-          </p>
-
-          <h3 style={h3Style}>4. Talent and casting</h3>
-          <p style={bodyText}>
-            If you have attached talent, leads, or a specific cast, put them here with photos and
-            a brief description of why they are compelling on camera. If the format uses a rotating
-            or subject-based cast, describe the casting criteria and the target subject pool.
-          </p>
-
-          <h3 style={h3Style}>5. Comparable shows (comps)</h3>
-          <p style={bodyText}>
-            List two or three shows from the target network or its closest competitor. Be specific:
-            name the show, the network, and the performance metric that proves it works. Then explain
-            what your show does differently or better.
-          </p>
-
-          <h3 style={h3Style}>6. Visual look and feel</h3>
-          <p style={bodyText}>
-            Reality TV is a visual medium. Include reference images, mood boards, or production
-            stills that communicate the visual tone of the show. Buyers want to know whether this
-            looks like a high-production-value cable series or a raw, immersive docuseries. The
-            visual references help them see the budget range and the audience.
-          </p>
-
-          <p style={bodyText}>
-            You can{' '}
-            <Link href="/tv-show-pitch-deck" style={{ color: '#e51d26', textDecoration: 'none' }}>
-              download a free TV show pitch deck template
-            </Link>{' '}
-            from MY Entertainment, an 8-slide annotated PDF built from 25+ years of pitching
-            unscripted concepts to Discovery, A&amp;E, PBS, and 28+ networks.
-          </p>
-
-          {/* Section 4 */}
-          <h2 style={h2Style}>How to Find a Distribution Partner</h2>
-          <p style={bodyText}>
-            Most independent creators cannot pitch directly to major networks. Networks buy from
-            production companies they have worked with, not from individuals who cold-submit through
-            a website. The fastest path to a greenlight is through a distribution or production
-            company that already has those relationships.
-          </p>
-
-          <h3 style={h3Style}>What a distribution partner does</h3>
-          <p style={bodyText}>
-            A television distribution company takes your format, attaches their production
-            infrastructure and network relationships, and brings the pitch to buyers on your behalf.
-            In exchange, they take a distribution fee and often a production credit. The relationship
-            is structured differently at every company, but the core value is access: they get your
-            concept in front of buyers who would otherwise never see it.
-          </p>
-
-          <h3 style={h3Style}>How to approach a distribution company</h3>
-          <p style={bodyText}>
-            Do your research before you reach out. Every distribution company has a genre focus.
-            Approaching a company that specializes in true crime with a cooking competition show
-            wastes everyone&apos;s time. Study their catalog, understand their network relationships,
-            and explain in your outreach why your show fits their lane.
-          </p>
-          <p style={bodyText}>
-            Your initial outreach should be short: one paragraph on the concept, one paragraph on
-            why you are reaching out to this company specifically, and a link to your sizzle reel
-            or pitch deck if it is polished enough to share. The goal is a conversation, not a
-            full pitch by email.
-          </p>
-          <p style={bodyText}>
-            MY Entertainment is a New York-based unscripted television distribution company with
-            25+ years of experience and relationships across Discovery, A&amp;E, PBS, Lifetime,
-            Travel Channel, and 28+ other networks. If you have an unscripted concept you believe
-            is ready for distribution, you can{' '}
-            <Link href="/work-with-us" style={{ color: '#e51d26', textDecoration: 'none' }}>
-              learn more about working with us
-            </Link>{' '}
-            or{' '}
-            <Link href="/contact" style={{ color: '#e51d26', textDecoration: 'none' }}>
-              contact us directly
-            </Link>.
-          </p>
-
-          {/* Section 5 */}
-          <h2 style={h2Style}>Common Mistakes and How to Avoid Them</h2>
-
-          <h3 style={h3Style}>Pitching a format that only works once</h3>
-          <p style={bodyText}>
-            Reality shows are ordered in seasons, not episodes. If your concept has a natural end
-            point after one season, networks will pass unless the first season is a cultural
-            phenomenon. Stress-test your format: can you run it for three seasons without repeating
-            the same story? If not, redesign the engine.
-          </p>
-
-          <h3 style={h3Style}>Leading with concept instead of conflict</h3>
-          <p style={bodyText}>
-            "A show about food" is a concept. "Chefs compete to recreate dishes they have never
-            tasted, using only memory and technique" is a conflict. Every pitch should lead with
-            the conflict that drives the show, not the subject matter that surrounds it.
-          </p>
-
-          <h3 style={h3Style}>Skipping the sizzle reel</h3>
-          <p style={bodyText}>
-            A sizzle reel is not optional for a reality pitch. Buyers need to see that your concept
-            translates to camera and that your cast is compelling on screen. A polished 2-3 minute
-            sizzle that shows the format in action will move a pitch further than a 30-slide deck
-            without one. Read more about{' '}
-            <Link href="/sizzle-reel" style={{ color: '#e51d26', textDecoration: 'none' }}>
-              what a sizzle reel is and how to make one
-            </Link>.
-          </p>
-
-          <h3 style={h3Style}>Pitching to the wrong buyers</h3>
-          <p style={bodyText}>
-            Netflix does not want the same show as the Food Network. Do the work of understanding
-            who buys in your genre and what their current programming slate looks like. A pitch
-            that says "this could be on Netflix, Hulu, or Peacock" tells the buyer you have not
-            done your homework. Specificity is credibility.
-          </p>
-
-          {/* FAQ */}
-          <h2 style={h2Style}>Frequently Asked Questions</h2>
-
-          {[
-            {
-              q: 'Do I need a production company to pitch a reality show?',
-              a: 'You do not need to own a production company, but you almost certainly need a production or distribution partner to get in front of major network buyers. Most networks have submission policies that only accept pitches from companies they have worked with. The exception is open call programs, which some networks run periodically, but these are competitive and represent a small fraction of what gets made.',
-            },
-            {
-              q: 'How long should a reality show pitch deck be?',
-              a: 'Between 10 and 20 slides for a standard pitch deck. If you are pitching in a room, aim for 10 to 12 slides because you want time to talk through each one. If you are submitting a leave-behind, you can go to 15 or 20 slides with more detail. Anything beyond 20 slides suggests the concept is not focused enough.',
-            },
-            {
-              q: 'What is the difference between pitching a reality format and a scripted show?',
-              a: 'In scripted television, the pilot script is the primary pitch document. In reality television, the format document and sizzle reel are the primary pitch materials. Scripted pitches sell a specific story. Reality pitches sell a repeatable engine. That distinction means reality pitches need to prove scalability in a way scripted pitches do not.',
-            },
-          ].map(({ q, a }, idx) => (
-            <div key={idx} style={{ marginBottom: 28 }}>
-              <h3 style={{ ...h3Style, marginTop: idx === 0 ? 0 : 32 }}>{q}</h3>
-              <p style={{ ...bodyText, marginBottom: 0 }}>{a}</p>
-            </div>
-          ))}
-
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section
-        style={{
-          padding: '80px 20px',
-          textAlign: 'center',
-          background: '#000',
-          borderTop: '1px solid #1a1a1a',
-        }}
-      >
-        <h2
-          style={{
-            fontFamily: "'Roboto', sans-serif",
-            fontSize: 32,
-            fontWeight: 400,
-            color: '#f2f4f7',
-            textTransform: 'capitalize',
-            marginBottom: 16,
-            marginTop: 0,
-          }}
-        >
-          Ready to Pitch Your Reality Show?
-        </h2>
-        <p
-          style={{
-            fontFamily: "'Roboto', sans-serif",
-            fontSize: 14,
-            color: '#a5a7ad',
-            lineHeight: 1.7,
-            marginBottom: 28,
-            marginTop: 0,
-            maxWidth: 560,
-            margin: '0 auto 28px',
-          }}
-        >
-          MY Entertainment has distributed 40+ unscripted titles to Discovery, A&amp;E, PBS, and 28+
-          networks over 25 years. If your concept is ready, we want to hear it.
-        </p>
-        <a
-          href="/contact"
-          style={{
-            fontFamily: "'Roboto Condensed', sans-serif",
-            fontSize: 14,
-            fontWeight: 500,
-            color: '#e02027',
-            textTransform: 'uppercase',
-            textDecoration: 'none',
-            letterSpacing: '0.05em',
-          }}
-        >
-          CONTACT US &#10095;
-        </a>
-      </section>
-
-    </div>
+      </main>
+    </>
   );
 }
