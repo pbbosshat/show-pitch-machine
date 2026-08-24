@@ -890,7 +890,7 @@ export default function TVShowPitchDeckPage() {
           {/* Primary CTA — pitch services. Icon + label + tooltip + aria-label per CLAUDE.md. */}
           <span className="mye-tooltip-wrap" style={{ display: 'inline-block', marginBottom: 24 }}>
             <a
-              href="/contact"
+              href="/work-with-us"
               className="deck-cta-btn"
               aria-label="Contact MY Entertainment to pitch your TV show with professional support"
               style={{
