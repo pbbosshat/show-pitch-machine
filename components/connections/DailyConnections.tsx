@@ -423,10 +423,16 @@ function StatusPill({ status }: { status: string | null }) {
 // Human-readable label per connect_queue.status (PRD §3). 'pending'/'picked'
 // are the two states before Bubba's poller has resolved a LinkedIn invite —
 // both read as "queued for Bubba" per the UI spec.
+// Distinguishes what the POLLER claims from what LINKEDIN confirms. Until
+// 'invite_confirmed' exists, "invite pending" is only Bubba's own word for it —
+// a silent failure in the engine would leave every row reading exactly the same.
+// 'invite_confirmed' means the person was found on Shawn's own LinkedIn "Sent
+// invitations" list, which is LinkedIn's record rather than ours.
 const QUEUE_STATUS_LABEL: Record<string, { label: string; color: string }> = {
   pending:           { label: 'queued for Bubba',  color: 'var(--status-deal)' },
   picked:            { label: 'queued for Bubba',  color: 'var(--status-deal)' },
-  pending_invite:    { label: 'invite pending',    color: 'var(--status-deal)' },
+  pending_invite:    { label: 'invite reported sent (unconfirmed)', color: 'var(--status-deal)' },
+  invite_confirmed:  { label: '✓ confirmed sent on LinkedIn', color: 'var(--status-greenlit)' },
   sent:              { label: 'sent',              color: 'var(--status-greenlit)' },
   already_connected: { label: 'already connected', color: 'var(--status-greenlit)' },
   failed:            { label: 'failed',            color: 'var(--status-pass)' },
