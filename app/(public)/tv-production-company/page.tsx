@@ -659,6 +659,45 @@ export default function TVProductionCompanyPage() {
               documentaries, internal culture films, and sponsored programming.
             </p>
             <p style={bodyText}>
+              The corporate entertainment services we produce include:
+            </p>
+            <ul
+              style={{
+                fontFamily: "'Roboto', sans-serif",
+                fontSize: 14,
+                color: '#a5a7ad',
+                lineHeight: 1.7,
+                paddingLeft: 20,
+                marginBottom: 16,
+                marginTop: 0,
+              }}
+            >
+              <li style={{ marginBottom: 8 }}>
+                <strong style={{ color: '#f2f4f7' }}>Branded content:</strong> brand-funded series and
+                short-form built to hold an audience, not just deliver a message
+              </li>
+              <li style={{ marginBottom: 8 }}>
+                <strong style={{ color: '#f2f4f7' }}>Corporate documentaries:</strong> origin stories,
+                founder profiles, and mission films with real narrative craft
+              </li>
+              <li style={{ marginBottom: 8 }}>
+                <strong style={{ color: '#f2f4f7' }}>Sponsored programming:</strong> advertiser-funded
+                formats produced to broadcast standard
+              </li>
+              <li style={{ marginBottom: 8 }}>
+                <strong style={{ color: '#f2f4f7' }}>Internal culture films:</strong> recruiting,
+                onboarding, and all-hands content people actually watch
+              </li>
+              <li style={{ marginBottom: 8 }}>
+                <strong style={{ color: '#f2f4f7' }}>Event and sizzle reels:</strong> highlight films and
+                promotional reels for launches, conferences, and campaigns
+              </li>
+              <li>
+                <strong style={{ color: '#f2f4f7' }}>Docu-style social content:</strong> platform-native
+                short-form cut from long-form shoots
+              </li>
+            </ul>
+            <p style={bodyText}>
               Our corporate entertainment work draws on the same infrastructure as our network
               productions: in-house shoot and edit teams, 25 years of non-fiction storytelling
               experience, and a track record producing content people actually want to watch,

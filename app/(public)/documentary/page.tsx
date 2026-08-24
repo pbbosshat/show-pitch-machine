@@ -319,6 +319,38 @@ export default function DocumentaryPage() {
           Emmy-nominated programming. We develop, produce, and pitch documentary concepts, and
           work with independent documentary filmmakers to package their projects for broadcast.
         </p>
+
+        {/* Above-the-fold hero CTA — /work-with-us. The hero previously had no CTA;
+            visitors had to scroll to the bottom of the page to find a next step. */}
+        <span className="mye-tooltip-wrap" style={{ display: 'inline-block', marginTop: 24 }}>
+          <a
+            href="/work-with-us"
+            className="doc-cta-btn"
+            aria-label="Partner with MY Entertainment on your documentary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              background: '#e51d26',
+              color: '#fff',
+              fontFamily: "'Roboto Condensed', sans-serif",
+              fontSize: 16,
+              fontWeight: 500,
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              borderRadius: 4,
+              padding: '12px 28px',
+              transition: 'opacity 150ms',
+            }}
+          >
+            {/* Leading icon — envelope/contact affordance */}
+            <span aria-hidden="true">✉</span>
+            Partner With MY Entertainment
+          </a>
+          <span className="mye-tooltip" aria-hidden="true">
+            Open the MYE partnership page
+          </span>
+        </span>
       </section>
 
       {/* ================================================================== */}

@@ -1300,6 +1300,39 @@ export default async function TVDistributionCompanyPage() {
             </span>
           </span>
 
+          {/* Secondary CTA — /work-with-us, ghost/outline style. This page's only CTA was
+              a producer submission link; buyers and partners visiting this page had no
+              path to the partnership page. Mirrors the ghost-button treatment used
+              elsewhere on the site (transparent bg, neutral border, muted text). */}
+          <span className="mye-tooltip-wrap" style={{ display: 'inline-block', marginBottom: 24, marginLeft: 12 }}>
+            <Link
+              href="/work-with-us"
+              className="distrib-cta-btn"
+              aria-label="Partner with MY Entertainment"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'transparent',
+                color: '#a5a7ad',
+                border: '2px solid #5f6266',
+                fontFamily: "'Roboto Condensed', sans-serif",
+                fontSize: 16,
+                fontWeight: 500,
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+                borderRadius: 4,
+                padding: '14px 40px',
+                transition: 'opacity 150ms',
+              }}
+            >
+              Partner With MY Entertainment →
+            </Link>
+            <span className="mye-tooltip" aria-hidden="true">
+              Go to the Work With MYE page
+            </span>
+          </span>
+
           {/* Secondary nav — related pages and education cluster */}
           <p
             style={{

@@ -605,6 +605,38 @@ export default function TVBuyersPage() {
             </span>
           </span>
 
+          {/* Secondary CTA — /work-with-us, ghost/outline style. /work-with-us was
+              previously only a buried cross-link at the bottom of this page; this
+              promotes it to a real button next to the primary catalog CTA. */}
+          <span className="mye-tooltip-wrap" style={{ display: 'inline-block', marginBottom: 16, marginLeft: 12 }}>
+            <Link
+              href="/work-with-us"
+              className="tvbuyers-cta-btn"
+              aria-label="Work with MY Entertainment"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'transparent',
+                color: '#a5a7ad',
+                border: '2px solid #5f6266',
+                fontFamily: "'Roboto Condensed', sans-serif",
+                fontSize: 16,
+                fontWeight: 500,
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+                borderRadius: 4,
+                padding: '14px 32px',
+                transition: 'opacity 150ms',
+              }}
+            >
+              Work With MY Entertainment →
+            </Link>
+            <span className="mye-tooltip" aria-hidden="true">
+              Go to the Work With MYE page
+            </span>
+          </span>
+
           {/* Secondary CTA — email inquiry */}
           <p
             style={{
