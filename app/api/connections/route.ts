@@ -7,6 +7,10 @@
  * Lists the leads for a build day (default today), tier-ordered. The client
  * recomputes tier counts, but we return them too for convenience.
  *
+ * mode=skipped — the dismissal archive. Every lead a human waved off, newest
+ * first, so nothing is ever truly lost and a mistaken dismissal can be undone
+ * from the page instead of needing a database edit.
+ *
  * mode=pending — rolling 14-day uncleared stack. Returns all leads where status is
  * still actionable (not yet sent/skipped/failed), from the last 14 days, ordered by
  * tier ASC then lead_date DESC so today's highest-tier leads float to the top.
@@ -44,6 +48,20 @@ export async function GET(request: Request) {
           WHERE cl.status IN ('new', 'enriching', 'ready', 'queued')
             AND cl.lead_date >= to_char(CURRENT_DATE - INTERVAL '14 days', 'YYYY-MM-DD')
           ORDER BY cl.tier ASC, cl.lead_date DESC, cl.created_at DESC`,
+        []
+      );
+    } else if (mode === 'skipped') {
+      // Dismissal archive. Deliberately NOT date-windowed: the point is that a
+      // dismissed lead stays retrievable indefinitely. Capped so the section
+      // cannot grow into a page-weight problem — the cap is surfaced in the UI
+      // rather than silently truncating.
+      rows = await query<JoinedLead>(
+        `SELECT cl.*, ta.headline AS article_headline, ta.url AS article_url
+           FROM connection_leads cl
+           LEFT JOIN trade_articles ta ON ta.id = cl.article_id
+          WHERE cl.status = 'skipped'
+          ORDER BY cl.updated_at DESC, cl.lead_date DESC
+          LIMIT 200`,
         []
       );
     } else {

@@ -507,6 +507,122 @@ function DismissButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+/**
+ * Dismissed-leads archive.
+ *
+ * Dismissing sets status='skipped', which every working view excludes — the
+ * pending list, Connect Selected and the LinkedIn lookup all skip them. That is
+ * the point, but it meant a dismissed lead vanished with no way back except a
+ * database edit, so an accidental click quietly cost a lead.
+ *
+ * Collapsed by default: this is an archive, not a work queue, and it should
+ * never compete for attention with the leads Shawn is actually working.
+ */
+function SkippedArchive({ onRestore }: { onRestore: (id: string, name: string) => Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  // Only fetched once opened — an archive nobody is looking at should not cost
+  // a query on every page load.
+  const { data, error, isLoading, mutate: refresh } = useSWR<ConnectionsListResponse>(
+    open ? '/api/connections?mode=skipped' : null,
+    fetcher
+  );
+  const rows = data?.data ?? [];
+
+  async function restore(lead: ConnectionLead) {
+    setBusyId(lead.id);
+    try {
+      await onRestore(lead.id, lead.person_name);
+      await refresh();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <div className="mt-6">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="text-[11px] font-semibold uppercase tracking-wider"
+        style={{ color: 'var(--text-muted)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+      >
+        {open ? '▾' : '▸'} Dismissed leads{rows.length ? ` (${rows.length})` : ''}
+      </button>
+
+      {open && (
+        <div
+          className="mt-2 rounded-lg border overflow-x-auto"
+          style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}
+        >
+          {isLoading && <p className="text-xs p-4" style={{ color: 'var(--text-muted)' }}>Loading…</p>}
+          {error && (
+            <p className="text-xs p-4" style={{ color: 'var(--status-pass)' }}>
+              {error instanceof Error ? error.message : String(error)}
+            </p>
+          )}
+          {!isLoading && !error && rows.length === 0 && (
+            <p className="text-xs p-4" style={{ color: 'var(--text-muted)' }}>
+              Nothing dismissed yet.
+            </p>
+          )}
+
+          {rows.map((lead) => (
+            <div
+              key={lead.id}
+              className="flex items-start gap-4 px-4 py-2.5 border-b last:border-b-0"
+              style={{ borderColor: 'var(--border-subtle)', minWidth: 640 }}
+            >
+              <div className="shrink-0" style={{ width: 200 }}>
+                <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{lead.person_name}</p>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                  {[lead.person_title, lead.company].filter(Boolean).join(' · ') || '—'}
+                </p>
+                <p className="text-[10px]" style={{ fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-muted)' }}>
+                  {lead.lead_date}
+                </p>
+              </div>
+
+              <p className="text-[11px] flex-1" style={{ color: 'var(--text-secondary)' }}>
+                {lead.reason ?? articleHeadline(lead) ?? '—'}
+              </p>
+
+              {/* Contact details are kept, so a restored lead is immediately
+                  workable rather than needing to be enriched again. */}
+              <div className="shrink-0 text-[10px]" style={{ width: 190, color: 'var(--text-muted)' }}>
+                <div className="truncate" title={lead.email ?? undefined}>{lead.email ?? 'no email'}</div>
+                <div>{lead.linkedin_url ? 'has LinkedIn' : 'no LinkedIn'}</div>
+              </div>
+
+              <div className="shrink-0" style={{ width: 84 }}>
+                <button
+                  onClick={() => restore(lead)}
+                  disabled={busyId === lead.id}
+                  title="Put this lead back in the pending list"
+                  className="text-[11px] font-semibold"
+                  style={{
+                    color: busyId === lead.id ? 'var(--text-muted)' : 'var(--accent)',
+                    background: 'none', border: 'none', padding: 0,
+                    cursor: busyId === lead.id ? 'wait' : 'pointer',
+                  }}
+                >
+                  {busyId === lead.id ? 'Restoring…' : 'Restore'}
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {rows.length >= 200 && (
+            <p className="text-[10px] px-4 py-2" style={{ color: 'var(--text-muted)' }}>
+              Showing the 200 most recently dismissed. Older ones are still in the database.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Tier 1/2 lead row ────────────────────────────────────────────────────
 
 function LeadRow({
@@ -936,6 +1052,18 @@ export default function DailyConnections() {
     }
   }
 
+  /** Put a dismissed lead back into the working list. */
+  async function restoreLead(leadId: string, name: string) {
+    try {
+      // 'ready' rather than 'new': it was already enriched before being
+      // dismissed, so it belongs back in the worked list, not the intake queue.
+      await postJson(`/api/connections/${leadId}`, { status: 'ready' }, 'PATCH');
+      await mutate();
+    } catch (err) {
+      setConnectError(err instanceof Error ? err.message : `Could not restore ${name}`);
+    }
+  }
+
   // ── Build / Refresh ──────────────────────────────────────────────────
   const [building, setBuilding] = useState(false);
   const [buildError, setBuildError] = useState<string | null>(null);
@@ -1259,6 +1387,9 @@ export default function DailyConnections() {
         connecting={connecting}
         error={connectError}
       />
+
+      {/* Archive of everything waved off — collapsed, at the bottom. */}
+      <SkippedArchive onRestore={restoreLead} />
 
       {/* Email compose — replaces the old inline draft panel. Only the email
           channel goes out from here; LinkedIn stays on the Connect Selected
