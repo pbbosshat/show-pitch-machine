@@ -439,6 +439,10 @@ const QUEUE_STATUS_LABEL: Record<string, { label: string; color: string }> = {
   picked:            { label: 'queued for Bubba',  color: 'var(--status-deal)' },
   pending_invite:    { label: 'invite reported sent (unconfirmed)', color: 'var(--status-deal)' },
   invite_confirmed:  { label: '✓ confirmed sent on LinkedIn', color: 'var(--status-greenlit)' },
+  invite_accepted:   { label: '✓ accepted — now connected', color: 'var(--status-greenlit)' },
+  // Claimed sent, but not pending on LinkedIn and not a connection. The invite
+  // has no evidence of ever existing — must not read like a success.
+  invite_unevidenced:{ label: '⚠ no evidence it was sent', color: 'var(--status-pass)' },
   sent:              { label: 'sent',              color: 'var(--status-greenlit)' },
   already_connected: { label: 'already connected', color: 'var(--status-greenlit)' },
   failed:            { label: 'failed',            color: 'var(--status-pass)' },
@@ -641,6 +645,8 @@ function ChannelState({ label, state, detail }: { label: string; state: string |
   let color = 'var(--text-muted)';
   if (state === 'sent') { text = 'sent'; color = 'var(--status-greenlit)'; }
   else if (state === 'invite_confirmed') { text = '✓ confirmed on LinkedIn'; color = 'var(--status-greenlit)'; }
+  else if (state === 'invite_accepted') { text = '✓ accepted — connected'; color = 'var(--status-greenlit)'; }
+  else if (state === 'invite_unevidenced') { text = '⚠ no evidence it was sent'; color = 'var(--status-pass)'; }
   else if (state === 'pending_invite') { text = 'reported sent — unconfirmed'; color = 'var(--status-deal)'; }
   else if (state === 'pending' || state === 'picked') { text = 'queued'; color = 'var(--status-deal)'; }
   else if (state === 'failed') { text = 'failed'; color = 'var(--status-pass)'; }
@@ -679,6 +685,7 @@ function ContactedLog() {
   // Surfaced because it is the actionable gap: emailed but never invited, or an
   // invite the poller claims but LinkedIn has not confirmed.
   const unconfirmed = rows.filter((r) => r.linkedin_state === 'pending_invite').length;
+  const unevidenced = rows.filter((r) => r.linkedin_state === 'invite_unevidenced').length;
   const emailOnly = rows.filter((r) => r.email_state === 'sent' && !r.linkedin_state).length;
 
   return (
@@ -690,11 +697,19 @@ function ContactedLog() {
       >
         {open ? '▾' : '▸'} Contacted{rows.length ? ` (${rows.length})` : ''}
       </button>
-      {(unconfirmed > 0 || emailOnly > 0) && (
-        <span className="text-[10px] ml-3" style={{ color: 'var(--status-deal)' }}>
-          {unconfirmed > 0 && `${unconfirmed} invite${unconfirmed > 1 ? 's' : ''} unconfirmed`}
-          {unconfirmed > 0 && emailOnly > 0 && ' · '}
-          {emailOnly > 0 && `${emailOnly} emailed but not invited`}
+      {(unconfirmed > 0 || emailOnly > 0 || unevidenced > 0) && (
+        <span className="text-[10px] ml-3">
+          {unevidenced > 0 && (
+            <span style={{ color: 'var(--status-pass)' }}>
+              {unevidenced} invite{unevidenced > 1 ? 's' : ''} with no evidence
+            </span>
+          )}
+          {unevidenced > 0 && (unconfirmed > 0 || emailOnly > 0) && <span style={{ color: 'var(--text-muted)' }}> · </span>}
+          <span style={{ color: 'var(--status-deal)' }}>
+            {unconfirmed > 0 && `${unconfirmed} unconfirmed`}
+            {unconfirmed > 0 && emailOnly > 0 && ' · '}
+            {emailOnly > 0 && `${emailOnly} emailed but not invited`}
+          </span>
         </span>
       )}
 
