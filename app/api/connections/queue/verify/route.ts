@@ -111,7 +111,10 @@ export async function POST(request: NextRequest) {
          FROM connect_queue q
          JOIN connection_leads cl ON cl.id = q.lead_id
         WHERE q.channel = 'linkedin'
-          AND q.status IN ('pending_invite', 'sent', 'picked')`
+          -- 'invite_confirmed' is included so a re-run RE-confirms a still-pending
+          -- invite. Excluding it made every later pass report confirmed=0 and
+          -- count its own earlier confirmations as unmatched strangers.
+          AND q.status IN ('pending_invite', 'sent', 'picked', 'invite_confirmed')`
     );
 
     let verified = 0;
