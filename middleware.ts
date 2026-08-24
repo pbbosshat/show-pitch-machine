@@ -85,6 +85,9 @@ const PUBLIC_PATHS = new Set([
   // use: "how to sell a tv show" / "how to distribute a tv show" / "how to
   // pitch a tv show". Must be public or Googlebot gets 307'd to /login.
   '/how-to-sell-a-tv-show',
+  // Reality-show pitch pillar page (seo/ctr-pass-aug26, merged 2026-08-24).
+  // Must be public or Googlebot gets 307'd to /login and the page can't rank.
+  '/how-to-pitch-a-reality-show',
 ]);
 
 // Path prefixes that are always public
