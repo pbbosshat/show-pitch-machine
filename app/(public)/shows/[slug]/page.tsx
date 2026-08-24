@@ -33,9 +33,9 @@ const SHOW_META_OVERRIDES: Record<string, { title: string; description: string }
   // and see who made it. Previous snippet led with "GHOST ADVENTURES spin-off"
   // which buried the show's own identity and truncated mid-sentence.
   'destination-fear': {
-    title: 'Destination Fear – Travel Channel Paranormal Series | MY Entertainment',
+    title: 'Destination Fear (Travel Channel) | MY Entertainment',
     description:
-      'Dakota Laden and crew spend the night in America\'s most haunted locations in this Travel Channel paranormal series. See the trailer from MY Entertainment.',
+      'Dakota Laden explores haunted locations across America. Travel Channel paranormal series from MY Entertainment, producers of Ghost Adventures.',
   },
 };
 

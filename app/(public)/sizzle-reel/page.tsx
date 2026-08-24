@@ -29,10 +29,10 @@ import Link from 'next/link';
 // ------------------------------------------------------------
 export const metadata: Metadata = {
   title: {
-    absolute: 'Sizzle Reel: What It Is, Examples & How a Production Company Makes One',
+    absolute: 'Sizzle Reel: What It Is, Examples + How to Make One',
   },
   description:
-    'A sizzle reel is a short, high-impact video that pitches a TV show concept to networks and streamers. Learn what a TV sizzle reel is, what makes one work, see examples, and find out how MY Entertainment — a sizzle reel production company with 25+ years of experience — produces reels that sell.',
+    'A sizzle reel is a short video that sells your TV idea to networks. Learn what makes one work, see examples, and how MY Entertainment produces reels that get picked up.',
   keywords: [
     'sizzle reel', 'tv sizzle reel', 'sizzle reel production company',
     'sizzle reel for tv show', 'what is a sizzle reel',
@@ -40,18 +40,18 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: 'https://www.myentertainment.tv/sizzle-reel' },
   openGraph: {
-    title: 'Sizzle Reel: What It Is, Examples & How a Production Company Makes One',
+    title: 'Sizzle Reel: What It Is, Examples + How to Make One',
     description:
-      'A sizzle reel is a short, high-impact video that pitches a TV show concept to networks and streamers. Learn what makes a TV sizzle reel work and how MY Entertainment produces reels that sell.',
+      'A sizzle reel is a short video that sells your TV idea to networks. Learn what makes one work, see examples, and how MY Entertainment produces reels that get picked up.',
     url: 'https://www.myentertainment.tv/sizzle-reel',
     siteName: 'MY Entertainment',
     type: 'article',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Sizzle Reel: What It Is, Examples & How a Production Company Makes One',
+    title: 'Sizzle Reel: What It Is, Examples + How to Make One',
     description:
-      'What a TV sizzle reel is, what makes one work, and how MY Entertainment — a sizzle reel production company with 25+ years of experience — produces reels that sell.',
+      'A sizzle reel is a short video that sells your TV idea to networks. Learn what makes one work, see examples, and how MY Entertainment produces reels that get picked up.',
   },
 };
 
