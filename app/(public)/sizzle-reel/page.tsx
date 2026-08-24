@@ -345,6 +345,39 @@ export default function SizzleReelPage() {
           tool in a TV pitch, the anatomy of one that sells, real examples, and how MY
           Entertainment produces reels for shows that get commissioned.
         </p>
+
+        {/* Above-the-fold CTA. This page ranks #5.1 for "sizzle reel production
+            company" (100 impr/mo) but previously had no CTA until roughly line 730
+            (mid-page) or line 896 (bottom of a ~950-line page). Reuses .sizzle-cta-btn
+            and .mye-tooltip-wrap classes already defined in this file's style block. */}
+        <span className="mye-tooltip-wrap" style={{ display: 'inline-block', marginTop: 8 }}>
+          <a
+            href="/work-with-us"
+            className="sizzle-cta-btn"
+            aria-label="Get a quote from MY Entertainment for your sizzle reel"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              background: '#e51d26',
+              color: '#fff',
+              fontFamily: "'Roboto Condensed', sans-serif",
+              fontSize: 14,
+              fontWeight: 500,
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              borderRadius: 4,
+              padding: '12px 28px',
+              transition: 'opacity 150ms',
+            }}
+          >
+            <span aria-hidden="true">✉</span>
+            Get a Sizzle Reel Quote
+          </a>
+          <span className="mye-tooltip" aria-hidden="true">
+            Open the MYE partnership page
+          </span>
+        </span>
       </section>
 
       {/* ================================================================== */}
@@ -890,10 +923,12 @@ export default function SizzleReelPage() {
             talk.
           </p>
 
-          {/* Primary CTA — contact page. Visible text + icon + tooltip per CLAUDE.md rules. */}
+          {/* Primary CTA, points to /work-with-us (the site's stated current B2B
+              destination per work-with-us/page.tsx). Visible text + icon + tooltip
+              per CLAUDE.md rules. */}
           <span className="mye-tooltip-wrap" style={{ display: 'inline-block' }}>
             <a
-              href="/contact"
+              href="/work-with-us"
               className="sizzle-cta-btn"
               aria-label="Contact MY Entertainment to discuss your show pitch"
               style={{

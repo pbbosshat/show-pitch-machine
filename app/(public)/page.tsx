@@ -378,6 +378,30 @@ export default function HomePage() {
                 >
                   Submit Your Show →
                 </Link>
+
+                {/* Tertiary CTA, B2B/corporate buyer path. Added because the two
+                    existing above-the-fold CTAs (catalog browsing, show submission)
+                    target consumers/creators, not corporate buyers researching a
+                    production partner ("corporate entertainment service" pos 1.8,
+                    "sizzle reel production company" pos 5.1, etc). */}
+                <Link
+                  href="/work-with-us"
+                  style={{
+                    background: 'transparent',
+                    color: '#a5a7ad',
+                    border: '2px solid #5f6266',
+                    fontFamily: "'Roboto Condensed', sans-serif",
+                    fontSize: 15,
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                    borderRadius: 8,
+                    padding: '9px 26px',
+                    display: 'inline-block',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  Hire Us For Your Production →
+                </Link>
               </div>
             </div>
             {/* Right column — intentionally empty (matches Webflow layout) */}

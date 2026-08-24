@@ -34,6 +34,7 @@ export const metadata: Metadata = {
     'tv production company', 'unscripted tv production company', 'commissioning editor',
     'television production company', 'reality tv production company', 'new york production company',
     'pitch to tv networks', 'production company partner',
+    'corporate entertainment service', 'corporate video production company',
   ],
   alternates: { canonical: 'https://www.myentertainment.tv/tv-production-company' },
   openGraph: {
@@ -130,6 +131,10 @@ const FAQ_ITEMS = [
   {
     q: 'What percentage does a production company take?',
     a: 'Production company arrangements vary widely depending on the deal structure. MY Entertainment works under co-production and option agreements that are negotiated case by case. We are transparent about deal terms and will always explain the structure before any agreement is signed. Contact us directly to discuss what a partnership would look like for your specific concept.',
+  },
+  {
+    q: 'Do you provide corporate entertainment services?',
+    a: 'Yes. In addition to network and streaming television, MY Entertainment produces branded content, corporate documentaries, and sponsored programming for brands and organizations. These projects use the same in-house production team and 25 years of non-fiction storytelling experience behind our network shows.',
   },
 ];
 
@@ -439,6 +444,40 @@ export default function TVProductionCompanyPage() {
             </div>
           ))}
         </div>
+
+        {/* Above-the-fold CTA. Added because the hero previously had zero CTA.
+            This is the best-fit landing page for "corporate entertainment
+            service" (pos 1.8, 0 clicks) once the section below adds that
+            content. Reuses .prodco-cta-btn and .mye-tooltip-wrap classes
+            already defined in this file's style block. */}
+        <span className="mye-tooltip-wrap" style={{ display: 'inline-block', marginTop: 24 }}>
+          <a
+            href="/work-with-us"
+            className="prodco-cta-btn"
+            aria-label="Get a quote from MY Entertainment for your production"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              background: '#e51d26',
+              color: '#fff',
+              fontFamily: "'Roboto Condensed', sans-serif",
+              fontSize: 14,
+              fontWeight: 500,
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              borderRadius: 4,
+              padding: '12px 28px',
+              transition: 'opacity 150ms',
+            }}
+          >
+            <span aria-hidden="true">✉</span>
+            Get a Production Quote
+          </a>
+          <span className="mye-tooltip" aria-hidden="true">
+            Open the MYE partnership page
+          </span>
+        </span>
       </section>
 
       {/* ================================================================== */}
@@ -599,6 +638,36 @@ export default function TVProductionCompanyPage() {
               If you are developing a reality TV concept and looking for a production partner with a
               proven track record across these formats,{' '}
               <Link href="/work-with-us" style={inlineLink}>reach out to discuss your concept →</Link>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================== */}
+      {/* SECTION 2d: Corporate Entertainment Services (H2 keyword target)    */}
+      {/* Targets "corporate entertainment service" (pos 1.8, 28 impr, 0      */}
+      {/* clicks). No page on the site addressed this term before this edit.  */}
+      {/* ================================================================== */}
+      <section style={{ background: '#000', padding: '60px 20px' }}>
+        <div style={container}>
+          <div className="prodco-prose">
+            <h2 style={h2Style}>Corporate Entertainment Services</h2>
+            <p style={bodyText}>
+              Beyond network television, MY Entertainment provides <strong style={{ color: '#f2f4f7' }}>corporate
+              entertainment services</strong> for brands and organizations that want the same production
+              quality we bring to Discovery, PBS, and A&amp;E applied to branded content, corporate
+              documentaries, internal culture films, and sponsored programming.
+            </p>
+            <p style={bodyText}>
+              Our corporate entertainment work draws on the same infrastructure as our network
+              productions: in-house shoot and edit teams, 25 years of non-fiction storytelling
+              experience, and a track record producing content people actually want to watch,
+              not just corporate video that checks a box.
+            </p>
+            <p style={bodyText}>
+              If you are a brand, agency, or organization looking for a corporate entertainment
+              partner with a real television production pedigree,{' '}
+              <Link href="/work-with-us" style={inlineLink}>reach out to discuss your project →</Link>
             </p>
           </div>
         </div>
@@ -934,7 +1003,7 @@ export default function TVProductionCompanyPage() {
           */}
           <span className="mye-tooltip-wrap" style={{ display: 'inline-block', marginBottom: 24 }}>
             <a
-              href="/contact"
+              href="/work-with-us"
               className="prodco-cta-btn"
               aria-label="Contact MY Entertainment to pitch your TV show concept"
               style={{
