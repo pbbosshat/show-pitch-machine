@@ -77,6 +77,12 @@ interface ConnectionLead {
   article_url?: string | null;
   headline?: string | null;
   url?: string | null;
+  // Only present on ?mode=contacted — per-channel queue state, aggregated.
+  // lead.status cannot carry this: it is one field for two channels, so an
+  // email flipping it to 'sent' hides whatever LinkedIn is doing.
+  email_state?: string | null;
+  linkedin_state?: string | null;
+  linkedin_detail?: string | null;
 }
 
 interface ConnectionsListResponse {
@@ -629,6 +635,119 @@ function SkippedArchive({ onRestore }: { onRestore: (id: string, name: string) =
   );
 }
 
+/** One channel's state, worded so "claimed" and "confirmed" never look alike. */
+function ChannelState({ label, state, detail }: { label: string; state: string | null | undefined; detail?: string | null }) {
+  let text = 'not sent';
+  let color = 'var(--text-muted)';
+  if (state === 'sent') { text = 'sent'; color = 'var(--status-greenlit)'; }
+  else if (state === 'invite_confirmed') { text = '✓ confirmed on LinkedIn'; color = 'var(--status-greenlit)'; }
+  else if (state === 'pending_invite') { text = 'reported sent — unconfirmed'; color = 'var(--status-deal)'; }
+  else if (state === 'pending' || state === 'picked') { text = 'queued'; color = 'var(--status-deal)'; }
+  else if (state === 'failed') { text = 'failed'; color = 'var(--status-pass)'; }
+  else if (state === 'skipped') { text = 'skipped'; color = 'var(--text-muted)'; }
+  return (
+    <div className="text-[10px] leading-tight" title={detail ?? undefined}>
+      <span style={{ color: 'var(--text-muted)' }}>{label}: </span>
+      <span style={{ color }}>{text}</span>
+    </div>
+  );
+}
+
+/**
+ * Everything already actioned — the audit trail.
+ *
+ * Emailing a lead sets status='sent', and every working view excludes it. That
+ * was fine for keeping the queue clean and terrible for knowing what happened:
+ * a person could be emailed, still carry an UNCONFIRMED LinkedIn invite, and be
+ * invisible. Nothing should leave the page without leaving a record of what went
+ * out on which channel, and whether LinkedIn itself confirmed it.
+ *
+ * Open by default, unlike the dismissal archive — this is the flow, not a bin.
+ */
+function ContactedLog() {
+  const [open, setOpen] = useState(false);
+  // Fetched even while collapsed: the whole point is that an unconfirmed invite
+  // or an un-invited lead should be visible WITHOUT having to go looking, so
+  // those counts have to be known before the section is opened.
+  const { data, error, isLoading } = useSWR<ConnectionsListResponse>(
+    '/api/connections?mode=contacted',
+    fetcher,
+    { refreshInterval: 120_000 }
+  );
+  const rows = data?.data ?? [];
+
+  // Surfaced because it is the actionable gap: emailed but never invited, or an
+  // invite the poller claims but LinkedIn has not confirmed.
+  const unconfirmed = rows.filter((r) => r.linkedin_state === 'pending_invite').length;
+  const emailOnly = rows.filter((r) => r.email_state === 'sent' && !r.linkedin_state).length;
+
+  return (
+    <div className="mt-6">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="text-[11px] font-semibold uppercase tracking-wider"
+        style={{ color: 'var(--text-muted)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+      >
+        {open ? '▾' : '▸'} Contacted{rows.length ? ` (${rows.length})` : ''}
+      </button>
+      {(unconfirmed > 0 || emailOnly > 0) && (
+        <span className="text-[10px] ml-3" style={{ color: 'var(--status-deal)' }}>
+          {unconfirmed > 0 && `${unconfirmed} invite${unconfirmed > 1 ? 's' : ''} unconfirmed`}
+          {unconfirmed > 0 && emailOnly > 0 && ' · '}
+          {emailOnly > 0 && `${emailOnly} emailed but not invited`}
+        </span>
+      )}
+
+      {open && (
+        <div className="mt-2 rounded-lg border overflow-x-auto" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}>
+          {isLoading && <p className="text-xs p-4" style={{ color: 'var(--text-muted)' }}>Loading…</p>}
+          {error && <p className="text-xs p-4" style={{ color: 'var(--status-pass)' }}>{error instanceof Error ? error.message : String(error)}</p>}
+          {!isLoading && !error && rows.length === 0 && (
+            <p className="text-xs p-4" style={{ color: 'var(--text-muted)' }}>Nothing contacted yet.</p>
+          )}
+          {rows.map((lead) => (
+            <div key={lead.id} className="flex items-start gap-4 px-4 py-2.5 border-b last:border-b-0"
+                 style={{ borderColor: 'var(--border-subtle)', minWidth: 680 }}>
+              <div className="shrink-0" style={{ width: 200 }}>
+                <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{lead.person_name}</p>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                  {[lead.person_title, lead.company].filter(Boolean).join(' · ') || '—'}
+                </p>
+                <p className="text-[10px]" style={{ fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-muted)' }}>{lead.lead_date}</p>
+              </div>
+              <div className="shrink-0" style={{ width: 230 }}>
+                <ChannelState label="Email" state={lead.email_state} />
+                <ChannelState label="LinkedIn" state={lead.linkedin_state} detail={lead.linkedin_detail} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] truncate" style={{ color: 'var(--text-secondary)' }} title={lead.email ?? undefined}>
+                  {lead.email ?? 'no address'}
+                </p>
+                {lead.linkedin_url && (
+                  <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer"
+                     className="text-[10px] hover:underline" style={{ color: 'var(--accent)' }}>
+                    profile ↗
+                  </a>
+                )}
+              </div>
+              <div className="shrink-0" style={{ width: 92 }}>
+                {lead.status === 'skipped' && (
+                  <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>dismissed</span>
+                )}
+              </div>
+            </div>
+          ))}
+          {rows.length >= 200 && (
+            <p className="text-[10px] px-4 py-2" style={{ color: 'var(--text-muted)' }}>
+              Showing the 200 most recent. Older activity is still in the database.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Tier 1/2 lead row ────────────────────────────────────────────────────
 
 function LeadRow({
@@ -987,6 +1106,8 @@ export default function DailyConnections() {
   }
 
   const allSelected = tier1And2.length > 0 && tier1And2.every((l) => selectedIds.has(l.id));
+
+  const [tier3Open, setTier3Open] = useState(false);
 
   // ── Compose-modal state ──────────────────────────────────────────────
   // The old inline "Draft ▾" expander was replaced by EmailComposeModal. Only
@@ -1359,14 +1480,22 @@ export default function DailyConnections() {
       </div>
 
       {/* Tier 3 strip — note-only, no enrichment data until promoted */}
+      {/* Tier 3 is note-only: people merely named in an article, never an exec
+          move. Dozens of rows all reading "not an executive move" buried the
+          sections below, so it collapses. Collapsed by DEFAULT — it is reference
+          material you occasionally promote from, not a queue to work. */}
       {!isLoading && !error && tier3.length > 0 && (
         <div>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>
-            Tier 3 — note only ({tier3.length})
-          </h3>
+          <button
+            onClick={() => setTier3Open((v) => !v)}
+            className="text-[11px] font-semibold uppercase tracking-wider mb-1.5"
+            style={{ color: 'var(--text-muted)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          >
+            {tier3Open ? '▾' : '▸'} Tier 3 — note only ({tier3.length})
+          </button>
           <div
             className="rounded-lg border border-[var(--border-subtle)] px-4 overflow-x-auto"
-            style={{ background: 'var(--bg-surface)' }}
+            style={{ background: 'var(--bg-surface)', display: tier3Open ? undefined : 'none' }}
           >
             <div style={{ minWidth: 700 }}>
               {tier3.map((lead) => (
@@ -1393,6 +1522,9 @@ export default function DailyConnections() {
         connecting={connecting}
         error={connectError}
       />
+
+      {/* The audit trail: what actually went out, per channel. */}
+      <ContactedLog />
 
       {/* Archive of everything waved off — collapsed, at the bottom. */}
       <SkippedArchive onRestore={restoreLead} />

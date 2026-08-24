@@ -7,6 +7,13 @@
  * Lists the leads for a build day (default today), tier-ordered. The client
  * recomputes tier counts, but we return them too for convenience.
  *
+ * mode=contacted — everything already actioned, with PER-CHANNEL state. Once a
+ * lead is emailed its status becomes 'sent' and every working view drops it,
+ * which meant a person could be emailed, still have an UNCONFIRMED LinkedIn
+ * invite, and be invisible — you could not tell what had gone out, or what had
+ * only been claimed. This is the audit trail: what was sent, on which channel,
+ * and whether LinkedIn itself confirmed it.
+ *
  * mode=skipped — the dismissal archive. Every lead a human waved off, newest
  * first, so nothing is ever truly lost and a mistaken dismissal can be undone
  * from the page instead of needing a database edit.
@@ -48,6 +55,27 @@ export async function GET(request: Request) {
           WHERE cl.status IN ('new', 'enriching', 'ready', 'queued')
             AND cl.lead_date >= to_char(CURRENT_DATE - INTERVAL '14 days', 'YYYY-MM-DD')
           ORDER BY cl.tier ASC, cl.lead_date DESC, cl.created_at DESC`,
+        []
+      );
+    } else if (mode === 'contacted') {
+      // Any lead with real queue activity on either channel. Driven by
+      // connect_queue rather than lead.status because status is a SINGLE field
+      // shared by both channels — an email flips it to 'sent' and the LinkedIn
+      // state it also carries becomes unreadable from it. Dismissed leads are
+      // included when they were contacted first: John Oliver was emailed AND
+      // has a pending invite, and hiding that is exactly the gap this closes.
+      rows = await query<JoinedLead>(
+        `SELECT cl.*, ta.headline AS article_headline, ta.url AS article_url,
+                MAX(CASE WHEN q.channel = 'email'    THEN q.status END) AS email_state,
+                MAX(CASE WHEN q.channel = 'linkedin' THEN q.status END) AS linkedin_state,
+                MAX(CASE WHEN q.channel = 'linkedin' THEN q.result_detail END) AS linkedin_detail,
+                MAX(q.queued_at) AS last_action_at
+           FROM connection_leads cl
+           LEFT JOIN trade_articles ta ON ta.id = cl.article_id
+           JOIN connect_queue q ON q.lead_id = cl.id AND q.channel IN ('email','linkedin')
+          GROUP BY cl.id, ta.headline, ta.url
+          ORDER BY MAX(q.queued_at) DESC
+          LIMIT 200`,
         []
       );
     } else if (mode === 'skipped') {
