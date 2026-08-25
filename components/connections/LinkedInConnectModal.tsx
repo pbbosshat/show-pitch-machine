@@ -5,7 +5,7 @@
 // shows the profile link, lets the note be edited against LinkedIn's 200-char
 // invite cap, and queues the invite.
 //
-// ── What "Queue invite" actually does (important) ────────────────────────────
+// ── What "Send invite" actually does (important) ─────────────────────────────
 // It does NOT send anything from this app. It POSTs to the existing
 // /api/connections/connect with channels:['linkedin'], which writes a row into
 // connect_queue and flips the lead to 'queued'. A separate poller ("Bubba",
@@ -156,7 +156,7 @@ export default function LinkedInConnectModal({
       onQueued();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not queue invite');
+      setError(err instanceof Error ? err.message : 'Could not send invite');
     } finally {
       setQueueing(false);
     }
@@ -265,7 +265,7 @@ export default function LinkedInConnectModal({
           {/* Be explicit that this is a queue, not a direct send. */}
           <div style={{ borderRadius: 6, border: '1px solid var(--border-subtle)', background: 'var(--bg-surface-alt)', padding: '10px 12px' }}>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              <strong>Queue invite</strong> adds this to the LinkedIn queue. The Shawn LinkedIn
+              <strong>Send invite</strong> hands this to the LinkedIn queue. The Shawn LinkedIn
               engine picks it up and sends the real invite, then reports back — the row shows
               “queued for Bubba” until it does.
             </p>
@@ -278,7 +278,7 @@ export default function LinkedInConnectModal({
           )}
           {alreadyQueued && (
             <p style={{ fontSize: 12, color: 'var(--status-deal)' }}>
-              This lead is already queued. Queueing again will add another invite.
+              This lead is already queued. Sending again will add a second invite.
             </p>
           )}
           {error && (
@@ -301,7 +301,7 @@ export default function LinkedInConnectModal({
             title={!hasUrl ? 'No LinkedIn URL on this lead' : overCap ? 'Note is over the 200-character cap' : undefined}
             style={{ ...btnPrimary, opacity: canQueue ? 1 : 0.55, cursor: canQueue ? 'pointer' : 'not-allowed' }}
           >
-            {queueing ? 'Queueing…' : 'Queue invite'}
+            {queueing ? 'Sending…' : 'Send invite'}
           </button>
         </div>
       </div>
