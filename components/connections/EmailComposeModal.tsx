@@ -152,6 +152,18 @@ export default function EmailComposeModal({
 
   const verified = lead.email_status === 'verified';
   const canSend = !sending && to.trim() !== '' && subject.trim() !== '' && bodyText.trim() !== '';
+
+  // Same rule as the LinkedIn window: never present a dead button without
+  // saying what would make it live. Listing every missing piece at once beats
+  // fixing one and discovering another.
+  const missing = [
+    !to.trim() && 'a recipient address',
+    !subject.trim() && 'a subject',
+    !bodyText.trim() && 'a message body',
+  ].filter(Boolean) as string[];
+  const blockedReason = missing.length
+    ? `Needs ${missing.length === 1 ? missing[0] : missing.slice(0, -1).join(', ') + ' and ' + missing[missing.length - 1]}.`
+    : null;
   const activeTpl = CONNECTION_EMAIL_TEMPLATES.find((t) => t.id === templateId);
 
   return (
@@ -251,6 +263,20 @@ export default function EmailComposeModal({
         </div>
 
         {/* Footer actions */}
+        {blockedReason && !sending && (
+          <div
+            style={{
+              margin: '0 22px 14px', padding: '9px 12px', borderRadius: 6,
+              border: '1px solid var(--status-deal)', background: 'rgba(217,119,6,0.10)',
+            }}
+          >
+            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--status-deal)', marginBottom: 2 }}>
+              Can&rsquo;t send yet
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{blockedReason}</p>
+          </div>
+        )}
+
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '16px 22px', borderTop: '1px solid var(--border-subtle)' }}>
           <button onClick={onClose} disabled={sending} style={btnGhost}>Cancel</button>
           <button onClick={handleSaveDraft} disabled={savingDraft || sending} style={btnGhost}>

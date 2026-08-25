@@ -93,6 +93,18 @@ export default function LinkedInConnectModal({
   // "no LinkedIn note yet". Redraft note is the fix, and it is right there.
   const canQueue = hasUrl && !overCap && !queueing && note.trim() !== '';
 
+  // WHY it cannot send, in words, next to the button that will not respond.
+  // A greyed-out control with the reason hidden in a tooltip is a dead end —
+  // the counter turning red says "too long" but not "this is why nothing
+  // happens when you click", and the two are not the same message.
+  const blockedReason = !hasUrl
+    ? 'No LinkedIn profile URL — paste one above, or use Find contact.'
+    : !note.trim()
+      ? 'The invite note is empty — write one, or use Redraft note.'
+      : overCap
+        ? `Note is ${noteLen - LI_NOTE_CAP} character${noteLen - LI_NOTE_CAP === 1 ? '' : 's'} over LinkedIn's ${LI_NOTE_CAP} limit. Trim it, or use Redraft note.`
+        : null;
+
   async function handleSaveDraft() {
     setSavingDraft(true); setError(null); setNotice(null);
     try {
@@ -271,11 +283,6 @@ export default function LinkedInConnectModal({
             </p>
           </div>
 
-          {hasUrl && !note.trim() && (
-            <p style={{ fontSize: 12, color: 'var(--status-deal)' }}>
-              No note drafted — an invite cannot be queued without one. Use “Redraft note” above, or write it yourself.
-            </p>
-          )}
           {alreadyQueued && (
             <p style={{ fontSize: 12, color: 'var(--status-deal)' }}>
               This lead is already queued. Sending again will add a second invite.
@@ -289,6 +296,20 @@ export default function LinkedInConnectModal({
           )}
           {notice && <p style={{ fontSize: 12, color: 'var(--status-greenlit)' }}>{notice}</p>}
         </div>
+
+        {blockedReason && (
+          <div
+            style={{
+              margin: '0 22px 14px', padding: '9px 12px', borderRadius: 6,
+              border: '1px solid var(--status-deal)', background: 'rgba(217,119,6,0.10)',
+            }}
+          >
+            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--status-deal)', marginBottom: 2 }}>
+              Can&rsquo;t send yet
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{blockedReason}</p>
+          </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '16px 22px', borderTop: '1px solid var(--border-subtle)' }}>
           <button onClick={onClose} disabled={queueing} style={btnGhost}>Cancel</button>
