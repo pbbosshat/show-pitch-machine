@@ -672,10 +672,12 @@ function ChannelState({ label, state, detail }: { label: string; state: string |
  */
 function ContactedLog() {
   const [open, setOpen] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [resendError, setResendError] = useState<string | null>(null);
   // Fetched even while collapsed: the whole point is that an unconfirmed invite
   // or an un-invited lead should be visible WITHOUT having to go looking, so
   // those counts have to be known before the section is opened.
-  const { data, error, isLoading } = useSWR<ConnectionsListResponse>(
+  const { data, error, isLoading, mutate: refresh } = useSWR<ConnectionsListResponse>(
     '/api/connections?mode=contacted',
     fetcher,
     { refreshInterval: 120_000 }
@@ -684,6 +686,41 @@ function ContactedLog() {
 
   // Surfaced because it is the actionable gap: emailed but never invited, or an
   // invite the poller claims but LinkedIn has not confirmed.
+  /**
+   * Queue a fresh LinkedIn invite for a lead whose last attempt left no trace.
+   *
+   * Verification can prove an invite never arrived, but proving it was useless
+   * without a way to act on it — those leads sit in Contacted, out of the
+   * pending list, with no button anywhere. This is that button.
+   *
+   * It re-queues through the same /connect path a normal send uses, so the
+   * invite is identical to any other; only the trigger differs. The old
+   * 'invite_unevidenced' row is left in place as the record of the failure.
+   */
+  async function resendInvite(lead: ConnectionLead) {
+    setResendingId(lead.id);
+    setResendError(null);
+    try {
+      const json = await postJson('/api/connections/connect', {
+        lead_ids: [lead.id],
+        channels: ['linkedin'],
+      });
+      const results: { channel: string; status: string; detail: string | null }[] =
+        Array.isArray(json) ? json : (json.results ?? json.data ?? []);
+      const li = results.find((r) => r.channel === 'linkedin');
+      // A skip is the common outcome here (no note, no URL) and must be shown
+      // verbatim rather than reported as a successful re-send.
+      if (li && !['pending', 'picked', 'sent'].includes(li.status)) {
+        throw new Error(li.detail ?? `LinkedIn ${li.status}`);
+      }
+      await refresh();
+    } catch (err) {
+      setResendError(`${lead.person_name}: ${err instanceof Error ? err.message : 'could not re-send'}`);
+    } finally {
+      setResendingId(null);
+    }
+  }
+
   const unconfirmed = rows.filter((r) => r.linkedin_state === 'pending_invite').length;
   const unevidenced = rows.filter((r) => r.linkedin_state === 'invite_unevidenced').length;
   const emailOnly = rows.filter((r) => r.email_state === 'sent' && !r.linkedin_state).length;
@@ -717,6 +754,9 @@ function ContactedLog() {
         <div className="mt-2 rounded-lg border overflow-x-auto" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}>
           {isLoading && <p className="text-xs p-4" style={{ color: 'var(--text-muted)' }}>Loading…</p>}
           {error && <p className="text-xs p-4" style={{ color: 'var(--status-pass)' }}>{error instanceof Error ? error.message : String(error)}</p>}
+          {resendError && (
+            <p className="text-xs px-4 py-2" style={{ color: 'var(--status-pass)' }}>{resendError}</p>
+          )}
           {!isLoading && !error && rows.length === 0 && (
             <p className="text-xs p-4" style={{ color: 'var(--text-muted)' }}>Nothing contacted yet.</p>
           )}
@@ -745,7 +785,23 @@ function ContactedLog() {
                   </a>
                 )}
               </div>
-              <div className="shrink-0" style={{ width: 92 }}>
+              <div className="shrink-0 flex flex-col gap-1" style={{ width: 104 }}>
+                {lead.linkedin_state === 'invite_unevidenced' && (
+                  <button
+                    onClick={() => resendInvite(lead)}
+                    disabled={resendingId === lead.id}
+                    title="Queue this LinkedIn invite again — the last attempt left no trace on LinkedIn"
+                    className="text-[11px] font-semibold w-fit"
+                    style={{
+                      color: resendingId === lead.id ? 'var(--text-muted)' : 'var(--accent)',
+                      background: 'none', border: 'none', padding: 0,
+                      cursor: resendingId === lead.id ? 'wait' : 'pointer',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    {resendingId === lead.id ? 'Re-sending…' : 'Send again'}
+                  </button>
+                )}
                 {lead.status === 'skipped' && (
                   <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>dismissed</span>
                 )}
