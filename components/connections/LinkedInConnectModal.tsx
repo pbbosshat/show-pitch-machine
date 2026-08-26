@@ -30,7 +30,6 @@ export interface LinkedInLead {
   status: string;
 }
 
-
 export default function LinkedInConnectModal({
   lead,
   onClose,
@@ -93,11 +92,9 @@ export default function LinkedInConnectModal({
   const canQueue = hasUrl && !queueing && note.trim() !== '';
 
   // WHY it cannot send, in words, next to the button that will not respond.
-  // A greyed-out control with the reason hidden in a tooltip is a dead end —
-  // the counter turning red says "too long" but not "this is why nothing
-  // happens when you click", and the two are not the same message.
-  // Length is never a blocker: notes are shortened to the cap on the way in and
-  // on the way out, so there is nothing here for the user to fix.
+  // A greyed-out control with the reason hidden in a tooltip is a dead end.
+  // Length is never one of these reasons: notes are shortened to the cap on
+  // the way in and on the way out, so there is nothing there to fix.
   const blockedReason = !hasUrl
     ? 'No LinkedIn profile URL — paste one above, or use Find contact.'
     : !note.trim()
