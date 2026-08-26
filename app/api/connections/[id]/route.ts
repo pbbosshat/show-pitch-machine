@@ -10,6 +10,7 @@
  */
 import { NextResponse } from 'next/server';
 import { queryOne, run } from '@/lib/db';
+import { capLiNote } from '@/lib/connections/li-note';
 
 export const runtime = 'nodejs';
 
@@ -42,9 +43,10 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
       if (key in body) {
         let v = body[key];
 
-        // Enforce the LinkedIn note hard cap server-side too, not just in the UI.
-        if (key === 'draft_li_note' && typeof v === 'string' && v.length > 200) {
-          v = v.slice(0, 200);
+        // Enforce the LinkedIn note hard cap server-side too, not just in the
+        // UI. Shorten, never reject — same helper the drafter uses.
+        if (key === 'draft_li_note' && typeof v === 'string') {
+          v = capLiNote(v);
         }
 
         if (key === 'status' && typeof v === 'string' && !VALID_STATUS.has(v)) {

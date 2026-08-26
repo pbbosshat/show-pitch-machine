@@ -17,6 +17,7 @@
 // path. Nothing here talks to LinkedIn directly.
 
 import { useState, useEffect } from 'react';
+import { capLiNote, LI_NOTE_CAP } from '@/lib/connections/li-note';
 
 export interface LinkedInLead {
   id: string;
@@ -29,7 +30,6 @@ export interface LinkedInLead {
   status: string;
 }
 
-const LI_NOTE_CAP = 200;
 
 export default function LinkedInConnectModal({
   lead,
@@ -42,7 +42,7 @@ export default function LinkedInConnectModal({
   onSaveDraft: (fields: Record<string, string | null>) => Promise<void>;
   onQueued: () => void;
 }) {
-  const [note, setNote] = useState(lead.draft_li_note ?? '');
+  const [note, setNote] = useState(() => capLiNote(lead.draft_li_note));
   const [url, setUrl] = useState(lead.linkedin_url ?? '');
   const [finding, setFinding] = useState(false);
   const [queueing, setQueueing] = useState(false);
@@ -65,7 +65,7 @@ export default function LinkedInConnectModal({
       if (!res.ok) throw new Error(json?.error ?? `HTTP ${res.status}`);
       const fresh = json.draft_li_note ?? json.data?.draft_li_note ?? json.li_note ?? null;
       if (typeof fresh === 'string' && fresh.trim()) {
-        setNote(fresh);
+        setNote(capLiNote(fresh));
         setNotice('Note redrafted.');
       } else {
         setNotice('Redraft returned no note — the drafting service may be unavailable.');
@@ -84,31 +84,30 @@ export default function LinkedInConnectModal({
   }, [onClose, queueing]);
 
   const noteLen = note.length;
-  const overCap = noteLen > LI_NOTE_CAP;
   const hasUrl = !!url.trim();
   const alreadyQueued = lead.status === 'queued';
   // /connect gained a draft gate (PR #30): it now SKIPS a lead with no
   // draft_li_note rather than queueing a blank invite. Mirror that here so the
   // button is disabled up front instead of firing a request that comes back
   // "no LinkedIn note yet". Redraft note is the fix, and it is right there.
-  const canQueue = hasUrl && !overCap && !queueing && note.trim() !== '';
+  const canQueue = hasUrl && !queueing && note.trim() !== '';
 
   // WHY it cannot send, in words, next to the button that will not respond.
   // A greyed-out control with the reason hidden in a tooltip is a dead end —
   // the counter turning red says "too long" but not "this is why nothing
   // happens when you click", and the two are not the same message.
+  // Length is never a blocker: notes are shortened to the cap on the way in and
+  // on the way out, so there is nothing here for the user to fix.
   const blockedReason = !hasUrl
     ? 'No LinkedIn profile URL — paste one above, or use Find contact.'
     : !note.trim()
       ? 'The invite note is empty — write one, or use Redraft note.'
-      : overCap
-        ? `Note is ${noteLen - LI_NOTE_CAP} character${noteLen - LI_NOTE_CAP === 1 ? '' : 's'} over LinkedIn's ${LI_NOTE_CAP} limit. Trim it, or use Redraft note.`
-        : null;
+      : null;
 
   async function handleSaveDraft() {
     setSavingDraft(true); setError(null); setNotice(null);
     try {
-      await onSaveDraft({ draft_li_note: note, linkedin_url: url.trim() || null });
+      await onSaveDraft({ draft_li_note: capLiNote(note), linkedin_url: url.trim() || null });
       setNotice('Saved.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save note');
@@ -146,7 +145,7 @@ export default function LinkedInConnectModal({
       // Persist note AND profile URL FIRST — /connect reads both straight from
       // the row, so queueing without saving would use stale values (or skip the
       // lead entirely for a URL that only exists in this input).
-      await onSaveDraft({ draft_li_note: note, linkedin_url: url.trim() || null });
+      await onSaveDraft({ draft_li_note: capLiNote(note), linkedin_url: url.trim() || null });
 
       const res = await fetch('/api/connections/connect', {
         method: 'POST',
@@ -255,11 +254,11 @@ export default function LinkedInConnectModal({
               onChange={(e) => setNote(e.target.value)}
               rows={4}
               maxLength={LI_NOTE_CAP}
-              style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5, borderColor: overCap ? 'var(--status-pass)' : 'var(--border-subtle)' }}
+              style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5, borderColor: 'var(--border-subtle)' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5, gap: 12 }}>
               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                LinkedIn caps invite notes at {LI_NOTE_CAP} characters.{' '}
+                Invite notes are kept to {LI_NOTE_CAP} characters.{' '}
                 <button
                   onClick={handleRedraft}
                   disabled={redrafting || queueing}
@@ -268,7 +267,7 @@ export default function LinkedInConnectModal({
                   {redrafting ? 'Redrafting…' : 'Redraft note'}
                 </button>
               </span>
-              <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: overCap ? 'var(--status-pass)' : 'var(--text-muted)' }}>
+              <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-muted)' }}>
                 {noteLen}/{LI_NOTE_CAP}
               </span>
             </div>
@@ -319,7 +318,7 @@ export default function LinkedInConnectModal({
           <button
             onClick={handleQueue}
             disabled={!canQueue}
-            title={!hasUrl ? 'No LinkedIn URL on this lead' : overCap ? 'Note is over the 200-character cap' : undefined}
+            title={!hasUrl ? 'No LinkedIn URL on this lead' : undefined}
             style={{ ...btnPrimary, opacity: canQueue ? 1 : 0.55, cursor: canQueue ? 'pointer' : 'not-allowed' }}
           >
             {queueing ? 'Sending…' : 'Send invite'}

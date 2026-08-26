@@ -14,6 +14,7 @@ import { NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { queryOne, run } from '@/lib/db';
 import { sendConnectEmail } from '@/lib/connections/send';
+import { capLiNote } from '@/lib/connections/li-note';
 
 export const runtime = 'nodejs';
 
@@ -122,7 +123,7 @@ export async function POST(request: Request) {
             [
               qid,
               leadId,
-              JSON.stringify({ note: lead.draft_li_note, email: lead.email, linkedin_url: lead.linkedin_url, name: lead.person_name }),
+              JSON.stringify({ note: capLiNote(lead.draft_li_note), email: lead.email, linkedin_url: lead.linkedin_url, name: lead.person_name }),
               now,
             ]
           );

@@ -9,6 +9,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { query, run } from '@/lib/db';
+import { capLiNote } from '@/lib/connections/li-note';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -54,5 +55,10 @@ export async function GET(request: NextRequest) {
     await run(`UPDATE connect_queue SET status = 'picked', picked_at = ? WHERE id = ? AND status = 'pending'`, [now, r.queue_id]);
   }
 
-  return NextResponse.json({ items: rows });
+  // Last gate before the note leaves for the LinkedIn sender. draft_li_note is
+  // read live here (not from the queued payload), so rows drafted before the
+  // 200-char policy still go out shortened rather than over-length.
+  const items = rows.map((r) => ({ ...r, note: r.note ? capLiNote(r.note) : r.note }));
+
+  return NextResponse.json({ items });
 }

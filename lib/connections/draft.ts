@@ -12,11 +12,12 @@
 //
 // Hard guardrails enforced both in the prompt AND in code after generation:
 //   - zero em dashes and en dashes (commas/periods only)
-//   - li_note <= 300 characters (updated from 200)
+//   - li_note <= 200 characters (capLiNote shortens, it never rejects)
 //   - never a "library" of material; no show titles in the li_note
 //   - must end with a specific question, never a generic "Worth a look?"
 
 import { groqChat, stripFences } from './llm';
+import { capLiNote } from './li-note';
 
 export interface DraftInput {
   person_name: string;
@@ -50,7 +51,7 @@ VOICE RULES (non-negotiable):
 - Sign-off: the bare word "Shawn". Email body ends with "Shawn" then a plain signature block (Shawn Moffatt, My Entertainment).
 - ZERO em dashes, ZERO en dashes. Commas and periods only.
 - li_note field MUST contain ALL THREE of: (1) "Hi [First]." opener, (2) one personalized sentence about their role/company move, (3) a specific question. Missing any part = wrong answer.
-- li_note MUST be 300 characters or fewer including the name and "Shawn".
+- li_note MUST be 200 characters or fewer including the name and "Shawn". Count as you write. Two short sentences plus the question is the target shape.
 - NEVER say "We haven't met yet." Write as if you may have crossed paths before — warm, not cold-stranger.
 - NEVER say "I wanted to reach out."
 - The closing question must be SPECIFIC to their company or role, not generic ("Worth a look?" is banned).
@@ -92,9 +93,10 @@ Acknowledge the move in one natural clause, then ask about what they are buildin
   );
   const parsed = JSON.parse(stripFences(sanitized)) as Partial<DraftOutput>;
 
-  let li = stripDashes((parsed.li_note ?? '').trim());
-  // Hard cap 200 chars: trim on a word boundary if we overshoot.
-  if (li.length > 300) li = li.slice(0, 300).replace(/\s+\S*$/, '').trim();
+  // Hard cap at 200. The prompt asks for it; capLiNote guarantees it by
+  // shortening (dropping middle sentences, keeping the opener and the closing
+  // question). Never surfaced as an error — an over-long draft is just cut.
+  const li = capLiNote(stripDashes((parsed.li_note ?? '').trim()));
 
   return {
     email_subject: stripDashes((parsed.email_subject ?? '').trim()),
