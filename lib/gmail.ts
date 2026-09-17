@@ -112,9 +112,43 @@ async function getIngestedThreadIds(): Promise<Set<string>> {
 
 const INVITE_FROM = 'cc@assignmentdesk.com';
 
+// Header values carry user-supplied form text and admin-edited settings, and a
+// newline in one would let the caller inject headers of their own. Every header
+// value goes through this first.
+function sanitizeHeaderValue(value: string): string {
+  return value.replace(/[\r\n]+/g, ' ').trim();
+}
+
+// Email headers are 7-bit ASCII. RFC 2047 encoded-words carry non-ASCII
+// (em dashes, curly quotes) so Gmail renders them instead of mojibake.
+// Only for values that are wholly a phrase — Subject, or a display name. Never
+// for an address-bearing value: encoding `Name <addr>` as one word swallows the
+// address and the send fails outright.
+function encodeHeaderValue(value: string): string {
+  const clean = sanitizeHeaderValue(value);
+  if (!/[^\x20-\x7E]/.test(clean)) return clean;
+  return `=?UTF-8?B?${Buffer.from(clean, 'utf8').toString('base64')}?=`;
+}
+
+// Build a `Name <addr>` header value for From/Reply-To. The single place display
+// names are handled: only the name is encoded or quoted, and the angle-bracket
+// address stays raw — a non-ASCII address is at worst a deliverability question
+// at the MTA, whereas an encoded one is a guaranteed silent failure. Falls back
+// to the bare address when there's no usable name.
+export function formatEmailAddress(name: string, email: string): string {
+  const addr = sanitizeHeaderValue(email).replace(/\s+/g, '');
+  const phrase = encodeHeaderValue(name);
+  if (!addr || !phrase) return addr;
+  // An encoded-word is already a valid phrase; a plain ASCII name gets quoted in
+  // case it contains specials like a comma or period.
+  const display = phrase.startsWith('=?') ? phrase : `"${phrase.replace(/["\\]/g, '')}"`;
+  return `${display} <${addr}>`;
+}
+
 // Send an HTML email from cc@assignmentdesk.com using the service account with
 // domain-wide delegation — no separate OAuth flow needed.
-export async function sendEmail(to: string, subject: string, htmlBody: string): Promise<void> {
+// replyTo is optional: pass it so Reply in Gmail answers the submitter, not cc@.
+export async function sendEmail(to: string, subject: string, htmlBody: string, replyTo?: string): Promise<void> {
   const auth = getServiceAccountAuth(
     ['https://www.googleapis.com/auth/gmail.send'],
     INVITE_FROM
@@ -123,8 +157,9 @@ export async function sendEmail(to: string, subject: string, htmlBody: string): 
 
   const raw = Buffer.from(
     `From: MY Entertainment <${INVITE_FROM}>\r\n` +
-    `To: ${to}\r\n` +
-    `Subject: ${subject}\r\n` +
+    `To: ${sanitizeHeaderValue(to)}\r\n` +
+    `Subject: ${encodeHeaderValue(subject)}\r\n` +
+    (replyTo?.trim() ? `Reply-To: ${sanitizeHeaderValue(replyTo)}\r\n` : '') +
     `MIME-Version: 1.0\r\n` +
     `Content-Type: text/html; charset=utf-8\r\n` +
     `\r\n` +

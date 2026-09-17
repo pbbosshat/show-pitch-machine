@@ -46,7 +46,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'node:crypto';
 import { query, queryOne, run } from '@/lib/db';
 import { getSessionUser, SESSION_COOKIE } from '@/lib/auth';
-import { sendEmail } from '@/lib/gmail';
+import { formatEmailAddress, sendEmail } from '@/lib/gmail';
 import {
   SUBMISSION_RELEASE_VERSION,
   isReleaseRequired,
@@ -646,7 +646,12 @@ export async function POST(request: NextRequest) {
     ? `New Show Submission (release signed): ${first_name} ${last_name}${material_title ? ` — ${material_title}` : ''}`
     : `New Contact Lead: ${first_name} ${last_name}`;
 
-  sendEmail(leadsEmail, subject, leadNotificationHtml(lead, showTitle))
+  // Reply-To the submitter so Reply in Gmail answers them, not the cc@ sender
+  // mailbox. first_name, last_name and email are all required above, so the name
+  // is present; formatEmailAddress still falls back to the bare address.
+  const replyTo = formatEmailAddress(`${first_name} ${last_name}`, email);
+
+  sendEmail(leadsEmail, subject, leadNotificationHtml(lead, showTitle), replyTo)
     .catch((err) => console.error('[contact] notification email failed:', err));
 
   if (isFormPost) {
