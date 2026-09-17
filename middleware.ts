@@ -8,6 +8,10 @@ import type { NextRequest } from 'next/server';
 // Exact paths that are always public (including clean public-site URLs via rewrites)
 const PUBLIC_PATHS = new Set([
   '/',
+  // Railway's healthcheckPath (railway.toml). Without this entry middleware 307s
+  // the healthcheck to /login, it never sees a 200, the deploy is marked failed
+  // and ON_FAILURE burns all 10 restarts — leaving nothing serving at all (502).
+  '/api/health',
   '/login',
   '/forgot-password',
   '/reset-password',
