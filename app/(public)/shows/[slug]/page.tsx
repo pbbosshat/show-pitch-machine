@@ -12,6 +12,16 @@ import ShowPageTracker from '@/components/shows/ShowPageTracker';
 import NewsletterSignup from '@/components/newsletter/NewsletterSignup';
 import { SHOWS } from '@/lib/data/shows';
 
+// Canonical site origin. Local show artwork lives at a root-relative path
+// (/shows/*.png); schema.org requires absolute URLs, and metadataBase only
+// rewrites Next.js-generated <meta> tags, not hand-built JSON-LD.
+const SITE_ORIGIN = 'https://www.myentertainment.tv';
+
+// Make an image src absolute for JSON-LD. Webflow CDN srcs are already absolute.
+function absoluteImageUrl(src: string): string {
+  return src.startsWith('/') ? `${SITE_ORIGIN}${src}` : src;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Static params — pre-render all show detail pages at build time
 // ─────────────────────────────────────────────────────────────────────────────
@@ -66,7 +76,7 @@ export async function generateMetadata({
       url: canonicalUrl,
       siteName: 'MyEntertainment',
       type: 'video.tv_show',
-      images: [{ url: show.titleImgSrc, alt: `${show.title} — MyEntertainment` }],
+      images: [{ url: show.titleImgSrc, alt: `${show.title} from MyEntertainment` }],
     },
     twitter: {
       card: 'summary_large_image',
@@ -99,7 +109,7 @@ export default async function ShowPage({
     name: show.title,
     description: show.description.replace(/\n/g, ' ').substring(0, 500),
     url: `https://www.myentertainment.tv/shows/${show.slug}`,
-    image: show.titleImgSrc,
+    image: absoluteImageUrl(show.titleImgSrc),
     productionCompany: {
       '@type': 'Organization',
       name: 'MyEntertainment',
@@ -199,10 +209,10 @@ export default async function ShowPage({
           */}
           <NewsletterSignup showSlug={show.slug} showTitle={show.title} />
 
-          {/* Webflow: .support { text-align: right; margin-top: 60px } */}
+          {/* Centered within the same 940px content column as the newsletter box above */}
           <p
             style={{
-              textAlign: 'right',
+              textAlign: 'center',
               marginTop: 60,
               marginBottom: 20,
               fontFamily: "'Roboto', sans-serif",

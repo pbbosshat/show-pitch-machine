@@ -125,15 +125,22 @@ const GENRE_CARDS = [
 
 // ---------------------------------------------------------------------------
 // All shows — Webflow section "shows-section"
-// Shows #2 (Uninterrupted) and #3 (Destinations of the Damned) link
-// to external URLs; all others link to /shows/[slug].
+// Order is hand-maintained here; the first six are the featured/priority
+// shows, the rest follow in Webflow display order.
+// Entries flagged `external: true` (currently Uninterrupted and
+// Destinations of the Damned) link out to third-party URLs and open in a
+// new tab; every other entry links internally to /shows/[slug].
+// The flag — not the position — decides how a tile is rendered.
 // ---------------------------------------------------------------------------
 const ALL_SHOWS = [
-  { title: 'Ghost Adventures', href: '/shows/ghost-adventures', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/673388c81a9ea2c6f167a992_Untitled%20design%20%282%29.png' },
+  { title: 'Ghost Adventures', href: '/shows/ghost-adventures', img: '/shows/ghost-adventures-new-season.jpg' },
+  { title: '14 Days in Gainesville', href: '/shows/14-days-in-gainesville', img: '/shows/14-days-in-gainesville.png' },
+  { title: 'Snooki: The Paranormal Rookie', href: '/shows/snooki-the-paranormal-rookie', img: '/shows/snooki-the-paranormal-rookie.png' },
+  { title: 'Billy Buys Brooklyn', href: '/shows/billy-buys-brooklyn', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/63deb3a111b873829a9d008c_billy%20buys%20brooklyn%20show%20page%20header.png' },
+  { title: 'Baggage Battles', href: '/shows/baggage-battles', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e807f230d2c0e667c2f14_BAGGAGE%20BATTLES.png' },
   { title: 'Uninterrupted: The Real Stories of Basketball', href: 'https://www.youtube.com/watch?v=g7LHsI0g7NA', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/6733858038041d899a10227b_Real%20Stories%20of%20Basketball.png', external: true },
   { title: 'Destinations of the Damned (Zak Bagans)', href: 'https://www.max.com/shows/destinations-of-the-damned-with-zak-bagans/fbbff164-87f5-43e1-bf4d-cded5e1b4cca', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/6733877d8707275f3cbc8261_Untitled%20design%20%281%29.png', external: true },
   { title: 'Destination Fear', href: '/shows/destination-fear', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e80fc230d2c47867c3658_DESTINATION%20FEAR.png' },
-  { title: 'Billy Buys Brooklyn', href: '/shows/billy-buys-brooklyn', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/63deb3a111b873829a9d008c_billy%20buys%20brooklyn%20show%20page%20header.png' },
   { title: 'Legacy List', href: '/shows/legacy-list', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e826b2c6bbe4482950448_LEGACY%20LIST.png' },
   { title: 'Ghost Adventures: Screaming Room', href: '/shows/ghost-adventures-screaming-room', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e81f594d7efdad72a01e2_GHOST%20ADVENTURES%20SCREAMING%20ROOM.png' },
   { title: 'Pros vs Joes', href: '/shows/pros-vs-joes', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e844f230d2c84e97c6095_PROS%20VS%20JOES.png' },
@@ -144,7 +151,6 @@ const ALL_SHOWS = [
   { title: 'Ghost Adventures: Live', href: '/shows/ghost-adventures-live', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e81e63bcb9cb0b932dd52_GHOST%20ADVENTURES%20LIVE.png' },
   { title: 'The Jane Doe Murders', href: '/shows/the-jane-doe-murders', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/63deb3a46f6edd2f885ef826_the%20jane%20doe%20murders%20show%20page%20header.png' },
   { title: 'Biker Battles', href: '/shows/biker-battles', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8090728e64bda17163d8_BIKER%20BATTLES.png' },
-  { title: 'Baggage Battles', href: '/shows/baggage-battles', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e807f230d2c0e667c2f14_BAGGAGE%20BATTLES.png' },
   { title: 'You Only Live Once', href: '/shows/you-only-live-once', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e869b60e214985f4b707e_YOU%20ONLY%20LIVE%20ONCE.png' },
   { title: 'Ghost Adventures: Serial Killer Spirits', href: '/shows/ghost-adventures-serial-killer-spirits', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e820734ed9e6f37c88ae7_GHOST%20ADVENTURES%20SERIAL%20KILLER%20SPIRITS.png' },
   { title: 'Pregnant and Platonic', href: '/shows/pregnant-and-platonic', img: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8440bc22fc95383840fa_PREGNANT%20AND%20PLATONIC.png' },
@@ -601,7 +607,12 @@ export default function HomePage() {
                   style={{ display: 'block', transition: 'opacity 200ms' }}
                   title={show.title}
                 >
-                  <img src={show.img} alt={show.title} loading="lazy" style={{ width: '100%', display: 'block' }} />
+                  <img
+                    src={show.img}
+                    alt={show.title}
+                    loading="lazy"
+                    style={{ width: '100%', display: 'block', aspectRatio: '2 / 1', objectFit: 'cover' }}
+                  />
                 </a>
               ) : (
                 // Internal shows use Next.js Link for client-side navigation
@@ -612,7 +623,12 @@ export default function HomePage() {
                   style={{ display: 'block', transition: 'opacity 200ms' }}
                   title={show.title}
                 >
-                  <img src={show.img} alt={show.title} loading="lazy" style={{ width: '100%', display: 'block' }} />
+                  <img
+                    src={show.img}
+                    alt={show.title}
+                    loading="lazy"
+                    style={{ width: '100%', display: 'block', aspectRatio: '2 / 1', objectFit: 'cover' }}
+                  />
                 </Link>
               )
             )}

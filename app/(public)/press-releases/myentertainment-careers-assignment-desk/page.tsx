@@ -7,24 +7,24 @@ import Link from 'next/link';
 const OG_IMAGE = 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/67c9c4bc80ecce7a341a501c_MYE%20Banner%20.png';
 
 export const metadata: Metadata = {
-  title: 'Working at MyEntertainment Is a Blast — All Hiring Through Assignment Desk | Press Release',
+  title: 'Working at MyEntertainment Is a Blast. All Hiring Through Assignment Desk | Press Release',
   description: 'MyEntertainment announces that all production staffing and hiring is handled exclusively through Assignment Desk. Sign up for gigs and full-time jobs in the production community.',
   alternates: { canonical: 'https://www.myentertainment.tv/press-releases/myentertainment-careers-assignment-desk' },
   robots: { index: true, follow: true },
   openGraph: {
-    title: 'Working at MyEntertainment Is a Blast — All Hiring Through Assignment Desk',
-    description: 'MYE is one of the most exciting production companies in non-fiction TV. All staffing runs through Assignment Desk — sign up for gigs or find a full-time role in the production community.',
+    title: 'Working at MyEntertainment Is a Blast. All Hiring Through Assignment Desk',
+    description: 'MYE is one of the most exciting production companies in non-fiction TV. All staffing runs through Assignment Desk. Sign up for gigs or find a full-time role in the production community.',
     url: 'https://www.myentertainment.tv/press-releases/myentertainment-careers-assignment-desk',
     siteName: 'MyEntertainment',
     type: 'article',
-    images: [{ url: OG_IMAGE, width: 1887, alt: 'MyEntertainment Careers — Assignment Desk' }],
+    images: [{ url: OG_IMAGE, width: 1887, alt: 'MyEntertainment Careers: Assignment Desk' }],
   },
 };
 
 const articleSchema = {
   '@context': 'https://schema.org',
   '@type': 'NewsArticle',
-  headline: 'Working at MyEntertainment Is a Blast — All Hiring Through Assignment Desk',
+  headline: 'Working at MyEntertainment Is a Blast. All Hiring Through Assignment Desk',
   description: 'MyEntertainment announces that all production staffing and hiring is handled exclusively through Assignment Desk.',
   datePublished: '2026-05-03',
   publisher: {
@@ -100,7 +100,7 @@ export default function CareersAssignmentDeskPressRelease() {
               margin: '0 0 24px',
             }}
           >
-            Working at MyEntertainment Is a Total Blast — And You Can Join Us Through Assignment Desk
+            Working at MyEntertainment Is a Total Blast, and You Can Join Us Through Assignment Desk
           </h1>
           <p
             style={{
@@ -111,7 +111,7 @@ export default function CareersAssignmentDeskPressRelease() {
               margin: 0,
             }}
           >
-            MyEntertainment — the award-winning non-fiction production company behind Ghost Adventures, Legacy List, and thousands of hours of network television — announces that all staffing and hiring is now powered exclusively by Assignment Desk. Whether you&apos;re chasing your next gig or a permanent seat on a world-class production team, here&apos;s everything you need to know.
+            MyEntertainment, the award-winning non-fiction production company behind Ghost Adventures, Legacy List, and thousands of hours of network television, announces that all staffing and hiring is now powered exclusively by Assignment Desk. Whether you&apos;re chasing your next gig or a permanent seat on a world-class production team, here&apos;s everything you need to know.
           </p>
         </div>
       </section>
@@ -122,10 +122,10 @@ export default function CareersAssignmentDeskPressRelease() {
 
           <h2 style={h2}>Twenty-Five Years of Making Television That Matters</h2>
           <p style={body}>
-            MyEntertainment has been producing undeniable non-fiction content since 2000. In that time, we&apos;ve delivered thousands of hours of programming for virtually every major network on the planet — <strong style={strong}>Discovery+, A&amp;E, Max, National Geographic, BBC, PBS, Lifetime, TruTV, Food Network, Animal Planet, Nickelodeon, Comedy Central, MTV, Travel Channel, ID, Oxygen, Reelz, CMT</strong> — and the slate keeps growing.
+            MyEntertainment has been producing undeniable non-fiction content since 2000. In that time, we&apos;ve delivered thousands of hours of programming for virtually every major network on the planet: <strong style={strong}>Discovery+, A&amp;E, Max, National Geographic, BBC, PBS, Lifetime, TruTV, Food Network, Animal Planet, Nickelodeon, Comedy Central, MTV, Travel Channel, ID, Oxygen, Reelz, CMT</strong>. And the slate keeps growing.
           </p>
           <p style={body}>
-            The titles speak for themselves: <strong style={strong}>Ghost Adventures</strong> — the number one paranormal show in television history. <strong style={strong}>Legacy List. Destination Fear. Baggage Battles. Breaking Borders. Pros vs. Joes. Billy Buys Brooklyn. Sin City Justice. Manson Bloodlines.</strong> Series that connected with audiences, delivered ratings, and put crews to work year after year.
+            The titles speak for themselves: <strong style={strong}>Ghost Adventures</strong>, the number one paranormal show in television history. <strong style={strong}>Legacy List. Destination Fear. Baggage Battles. Breaking Borders. Pros vs. Joes. Billy Buys Brooklyn. Sin City Justice. Manson Bloodlines.</strong> Series that connected with audiences, delivered ratings, and put crews to work year after year.
           </p>
           <p style={body}>
             We&apos;ve built that track record from our offices in <strong style={strong}>New York, Toronto, and London</strong>, co-producing series across the globe and maintaining strong working relationships with more than 40 producers in 15 countries. The international co-production business keeps our development pipeline rich and our crews constantly active.
@@ -133,13 +133,13 @@ export default function CareersAssignmentDeskPressRelease() {
 
           <h2 style={h2}>What It&apos;s Actually Like Here</h2>
           <p style={body}>
-            Let&apos;s be direct: working at MyEntertainment is genuinely exciting. This is not a place where ideas get buried in committee or talent gets treated like a replaceable variable. Our culture runs on <strong style={strong}>compelling characters, great storytelling, and the relentless pursuit of high production value</strong> — and those aren&apos;t marketing words, they&apos;re the actual filter on every decision we make from development pitch to delivery.
+            Let&apos;s be direct: working at MyEntertainment is genuinely exciting. This is not a place where ideas get buried in committee or talent gets treated like a replaceable variable. Our culture runs on <strong style={strong}>compelling characters, great storytelling, and the relentless pursuit of high production value</strong>, and those aren&apos;t marketing words, they&apos;re the actual filter on every decision we make from development pitch to delivery.
           </p>
           <p style={body}>
             Our team has worked alongside <strong style={strong}>LeBron James and Maverick Carter&apos;s SpringHill Company, Mark Wahlberg&apos;s Unrealistic Ideas, Al Roker&apos;s ARE, and Michael Sugar&apos;s Sugar23</strong>. That caliber of partnership creates an energy inside the company that pushes everyone to bring their best every single day. Producers collaborate across offices. APs sit in on development calls. The CEO knows your name. No one is a cog here.
           </p>
           <p style={body}>
-            We move fast. We trust our instincts. We back our people. If you&apos;re serious about your craft — whether that&apos;s as an editor, a story producer, a field cam op, or a development executive — this is the kind of company where that seriousness compounds into a career.
+            We move fast. We trust our instincts. We back our people. If you&apos;re serious about your craft, whether that&apos;s as an editor, a story producer, a field cam op, or a development executive, this is the kind of company where that seriousness compounds into a career.
           </p>
 
           <h2 style={h2}>All Staffing Runs Through Assignment Desk</h2>
@@ -148,10 +148,10 @@ export default function CareersAssignmentDeskPressRelease() {
             <a href="https://www.assignmentdesk.com" target="_blank" rel="noopener noreferrer" style={linkStyle}>
               Assignment Desk
             </a>
-            {' '}— the production community&apos;s dedicated platform for gigs and full-time production jobs. This is where every MYE opening is posted and where our team goes when we&apos;re building a crew.
+            , the production community&apos;s dedicated platform for gigs and full-time production jobs. This is where every MYE opening is posted and where our team goes when we&apos;re building a crew.
           </p>
           <p style={body}>
-            The reason is simple: Assignment Desk was built for this industry. It understands the difference between a freelance day-rate gig and a staff position. It knows what a story producer&apos;s credit history looks like versus a camera operator&apos;s. It speaks production — and that makes the matching faster and cleaner for everyone involved.
+            The reason is simple: Assignment Desk was built for this industry. It understands the difference between a freelance day-rate gig and a staff position. It knows what a story producer&apos;s credit history looks like versus a camera operator&apos;s. It speaks production, and that makes the matching faster and cleaner for everyone involved.
           </p>
           <p style={body}>
             If you want to work with MYE, Assignment Desk is where it starts. Full stop.
@@ -171,7 +171,7 @@ export default function CareersAssignmentDeskPressRelease() {
             }}
           >
             {[
-              ['Production Gigs', 'Camera operators, APs, PAs, story producers, loggers, field producers, sound mixers — short-term freelance across all active productions'],
+              ['Production Gigs', 'Camera operators, APs, PAs, story producers, loggers, field producers, sound mixers (short-term freelance across all active productions)'],
               ['Development', 'Story researchers, development producers, sizzle writers, pitch deck creators, format researchers shaping the next greenlight'],
               ['Post Production', 'Episodic and documentary editors, assistant editors, colorists, motion graphics artists, audio mixers, post supervisors'],
               ['International', 'Local fixers, production coordinators, casting leads, international series producers across our 15-country co-production network'],
@@ -205,11 +205,11 @@ export default function CareersAssignmentDeskPressRelease() {
           </p>
 
           {[
-            ['Create Your Account', 'Go to assignmentdesk.com and sign up. No fee, no catch — just your industry profile.'],
-            ['Build Your Profile', 'Add your credits, skills, department, rate, reel link, and the types of work you\'re open to — gigs, staff, or both.'],
+            ['Create Your Account', 'Go to assignmentdesk.com and sign up. No fee, no catch: just your industry profile.'],
+            ['Build Your Profile', 'Add your credits, skills, department, rate, reel link, and the types of work you\'re open to: gigs, staff, or both.'],
             ['Browse MYE Postings', 'Search for MyEntertainment to see active gigs and full-time openings. Apply directly through the platform.'],
             ['Get Discovered', 'Our production team actively scouts profiles on Assignment Desk when staffing. A strong, complete profile means we may reach out to you before you even apply.'],
-            ['Stay Connected', 'Assignment Desk keeps you visible to the broader production community — not just MYE. Multiple companies, multiple productions, all in one place.'],
+            ['Stay Connected', 'Assignment Desk keeps you visible to the broader production community, not just MYE. Multiple companies, multiple productions, all in one place.'],
           ].map(([step, detail], i) => (
             <div
               key={step}
@@ -245,10 +245,10 @@ export default function CareersAssignmentDeskPressRelease() {
 
           <h2 style={h2}>The Bottom Line</h2>
           <p style={body}>
-            MyEntertainment is one of the most exciting production companies in non-fiction television — with the track record, the international reach, the A-list partnerships, and the creative culture to prove it. We have a full slate in development and production, and we&apos;re always looking for talented people who want to build something great.
+            MyEntertainment is one of the most exciting production companies in non-fiction television, with the track record, the international reach, the A-list partnerships, and the creative culture to prove it. We have a full slate in development and production, and we&apos;re always looking for talented people who want to build something great.
           </p>
           <p style={body}>
-            If that&apos;s you — get on Assignment Desk. Build your free profile. Browse our postings. Let us find you. The work is worth it.
+            If that&apos;s you, get on Assignment Desk. Build your free profile. Browse our postings. Let us find you. The work is worth it.
           </p>
 
           {/* CTA cards */}
@@ -261,7 +261,7 @@ export default function CareersAssignmentDeskPressRelease() {
                 Assignment Desk
               </p>
               <p style={{ ...body, margin: '0 0 20px' }}>
-                The production community&apos;s hiring platform. Sign up free — gigs, staff positions, and the full MYE roster of open roles, all in one place.
+                The production community&apos;s hiring platform. Sign up free: gigs, staff positions, and the full MYE roster of open roles, all in one place.
               </p>
               <a
                 href="https://www.assignmentdesk.com"

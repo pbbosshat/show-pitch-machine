@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     url: 'https://www.myentertainment.tv/about',
     siteName: 'MY Entertainment',
     type: 'website',
-    images: [{ url: OG_IMAGE, width: 1887, alt: 'MY Entertainment team — New York unscripted TV production company' }],
+    images: [{ url: OG_IMAGE, width: 1887, alt: 'MY Entertainment team: New York unscripted TV production company' }],
   },
   twitter: {
     card: 'summary_large_image',

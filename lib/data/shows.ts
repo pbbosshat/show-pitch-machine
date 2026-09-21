@@ -16,25 +16,55 @@ export type ShowData = {
   titleImgSrc: string;
   youtubeId: string;
   description: string;
-  logoSrc: string;
-  logoAlt: string;
-  logoHref: string;
+  /**
+   * Network logo shown at the bottom of the show detail page.
+   * OPTIONAL: omit all three fields for a show that should render no logo
+   * (e.g. ghost-adventures). The detail page skips the whole logo block when
+   * logoSrc is absent, so there is no empty box or stray link left behind.
+   */
+  logoSrc?: string;
+  logoAlt?: string;
+  logoHref?: string;
 };
 
 export const SHOWS: ShowData[] = [
   {
     slug: 'ghost-adventures',
     title: 'Ghost Adventures',
-    titleImgSrc: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e81b453eb680504dc1d36_Ghost%20Adventures%20copy.png',
+    titleImgSrc: '/shows/ghost-adventures-new-season.jpg',
     youtubeId: 'fvws2umKwGY',
     description: `The stars of the award winning documentary feature, Ghost Adventures, hit the road searching for the most evil, sinister and haunted locations in the US to investigate, and put themselves face to face with the evil spirits who have documented reports of injuries to the living.
 
 During the investigations, they use their trademark "raw" technique while inside these haunted locations.
 
 Starring Zak Bagans, Aaron Goodwin, Billy Tolley and Jay Wasley.`,
-    logoSrc: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8e8b2c6bbe853695d916_travel%20channel.png',
-    logoAlt: 'travel channel logo',
-    logoHref: 'https://www.travelchannel.com/',
+    // No network logo by request — logo fields intentionally omitted.
+  },
+  {
+    slug: '14-days-in-gainesville',
+    title: '14 Days in Gainesville',
+    titleImgSrc: '/shows/14-days-in-gainesville.png',
+    youtubeId: 'UM3ErZBACy0',
+    description: `In the fall of 1990, Gainesville, Florida was bracing for a new era of Gators football. Steve Spurrier, the Heisman Trophy winner who had quarterbacked Florida in 1966, had returned to his alma mater as head coach, promising to breathe new life into a program hungry to join college football's elite. Then, just days before the Gators were scheduled to open the season, five University of Florida students were murdered over a matter of days, and a community waiting on kickoff instead found itself gripped by fear and grief, with a serial killer still on the loose.
+
+14 Days in Gainesville returns to that two-week stretch through the people who lived it: Spurrier and members of the Gators football program, along with journalists, university leaders, law enforcement officials and residents of the Gainesville community. Classes were disrupted, students left town, and a football team preparing for a fresh start became inseparable from a city confronting the unthinkable.
+
+Directed by Daniel B. Levin and produced by MY Entertainment, this 30 for 30 documentary premiered Tuesday, September 15 at 8 p.m. ET on ESPN and the ESPN App.`,
+    // ESPN Films / 30 for 30 title — no ESPN network logo asset on the site yet,
+    // so the logo fields are intentionally omitted (detail page hides the block).
+  },
+  {
+    slug: 'snooki-the-paranormal-rookie',
+    title: 'Snooki: The Paranormal Rookie',
+    titleImgSrc: '/shows/snooki-the-paranormal-rookie.png',
+    youtubeId: 'AirGz3ce1lE',
+    description: `Reality television icon Nicole "Snooki" Polizzi trades the Jersey Shore for haunted halls in this Crave Original series, exploring the stories, secrets, and spirits said to inhabit some of Canada's most intriguing locations.
+
+With no formal paranormal training, Snooki joins a team of experienced investigators: psychic medium Kevin Whitaker, occult expert and historian Missy Morrow, and paranormal tech specialist Todd Thomas. Together they visit reportedly haunted Ontario sites including Tuckett Mansion in Hamilton, Fulford Place in Brockville, the Huron Historic Gaol in Goderich, Old Fort Erie, the Niagara Parks Power Station, and Loretto Academy in Niagara Falls. What starts as a curiosity-driven adventure turns into a personal journey as she builds her instincts and confidence in the field, growing from novice to capable investigator.
+
+Eight one-hour episodes premiere October 2 on Crave, with the first two episodes at launch and two new episodes every Friday. Produced by Buck Productions in association with MY Entertainment and in partnership with Crave.`,
+    // Crave Original — no Crave network logo asset on the site, so the logo
+    // fields are intentionally omitted (detail page hides the block).
   },
   {
     slug: 'destination-fear',
@@ -295,7 +325,7 @@ Dozens of microphones, and an array of the most advanced technical visual / audi
     title: 'Breaking Borders',
     titleImgSrc: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e809ea0b43284c72ad372_Breaking%20Borders%20copy.png',
     youtubeId: 'lbVxpB2HVA0',
-    description: `Peabody Award-winning journalist Mariana van Zeller and Top Chef winner Michael Voltaggio travel to conflict zones around the globe with one goal — to gather people from all sides of the conflict around the dinner table, in order to break bread and discuss the issues that divide them.
+    description: `Peabody Award-winning journalist Mariana van Zeller and Top Chef winner Michael Voltaggio travel to conflict zones around the globe with one goal: to gather people from all sides of the conflict around the dinner table, in order to break bread and discuss the issues that divide them.
 
 Can breaking bread lead to Breaking Borders?`,
     logoSrc: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8e8b2c6bbe853695d916_travel%20channel.png',
@@ -307,7 +337,7 @@ Can breaking bread lead to Breaking Borders?`,
     title: 'Top of the World',
     titleImgSrc: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8599341fb570db9b4c79_Top%20of%20the%20World%20copy.png',
     youtubeId: 'shJd7SBjtCw',
-    description: `TOP OF THE WORLD takes us to the most gorgeous, epic, surprising locations to revel in the beauty of their unique views — while uncovering the unusual stories behind them.
+    description: `TOP OF THE WORLD takes us to the most gorgeous, epic, surprising locations to revel in the beauty of their unique views, while uncovering the unusual stories behind them.
 
 TOP OF THE WORLD: "Alaska," "Hawaii" and "Beyond Vegas" will be hour episodes featuring multiple knockout views of the US, while "Mega Rides" and "Hotels" take us across the world for immersive, thrilling experiences, and once-in-a-lifetime panoramic views.`,
     logoSrc: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8e8b2c6bbe853695d916_travel%20channel.png',
@@ -381,7 +411,7 @@ From the Basketball Toss to Skeeball to Monopoly and more, it's time for you to 
     title: 'Ghost Adventures: Aftershocks',
     titleImgSrc: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e81c4bc22fc708d3820c7_Ghost%20Adventures%20-%20Aftershocks.png',
     youtubeId: 'm8N1JIo3rw8',
-    description: `Host Zak Bagans invites Ghost Adventures fan favorites out to Las Vegas to update viewers on how their lives — and their ghosts — have fared since the GAC paid them a visit. Have the ghosts returned to do these people harm?
+    description: `Host Zak Bagans invites Ghost Adventures fan favorites out to Las Vegas to update viewers on how their lives, and their ghosts, have fared since the GAC paid them a visit. Have the ghosts returned to do these people harm?
 
 Has their approach to the spirits changed? There is more to every story.`,
     logoSrc: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/631e8e8b2c6bbe853695d916_travel%20channel.png',

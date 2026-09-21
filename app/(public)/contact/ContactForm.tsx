@@ -106,7 +106,7 @@ export default function ContactForm({ source }: { source?: string } = {}) {
       }
       if (materialLink.trim() && !normalizeMaterialLink(materialLink)) {
         setError(
-          'The materials link doesn’t look like a web address. Paste the shareable link from Google Drive, Dropbox, Vimeo, or WeTransfer — or leave it blank and we’ll request materials by email.'
+          'The materials link doesn’t look like a web address. Paste the shareable link from Google Drive, Dropbox, Vimeo, or WeTransfer, or leave it blank and we’ll request materials by email.'
         );
         return;
       }
@@ -225,8 +225,8 @@ export default function ContactForm({ source }: { source?: string } = {}) {
         </p>
         <p style={{ fontSize: 15, color: '#a5a7ad', margin: 0 }}>
           {requiresRelease
-            ? 'Thanks — your submission and signed release have been recorded. Someone from our development team will be in touch.'
-            : 'Thanks for reaching out — someone will be in touch soon.'}
+            ? 'Thanks. Your submission and signed release have been recorded. Someone from our development team will be in touch.'
+            : 'Thanks for reaching out. Someone will be in touch soon.'}
         </p>
       </div>
     );
@@ -390,7 +390,7 @@ export default function ContactForm({ source }: { source?: string } = {}) {
               >
                 Paste a shareable link to your deck, treatment, or screener and make sure
                 link access is set to &ldquo;anyone with the link.&rdquo; No link ready?
-                Submit anyway — our development team will reply and request materials.
+                Submit anyway. Our development team will reply and request materials.
               </p>
             </div>
           </fieldset>
@@ -476,7 +476,7 @@ export default function ContactForm({ source }: { source?: string } = {}) {
 
           <div style={{ marginBottom: 24 }}>
             <label htmlFor="release-signature" style={LABEL_STYLE}>
-              Signature — type your full legal name
+              Signature (type your full legal name)
             </label>
             <input
               id="release-signature"

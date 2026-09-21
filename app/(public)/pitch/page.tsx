@@ -34,7 +34,7 @@ const OG_IMAGE =
 export const metadata: Metadata = {
   title: 'Submit Your Show | Distribution & Representation for Producers',
   description:
-    'MY Entertainment represents finished and near-finished unscripted shows — reality, true-crime, paranormal, documentary — to networks, streamers, and international territories. Submit your show for consideration.',
+    'MY Entertainment represents finished and near-finished unscripted shows, including reality, true-crime, paranormal, and documentary, to networks, streamers, and international territories. Submit your show for consideration.',
   alternates: { canonical: 'https://www.myentertainment.tv/pitch' },
   openGraph: {
     title: 'Submit Your Show | MY Entertainment',
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     url: 'https://www.myentertainment.tv/pitch',
     siteName: 'MY Entertainment',
     type: 'website',
-    images: [{ url: OG_IMAGE, width: 1887, alt: 'MY Entertainment — Submit Your Show' }],
+    images: [{ url: OG_IMAGE, width: 1887, alt: 'MY Entertainment: Submit Your Show' }],
   },
   twitter: {
     card: 'summary_large_image',
@@ -65,7 +65,7 @@ const serviceSchema = {
   '@type': 'Service',
   name: 'TV Show Distribution & Producer Representation',
   description:
-    'MY Entertainment represents finished and near-finished unscripted television shows — reality, true-crime, paranormal, documentary — to US broadcast networks, streaming platforms, and international territories.',
+    'MY Entertainment represents finished and near-finished unscripted television shows, including reality, true-crime, paranormal, and documentary, to US broadcast networks, streaming platforms, and international territories.',
   provider: {
     '@type': 'Organization',
     name: 'MY Entertainment',
@@ -183,7 +183,7 @@ const PROCESS_STEPS = [
   {
     step: '01',
     heading: 'Submit',
-    body: 'Download and complete the Submission Release Form below. Email it with a brief show summary to info@myentertainment.tv — or fill out the contact form at the bottom of this page.',
+    body: 'Download and complete the Submission Release Form below. Email it with a brief show summary to info@myentertainment.tv, or fill out the contact form at the bottom of this page.',
   },
   {
     step: '02',
@@ -198,7 +198,7 @@ const PROCESS_STEPS = [
   {
     step: '04',
     heading: 'Distribute',
-    body: "When a deal is made, we handle representation and distribution — placing your content where it can reach the right audience. Our offices in New York, Toronto, and London give us global reach.",
+    body: "When a deal is made, we handle representation and distribution, placing your content where it can reach the right audience. Our offices in New York, Toronto, and London give us global reach.",
   },
 ];
 
@@ -268,7 +268,7 @@ export default function PitchPage() {
           }}
         >
           MY Entertainment pitches finished and near-finished unscripted shows to
-          US networks, streamers, and international broadcasters — on your behalf.
+          US networks, streamers, and international broadcasters, on your behalf.
         </p>
 
         <p
@@ -320,7 +320,7 @@ export default function PitchPage() {
           <p style={{ ...bodyText, maxWidth: 720, marginBottom: 32 }}>
             We represent producers and creators who have a finished or near-finished
             unscripted show and need a distribution partner with real network access.
-            Our catalog skews toward these formats — if your show fits one of these
+            Our catalog skews toward these formats. If your show fits one of these
             genres, submit it:
           </p>
 
@@ -345,7 +345,7 @@ export default function PitchPage() {
           </div>
 
           <p style={{ ...bodyText, marginTop: 32, marginBottom: 0, maxWidth: 720 }}>
-            We mostly develop our own internally generated ideas — but we recognize that
+            We mostly develop our own internally generated ideas, but we recognize that
             a great idea can come from anywhere. If you have a show we can place, we want
             to know about it.
           </p>
@@ -388,7 +388,7 @@ export default function PitchPage() {
               <h3 style={subheadRed}>Network Relationships</h3>
               <p style={bodyText}>
                 We have active relationships with buyers at every major US network and
-                several leading international broadcasters — Discovery, Travel Channel,
+                several leading international broadcasters: Discovery, Travel Channel,
                 PBS, A&amp;E, ID, Oxygen, Food Network, BBC, and 20+ more. We know the
                 right doors for your show.
               </p>
@@ -476,8 +476,8 @@ export default function PitchPage() {
               <h3 style={subheadRed}>25+ Years in Unscripted</h3>
               <p style={bodyText}>
                 MY Entertainment has been producing and distributing non-fiction
-                television since 2000. We understand the business — from development
-                to broadcast — because we have lived every side of it.
+                television since 2000. We understand the business, from development
+                to broadcast, because we have lived every side of it.
               </p>
             </div>
 
@@ -485,7 +485,7 @@ export default function PitchPage() {
             <div>
               <h3 style={subheadRed}>A Track Record That Speaks</h3>
               <p style={bodyText}>
-                Ghost Adventures — which began as an independent documentary — became the
+                Ghost Adventures, which began as an independent documentary, became the
                 #1 paranormal show in cable TV history with 28 seasons on Travel Channel
                 and five spin-off series. Legacy List earned an Emmy nomination.
                 Breaking Borders received critical recognition for journalism.{' '}

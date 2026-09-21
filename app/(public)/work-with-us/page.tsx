@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     url: 'https://www.myentertainment.tv/work-with-us',
     siteName: 'MyEntertainment',
     type: 'website',
-    images: [{ url: OG_IMAGE, width: 1887, alt: 'Work with MyEntertainment — NYC unscripted production company' }],
+    images: [{ url: OG_IMAGE, width: 1887, alt: 'Work with MyEntertainment: NYC unscripted production company' }],
   },
   twitter: {
     card: 'summary_large_image',
@@ -188,8 +188,8 @@ export default function WorkWithUsPage() {
             marginRight: 'auto',
           }}
         >
-          Partner with one of New York&rsquo;s most experienced independent production companies
-          — 25+ years of unscripted, documentary, and branded content across every major network.
+          Partner with one of New York&rsquo;s most experienced independent production companies:
+          25+ years of unscripted, documentary, and branded content across every major network.
         </p>
       </section>
 
@@ -213,7 +213,7 @@ export default function WorkWithUsPage() {
           </p>
           <p style={bodyText}>
             With offices in Manhattan, Toronto, and London, we have been at the forefront of
-            the international format business — co-producing series across the globe, forging
+            the international format business, co-producing series across the globe, forging
             strong relationships with independent producers, and importing ideas to the US market.
             We have established working relationships with more than 40 producers in 15 countries.
             MyEntertainment is a Media Content Services company.
@@ -284,7 +284,7 @@ export default function WorkWithUsPage() {
               <p style={bodyText}>
                 Competition formats, social experiments, game shows, and character-driven series.
                 We develop both original IP and adapt proven international formats for US networks.
-                Ghost Adventures is our flagship — 28 seasons and counting.
+                Ghost Adventures is our flagship: 28 seasons and counting.
               </p>
             </div>
 
@@ -331,7 +331,7 @@ export default function WorkWithUsPage() {
                 We have partnered with brands including Stolichnaya on serialized branded content,
                 and co-produced with international partners in France, Germany, Spain, Australia,
                 the Netherlands, Sweden, Finland, and the UK. If you have IP, a talent relationship,
-                or a distribution deal — we can help get it made.
+                or a distribution deal, we can help get it made.
               </p>
             </div>
           </div>
@@ -355,7 +355,7 @@ export default function WorkWithUsPage() {
                 marginBottom: 8,
               }}
             >
-              Paranormal — Ghost Adventures (Travel Channel, 28 seasons)
+              Paranormal: Ghost Adventures (Travel Channel, 28 seasons)
             </h3>
             <p style={bodyText}>
               Started as an independent documentary feature, Ghost Adventures became the
@@ -379,7 +379,7 @@ export default function WorkWithUsPage() {
                 marginBottom: 8,
               }}
             >
-              True Crime — Sin City Justice &amp; The Jane Doe Murders (ID, Oxygen)
+              True Crime: Sin City Justice &amp; The Jane Doe Murders (ID, Oxygen)
             </h3>
             <p style={bodyText}>
               Sin City Justice delivered unprecedented access to the Las Vegas District
@@ -402,10 +402,10 @@ export default function WorkWithUsPage() {
                 marginBottom: 8,
               }}
             >
-              Sports — Pros vs Joes (Spike TV, 5 seasons)
+              Sports: Pros vs Joes (Spike TV, 5 seasons)
             </h3>
             <p style={bodyText}>
-              We cast and produced five seasons of Pros vs Joes — one of the first shows
+              We cast and produced five seasons of Pros vs Joes, one of the first shows
               to put real sports fans against professional athletes on camera. Guest athletes
               included Jerry Rice, Dennis Rodman, Roy Jones Jr., Michael Irvin, and Hakeem
               Olajuwon. The show ran for five seasons on Spike, proving our ability to
@@ -425,7 +425,7 @@ export default function WorkWithUsPage() {
                 marginBottom: 8,
               }}
             >
-              International Format — Pregnant &amp; Platonic (8 country format)
+              International Format: Pregnant &amp; Platonic (8 country format)
             </h3>
             <p style={bodyText}>
               Pregnant &amp; Platonic is a social experiment format co-created with Israeli

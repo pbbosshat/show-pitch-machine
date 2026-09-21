@@ -194,7 +194,7 @@ export default function ContactPage() {
                 }}
               >
                 Have an idea you&#39;d like to submit? Our online submission form walks you
-                through everything in a couple of minutes — tell us about your show, sign
+                through everything in a couple of minutes: tell us about your show, sign
                 the Submissions Release electronically, and share a link to your materials.
               </p>
 

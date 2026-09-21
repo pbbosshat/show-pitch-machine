@@ -83,7 +83,8 @@ export default function NewsletterSignup({ showSlug, showTitle }: NewsletterSign
           You&rsquo;re on the list!
         </p>
         <p style={{ fontSize: 14, color: '#666', margin: 0 }}>
-          Thanks for signing up. We&rsquo;ll send updates on {showTitle} and other MyEntertainment series once a month.
+          Thanks for signing up. We&rsquo;ll send updates on {showTitle}{' '}
+          and other MyEntertainment series once a month.
         </p>
       </div>
     );
@@ -112,8 +113,8 @@ export default function NewsletterSignup({ showSlug, showTitle }: NewsletterSign
           textAlign: 'center',
         }}
       >
-        Get behind-the-scenes updates on <strong style={{ fontWeight: 600 }}>{showTitle}</strong> and other
-        MyEntertainment series &mdash; sent monthly, never sold. We share production news, new shows in
+        Get behind-the-scenes updates on <strong style={{ fontWeight: 600 }}>{showTitle}</strong>{' '}
+        and other MyEntertainment series, sent monthly, never sold. We share production news, new shows in
         development, and the occasional behind-the-scenes look at what it takes to bring unscripted stories
         to life. No spam. Unsubscribe any time.
       </p>

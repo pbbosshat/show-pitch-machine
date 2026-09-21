@@ -15,11 +15,11 @@ const OG_IMAGE = 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/67
 export const metadata: Metadata = {
   title: 'Shows | MY Entertainment',
   description:
-    'Browse all unscripted TV shows produced by MY Entertainment — including Ghost Adventures (28 seasons on Discovery), Destination Fear, Pros vs Joes, Paranormal Challenge, Legacy List (Emmy nominated), and 40+ more productions across paranormal, sports, crime, and lifestyle genres.',
+    'Browse all unscripted TV shows produced by MY Entertainment, including Ghost Adventures (28 seasons on Discovery), Destination Fear, Pros vs Joes, Paranormal Challenge, Legacy List (Emmy nominated), and 40+ more productions across paranormal, sports, crime, and lifestyle genres.',
   alternates: { canonical: 'https://www.myentertainment.tv/shows' },
   openGraph: {
     title: 'TV Shows | MY Entertainment',
-    description: 'Browse 40+ unscripted TV shows from MY Entertainment — Ghost Adventures, Destination Fear, Pros vs Joes, Legacy List, Breaking Borders, and more for Discovery, PBS, A&E, and 28+ networks.',
+    description: 'Browse 40+ unscripted TV shows from MY Entertainment: Ghost Adventures, Destination Fear, Pros vs Joes, Legacy List, Breaking Borders, and more for Discovery, PBS, A&E, and 28+ networks.',
     url: 'https://www.myentertainment.tv/shows',
     siteName: 'MY Entertainment',
     type: 'website',
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'TV Shows | MY Entertainment',
-    description: 'Browse 40+ unscripted TV shows from MY Entertainment — Ghost Adventures, Destination Fear, Pros vs Joes, and more.',
+    description: 'Browse 40+ unscripted TV shows from MY Entertainment: Ghost Adventures, Destination Fear, Pros vs Joes, and more.',
     images: [OG_IMAGE],
   },
 };
@@ -51,6 +51,106 @@ async function getShows(): Promise<SiteShow[]> {
     );
     return JSON.parse(JSON.stringify(rows));
   } catch { return []; }
+}
+
+// ─── Hardcoded pinned shows ───────────────────────────────────────────────────
+// Same hybrid pattern as /press-releases: hardcoded entries merged with DB rows.
+// These two titles have real detail pages (their data lives in lib/data/shows.ts)
+// and artwork in public/shows/, but no site_shows row yet — so they are declared
+// here to guarantee they surface in the grid.
+//   • imdb_url is null → they render as INTERNAL <Link> tiles to /shows/<slug>.
+//   • sort_order is unused for these; PINNED_ORDER below drives their position.
+// MIGRATION PATH: once a real site_shows row exists for either slug, the DB row
+// wins (see the de-duplication guard in mergeShows) and the matching entry here
+// becomes inert and can simply be deleted.
+const PINNED_SHOWS: SiteShow[] = [
+  {
+    id: 'pinned-14-days-in-gainesville',
+    title: '14 Days in Gainesville',
+    slug: '14-days-in-gainesville',
+    image_url: '/shows/14-days-in-gainesville.png',
+    imdb_url: null,
+    status: 'active',
+    sort_order: 0,
+  },
+  {
+    id: 'pinned-snooki-the-paranormal-rookie',
+    title: 'Snooki: The Paranormal Rookie',
+    slug: 'snooki-the-paranormal-rookie',
+    image_url: '/shows/snooki-the-paranormal-rookie.png',
+    imdb_url: null,
+    status: 'active',
+    sort_order: 0,
+  },
+];
+
+// ─── Explicit lead-off order ──────────────────────────────────────────────────
+// The first six tiles of the grid, by slug, in the exact order they must appear.
+// Anything not listed here keeps its DB order (sort_order ASC, title ASC) and
+// follows after them. Slugs verified against site_shows — do not guess them.
+const PINNED_ORDER: string[] = [
+  'ghost-adventures',
+  '14-days-in-gainesville',
+  'snooki-the-paranormal-rookie',
+  'billy-buys-brooklyn',
+  'baggage-battles',
+  'uninterrupted-the-real-stories-of-basketball',
+];
+
+// ─── TEMPORARY image overrides ───────────────────────────────────────────────
+// Code-side override for a show's artwork, keyed by slug. Applied to DB rows
+// after they are fetched, so the grid can show new key art without a DB write.
+// PROPER HOME: the image_url column on site_shows, editable from the
+// /marketing/shows admin screen. Once image_url is updated there, DELETE the
+// matching entry below — it only exists because we could not write to the DB.
+const IMAGE_OVERRIDES: Record<string, string> = {
+  'ghost-adventures': '/shows/ghost-adventures-new-season.jpg',
+};
+
+// ─── TEMPORARY hidden slugs ──────────────────────────────────────────────────
+// Code-side hide for a site_shows row that has NO matching entry in
+// lib/data/shows.ts, so its tile links to a /shows/<slug> detail page that does
+// not exist and 404s. Filtered out in mergeShows so the dead tile never renders.
+// PROPER FIX: set status='archived' on that row from the /marketing/shows admin
+// screen — the grid query already excludes archived rows. Once that is done,
+// DELETE the matching entry below; it only exists because we could not write to
+// the DB.
+const HIDDEN_SLUGS = new Set<string>([
+  'sandy-show-and-tell-killer',
+]);
+
+/**
+ * Merge hardcoded PINNED_SHOWS with the DB rows, then apply PINNED_ORDER.
+ *
+ * De-duplication guard: a hardcoded entry is dropped whenever a site_shows row
+ * with the same slug exists. The DB always wins, so adding the rows later can
+ * never produce a duplicate tile.
+ *
+ * Ordering: slugs in PINNED_ORDER come first, in that exact order; everything
+ * else follows in the order the DB returned it (Array.sort is stable in ES2019+).
+ */
+function mergeShows(dbShows: SiteShow[]): SiteShow[] {
+  // Drop the temporary HIDDEN_SLUGS above before anything else sees these rows.
+  dbShows = dbShows.filter((s) => !HIDDEN_SLUGS.has(s.slug));
+  const dbSlugs = new Set(dbShows.map((s) => s.slug));
+  // Apply the temporary IMAGE_OVERRIDES above; every other row passes through unchanged.
+  const overridden = dbShows.map((s) =>
+    IMAGE_OVERRIDES[s.slug] ? { ...s, image_url: IMAGE_OVERRIDES[s.slug] } : s
+  );
+  const merged = [...overridden, ...PINNED_SHOWS.filter((s) => !dbSlugs.has(s.slug))];
+
+  // Not in the list → Infinity, i.e. sorts after every pinned slug and keeps DB order.
+  const rank = (s: SiteShow) => {
+    const i = PINNED_ORDER.indexOf(s.slug);
+    return i === -1 ? Number.POSITIVE_INFINITY : i;
+  };
+
+  return merged.sort((a, b) => {
+    const ra = rank(a);
+    const rb = rank(b);
+    if (ra === rb) return 0;
+    return ra < rb ? -1 : 1;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -114,7 +214,7 @@ const breadcrumbSchema = {
 };
 
 export default async function ShowsPage() {
-  const shows = await getShows();
+  const shows = mergeShows(await getShows());
 
   return (
     <>
@@ -129,10 +229,15 @@ export default async function ShowsPage() {
         @media (max-width: 700px)  { .mye-shows-page-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 480px)  { .mye-shows-page-grid { grid-template-columns: repeat(2, 1fr); } }
         .mye-show-thumb-page:hover { opacity: 0.85; }
-        .mye-show-thumb-page img { width: 100%; display: block; }
+        .mye-show-thumb-page img {
+          width: 100%;
+          aspect-ratio: 2/1;
+          object-fit: cover;
+          display: block;
+        }
         .mye-show-no-img {
           width: 100%;
-          aspect-ratio: 16/9;
+          aspect-ratio: 2/1;
           display: flex;
           align-items: center;
           justify-content: center;

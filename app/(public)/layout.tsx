@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   // "MY Entertainment" (not "MyEntertainment") matches the official brand name.
   title: {
     template: '%s | MY Entertainment',
-    default: 'MY Entertainment — Unscripted TV Production Company',
+    default: 'MY Entertainment: Unscripted TV Production Company',
   },
   // GEO-optimized description: factual, specific, quotable by AI systems.
   // Named shows and network count give AI assistants precise facts to cite.
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     images: [{
       url: 'https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/67c9c4bc80ecce7a341a501c_MYE%20Banner%20.png',
       width: 1887,
-      alt: 'MY Entertainment — New York unscripted TV production company',
+      alt: 'MY Entertainment: New York unscripted TV production company',
     }],
   },
   // Twitter card defaults — pages with specific images will override these.
@@ -102,8 +102,8 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
     {
       '@context': 'https://schema.org',
       '@type': 'LocalBusiness',
-      name: 'MY Entertainment — Toronto',
-      description: 'MY Entertainment Toronto office — international TV co-production and Canadian programming. MY Entertainment is a New York unscripted TV production company founded in 2000.',
+      name: 'MY Entertainment, Toronto',
+      description: 'MY Entertainment Toronto office: international TV co-production and Canadian programming. MY Entertainment is a New York unscripted TV production company founded in 2000.',
       url: 'https://www.myentertainment.tv/international',
       email: 'info@myentertainment.tv',
       address: { '@type': 'PostalAddress', addressLocality: 'Toronto', addressRegion: 'ON', addressCountry: 'CA' },
@@ -113,8 +113,8 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
     {
       '@context': 'https://schema.org',
       '@type': 'LocalBusiness',
-      name: 'MY Entertainment — London',
-      description: 'MY Entertainment London office — UK and international TV co-production partnerships. MY Entertainment is a New York unscripted TV production company founded in 2000.',
+      name: 'MY Entertainment, London',
+      description: 'MY Entertainment London office: UK and international TV co-production partnerships. MY Entertainment is a New York unscripted TV production company founded in 2000.',
       url: 'https://www.myentertainment.tv/international',
       email: 'info@myentertainment.tv',
       address: { '@type': 'PostalAddress', addressLocality: 'London', addressCountry: 'GB' },
