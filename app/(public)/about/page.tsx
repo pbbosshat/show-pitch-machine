@@ -323,7 +323,7 @@ export default function AboutPage() {
             {/* ── Team Member 4: Kerry Miles ── */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
               <img
-                src="https://cdn.prod.website-files.com/631bb40f42caf4264eb9313e/63af15d95b5d511696da4e9c_Kerry%20Miles.png"
+                src="/team/kerry-miles.jpg"
                 alt="Kerry Miles Senior Producer of Content for MyEntertainment"
                 loading="lazy"
                 style={{
