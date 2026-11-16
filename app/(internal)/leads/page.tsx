@@ -61,18 +61,20 @@ const SORT_COLS = new Set<string>(COLUMNS.map((c) => c.sort).filter(Boolean) as 
 // For the flexible columns (see FLEX_COLS) this is the MINIMUM width; they
 // share any spare space. Defaults are sized so the default columns fit at a
 // 1280px window: 1280 - 224 (Nav w-56) - 48 (page padding) - 2 (card border)
-// = 1006px inside the card; 36 + 140 + 150 + 110 + 160 + 140 + 120 + 100 + 44
-// = 1000px.
+// = 1006px inside the card; 36 + 136 + 150 + 126 + 160 + 114 + 100 + 124 + 44
+// = 990px, leaving room for a 15px always-visible Mac scrollbar.
+// Measured with Inter: "Nov 15, 2026" needs ~116px incl. cell padding (Date
+// 124); the "Show Request" badge needs ~124px (Source 126).
 const DEFAULT_WIDTHS: Record<ColKey, number> = {
-  name: 140,
+  name: 136,
   status: 150,
-  source: 110,
+  source: 126,
   email: 160,
   company: 150,
   show: 170,
-  message: 140,
-  notes: 120,
-  date: 100,
+  message: 114,
+  notes: 100,
+  date: 124,
 };
 // Flexible columns and their share (fr) of the spare width.
 const FLEX_COLS: Partial<Record<ColKey, number>> = { message: 2, notes: 1 };
@@ -453,7 +455,9 @@ export default function LeadsPage() {
       setDraft('');
     } else {
       setOpenId(lead.id);
-      setDraft(lead.notes ?? '');
+      // If this lead's own save is still running, show the text being saved
+      // (not the old notes); the save reply then refreshes it as usual.
+      setDraft(notesInFlight[lead.id] ?? lead.notes ?? '');
     }
   }
 
