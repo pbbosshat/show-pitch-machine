@@ -59,19 +59,20 @@ const SORT_COLS = new Set<string>(COLUMNS.map((c) => c.sort).filter(Boolean) as 
 // One width (px) per data column. Typed as a full Record so a new column
 // cannot be added without a width (the old positional array fell out of step).
 // For the flexible columns (see FLEX_COLS) this is the MINIMUM width; they
-// share any spare space. Defaults are sized so the default columns fit in the
-// ~1116px a 1440px window leaves after the sidebar, page padding and borders:
-// 36 + 160 + 150 + 120 + 190 + 160 + 140 + 110 + 44 = 1110px.
+// share any spare space. Defaults are sized so the default columns fit at a
+// 1280px window: 1280 - 224 (Nav w-56) - 48 (page padding) - 2 (card border)
+// = 1006px inside the card; 36 + 140 + 150 + 110 + 160 + 140 + 120 + 100 + 44
+// = 1000px.
 const DEFAULT_WIDTHS: Record<ColKey, number> = {
-  name: 160,
+  name: 140,
   status: 150,
-  source: 120,
-  email: 190,
+  source: 110,
+  email: 160,
   company: 150,
   show: 170,
-  message: 160,
-  notes: 140,
-  date: 110,
+  message: 140,
+  notes: 120,
+  date: 100,
 };
 // Flexible columns and their share (fr) of the spare width.
 const FLEX_COLS: Partial<Record<ColKey, number>> = { message: 2, notes: 1 };
@@ -173,7 +174,7 @@ const PAGE_CSS = `
 .lt-chip-on{background:var(--text-primary);border-color:var(--text-primary);color:var(--bg-surface)}
 .lt-chipn{color:var(--text-muted);font-weight:600;font-variant-numeric:tabular-nums}
 .lt-chip-on .lt-chipn{color:color-mix(in srgb,var(--bg-surface) 75%,var(--text-primary))}
-.lt-head{position:sticky;top:0;z-index:2;background:var(--bg-surface-alt);border-bottom:1px solid var(--border-subtle)}
+.lt-head{background:var(--bg-surface-alt);border-bottom:1px solid var(--border-subtle)}
 .lt-hcell{position:relative;overflow:hidden}
 .lt-hbtn{display:flex;align-items:center;gap:6px;width:100%;padding:10px 12px;text-align:left;background:none;border:none;color:var(--text-secondary);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap}
 button.lt-hbtn{cursor:pointer}
@@ -188,9 +189,12 @@ button.lt-hbtn{cursor:pointer}
 .lt-chev{color:var(--text-muted);display:inline-flex;transition:transform .15s}
 .lt-chev-open{transform:rotate(90deg);color:var(--accent)}
 .lt-pillwrap{position:relative;display:inline-flex;align-items:center;max-width:100%;margin-top:-4px}
-.lt-pill{appearance:none;-webkit-appearance:none;font-size:12px;font-weight:600;border-radius:999px;padding:5px 26px 5px 10px;border:1px solid transparent;cursor:pointer;max-width:100%;font-family:inherit}
+.lt-pill{appearance:none;-webkit-appearance:none;font-size:12px;font-weight:600;border-radius:999px;padding:5px 28px 5px 10px;border:1px solid transparent;cursor:pointer;max-width:100%;font-family:inherit}
 .lt-pill option{background:var(--bg-surface);color:var(--text-primary)}
-.lt-pillarrow{position:absolute;right:9px;pointer-events:none;display:inline-flex}
+.lt-pillarrow{position:absolute;right:10px;pointer-events:none;display:inline-flex}
+.lt-statuscell{padding-left:8px;padding-right:8px}
+.lt-chevbtn{appearance:none;border:none;background:transparent;padding:0;margin:-6px 0 0 -6px;width:28px;height:28px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:inherit}
+.lt-chevbtn:hover{background:var(--bg-surface-alt)}
 .lt-src{display:inline-block;font-size:12px;font-weight:500;border-radius:6px;padding:3px 8px;border:1px solid var(--border-strong);color:var(--text-secondary);white-space:nowrap}
 .lt-src-hi{border-color:color-mix(in srgb,var(--accent) 45%,transparent);color:color-mix(in srgb,var(--accent) 60%,var(--text-primary))}
 .lt-muted{color:var(--text-muted)}
@@ -205,7 +209,7 @@ button.lt-hbtn{cursor:pointer}
 .lt-ghost:hover{border-color:var(--border-strong)}
 .lt-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 6px;display:block}
 .lt-textarea{width:100%;resize:vertical;font:inherit;font-size:0.875rem;color:var(--text-primary);border:1px solid var(--border-subtle);border-radius:6px;padding:8px 12px;background:var(--bg-surface);box-sizing:border-box}
-.lt-root input:focus-visible,.lt-root textarea:focus-visible,.lt-root select:focus-visible,.lt-root button:focus-visible,.lt-root a:focus-visible,.lt-row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.lt-root input:focus-visible,.lt-root textarea:focus-visible,.lt-root select:focus-visible,.lt-root button:focus-visible,.lt-root a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .lt-tnum{font-variant-numeric:tabular-nums}
 .lt-card{container-type:inline-size}
 .lt-vis{position:sticky;left:0;width:100cqw;max-width:100%;box-sizing:border-box}
@@ -311,12 +315,17 @@ export default function LeadsPage() {
   // ── Expanded row + notes draft ───────────────────────────────────────────────
   const [openId, setOpenId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
-  const [notesSaving, setNotesSaving] = useState(false);
+  // Notes saves in flight, per lead: lead id -> the exact text that was sent.
+  // Per lead so opening another row mid-save does not show "Saving…" there.
+  const [notesInFlight, setNotesInFlight] = useState<Record<string, string>>({});
   const [notesSaved, setNotesSaved] = useState(false);
-  // Mirror of openId for async callbacks: a notes save that finishes after a
-  // different row was opened must not write into that row's draft.
+  // Mirrors of openId / draft for async callbacks: a notes save that finishes
+  // after a different row was opened, or after more typing, must not
+  // overwrite the current draft.
   const openIdRef = useRef<string | null>(null);
   useEffect(() => { openIdRef.current = openId; }, [openId]);
+  const draftRef = useRef('');
+  useEffect(() => { draftRef.current = draft; }, [draft]);
   // Lead id the user chose to keep open (unsaved notes) while filters hide
   // it, so they are not asked again on every keystroke.
   const keptHiddenRef = useRef<string | null>(null);
@@ -423,10 +432,16 @@ export default function LeadsPage() {
 
   const openLead = leads.find((l) => l.id === openId) ?? null;
   const draftDirty = !!openLead && draft.trim() !== (openLead.notes ?? '');
+  // Text currently being saved for the open lead (undefined = no save running).
+  const openInFlight = openId !== null ? notesInFlight[openId] : undefined;
+  const openSaving = openInFlight !== undefined;
+  // Edits that have genuinely not been sent: differ from the stored notes AND
+  // from the text a running save is sending. Only these warrant "Discard?".
+  const draftUnsent = draftDirty && (openInFlight === undefined || draft !== openInFlight);
 
   /** Returns false if the user chose to keep their unsaved note edits. */
   function confirmDiscardDraft(): boolean {
-    if (!draftDirty) return true;
+    if (!draftUnsent) return true;
     return confirm(DISCARD_NOTES_PROMPT);
   }
 
@@ -493,29 +508,36 @@ export default function LeadsPage() {
 
   // ─── Save notes for the open lead ────────────────────────────────────────────
   async function handleSaveNotes() {
-    if (!openLead || notesSaving) return;
+    if (!openLead || notesInFlight[openLead.id] !== undefined) return;
     const leadId = openLead.id;
-    setNotesSaving(true);
+    const sent = draft;
+    setNotesInFlight((prev) => ({ ...prev, [leadId]: sent }));
     setActionError(null);
     try {
       const res = await fetch(`/api/contact/${leadId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes: draft }),
+        body: JSON.stringify({ notes: sent }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error ?? `Error ${res.status}`);
       const saved = (d.data?.notes ?? null) as string | null;
       setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, notes: saved } : l)));
-      // Only touch the draft if this lead is still the open one.
-      if (openIdRef.current === leadId) {
+      // Only replace the draft if this lead is still open AND nothing was
+      // typed since the save started; otherwise keep the newer text and do
+      // not claim "Saved".
+      if (openIdRef.current === leadId && draftRef.current === sent) {
         setDraft(saved ?? '');
         setNotesSaved(true);
       }
     } catch (err) {
       setActionError(`Notes save failed: ${err instanceof Error ? err.message : 'request failed'}`);
     } finally {
-      setNotesSaving(false);
+      setNotesInFlight((prev) => {
+        const next = { ...prev };
+        delete next[leadId];
+        return next;
+      });
     }
   }
 
@@ -610,7 +632,7 @@ export default function LeadsPage() {
       return;
     }
     if (loading || keptHiddenRef.current === openId) return;
-    if (draftDirty && !confirm(DISCARD_NOTES_PROMPT)) {
+    if (draftUnsent && !confirm(DISCARD_NOTES_PROMPT)) {
       keptHiddenRef.current = openId;
       return;
     }
@@ -620,7 +642,7 @@ export default function LeadsPage() {
     setDraft('');
     setNotesSaved(false);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [openId, openVisible, draftDirty, loading]);
+  }, [openId, openVisible, draftUnsent, loading]);
 
   const activeFilterParts: string[] = [];
   if (sourceFilter !== 'all') activeFilterParts.push(`Source: ${leadSourceLabel(sourceFilter)}`);
@@ -773,7 +795,10 @@ export default function LeadsPage() {
 
           <div style={{ flex: 1 }} />
 
-          <span className="text-xs font-semibold uppercase" style={{ color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>
+          {/* Label + chips are one unit, so the label never wraps away from
+              its chips; the whole unit moves to a new line instead. */}
+          <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold uppercase shrink-0" style={{ color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>
             Status
           </span>
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -791,6 +816,7 @@ export default function LeadsPage() {
                 </button>
               );
             })}
+          </div>
           </div>
 
           {/* Column selector */}
@@ -864,11 +890,12 @@ export default function LeadsPage() {
           </div>
         )}
 
-        {/* Table — CSS Grid. No overflow on this box or any ancestor up to the
-            app's <main> (layout.tsx, overflow-auto): <main> is the only
-            scroller, so the sticky header pins to the top of it. On windows
-            narrower than tableMinWidth, <main> also scrolls sideways. */}
-        <div style={{ borderRadius: '0 0 10px 10px' }}>
+        {/* Table — CSS Grid. The header row is NOT sticky: the window is the
+            vertical scroller here (layout.tsx's wrapper is min-h-screen, so
+            <main> never scrolls), and this box must not scroll vertically
+            either (no max-height). It scrolls sideways only, so on windows
+            narrower than tableMinWidth wide content stays inside the card. */}
+        <div style={{ overflowX: 'auto', borderRadius: '0 0 10px 10px' }}>
           <div style={{ minWidth: tableMinWidth, background: 'var(--bg-surface)', borderRadius: '0 0 10px 10px' }}>
 
             {/* Header row */}
@@ -932,7 +959,7 @@ export default function LeadsPage() {
                       <LeadDetail
                         lead={lead}
                         draft={draft}
-                        saving={notesSaving}
+                        saving={openSaving}
                         saved={notesSaved}
                         dirty={draftDirty}
                         onDraftChange={(v) => { setDraft(v); setNotesSaved(false); }}
@@ -978,7 +1005,7 @@ function LeadRow({ lead, gridCols, shownCols, isOpen, onToggle, onDelete, onStat
         );
       case 'status':
         return (
-          <div key={key} className="lt-cell">
+          <div key={key} className="lt-cell lt-statuscell">
             <span className="lt-pillwrap">
               <select
                 className="lt-pill"
@@ -1067,21 +1094,21 @@ function LeadRow({ lead, gridCols, shownCols, isOpen, onToggle, onDelete, onStat
     <div
       className="lt-row"
       style={{ display: 'grid', gridTemplateColumns: gridCols, alignItems: 'start' }}
-      role="button"
-      tabIndex={0}
-      aria-expanded={isOpen}
+      // Mouse convenience only: clicking anywhere on the row toggles it. The
+      // keyboard / screen-reader control is the chevron <button> below, so
+      // the row itself carries no role (it contains a select, link, button).
       onClick={() => onToggle(lead)}
-      onKeyDown={(e) => {
-        // Only when the row itself has focus — not a link/select inside it.
-        // preventDefault stops Space from scrolling the page.
-        if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
-          e.preventDefault();
-          onToggle(lead);
-        }
-      }}
     >
       <div className="lt-cell" style={{ paddingRight: 0 }}>
-        <span className={`lt-chev${isOpen ? ' lt-chev-open' : ''}`}><IconChevronRight /></span>
+        <button
+          type="button"
+          className="lt-chevbtn"
+          aria-expanded={isOpen}
+          aria-label={`Show submission for ${name}`}
+          onClick={(e) => { e.stopPropagation(); onToggle(lead); }}
+        >
+          <span className={`lt-chev${isOpen ? ' lt-chev-open' : ''}`}><IconChevronRight /></span>
+        </button>
       </div>
 
       {shownCols.map((c) => cell(c.key))}
