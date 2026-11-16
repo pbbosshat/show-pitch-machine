@@ -58,19 +58,27 @@ const SORT_COLS = new Set<string>(COLUMNS.map((c) => c.sort).filter(Boolean) as 
 
 // One width (px) per data column. Typed as a full Record so a new column
 // cannot be added without a width (the old positional array fell out of step).
+// For the flexible columns (see FLEX_COLS) this is the MINIMUM width; they
+// share any spare space. Defaults are sized so the default columns fit in the
+// ~1116px a 1440px window leaves after the sidebar, page padding and borders:
+// 36 + 160 + 150 + 120 + 190 + 160 + 140 + 110 + 44 = 1110px.
 const DEFAULT_WIDTHS: Record<ColKey, number> = {
-  name: 180,
-  status: 168,
-  source: 136,
-  email: 210,
+  name: 160,
+  status: 150,
+  source: 120,
+  email: 190,
   company: 150,
   show: 170,
-  message: 260,
-  notes: 200,
-  date: 124,
+  message: 160,
+  notes: 140,
+  date: 110,
 };
-const CHEVRON_WIDTH = 40;
-const ACTIONS_WIDTH = 56;
+// Flexible columns and their share (fr) of the spare width.
+const FLEX_COLS: Partial<Record<ColKey, number>> = { message: 2, notes: 1 };
+const CHEVRON_WIDTH = 36;
+const ACTIONS_WIDTH = 44;
+
+const DISCARD_NOTES_PROMPT = 'You have unsaved notes for this lead. Discard them?';
 
 // Company and Show are rarely filled in, so they start hidden. Stored under a
 // v2 key: the old 'leads-cols' prefs had company/show saved as true, and
@@ -199,6 +207,8 @@ button.lt-hbtn{cursor:pointer}
 .lt-textarea{width:100%;resize:vertical;font:inherit;font-size:0.875rem;color:var(--text-primary);border:1px solid var(--border-subtle);border-radius:6px;padding:8px 12px;background:var(--bg-surface);box-sizing:border-box}
 .lt-root input:focus-visible,.lt-root textarea:focus-visible,.lt-root select:focus-visible,.lt-root button:focus-visible,.lt-root a:focus-visible,.lt-row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .lt-tnum{font-variant-numeric:tabular-nums}
+.lt-card{container-type:inline-size}
+.lt-vis{position:sticky;left:0;width:100cqw;max-width:100%;box-sizing:border-box}
 `;
 
 // ─── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -303,6 +313,13 @@ export default function LeadsPage() {
   const [draft, setDraft] = useState('');
   const [notesSaving, setNotesSaving] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
+  // Mirror of openId for async callbacks: a notes save that finishes after a
+  // different row was opened must not write into that row's draft.
+  const openIdRef = useRef<string | null>(null);
+  useEffect(() => { openIdRef.current = openId; }, [openId]);
+  // Lead id the user chose to keep open (unsaved notes) while filters hide
+  // it, so they are not asked again on every keystroke.
+  const keptHiddenRef = useRef<string | null>(null);
 
   // ─── Load saved prefs once on mount ──────────────────────────────────────────
   useEffect(() => {
@@ -410,7 +427,7 @@ export default function LeadsPage() {
   /** Returns false if the user chose to keep their unsaved note edits. */
   function confirmDiscardDraft(): boolean {
     if (!draftDirty) return true;
-    return confirm('You have unsaved notes for this lead. Discard them?');
+    return confirm(DISCARD_NOTES_PROMPT);
   }
 
   function toggleRow(lead: Lead) {
@@ -462,7 +479,9 @@ export default function LeadsPage() {
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error ?? `Error ${res.status}`);
       const u = d.data as Pick<Lead, 'status' | 'status_changed_at' | 'status_changed_by'>;
-      setLeads((prev) => prev.map((l) => (l.id === lead.id
+      // Apply the reply only if the lead still shows the status this request
+      // sent — a newer change made meanwhile must not be overwritten.
+      setLeads((prev) => prev.map((l) => (l.id === lead.id && l.status === next
         ? { ...l, status: u.status, status_changed_at: u.status_changed_at, status_changed_by: u.status_changed_by }
         : l)));
     } catch (err) {
@@ -488,8 +507,11 @@ export default function LeadsPage() {
       if (!res.ok) throw new Error(d.error ?? `Error ${res.status}`);
       const saved = (d.data?.notes ?? null) as string | null;
       setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, notes: saved } : l)));
-      setDraft(saved ?? '');
-      setNotesSaved(true);
+      // Only touch the draft if this lead is still the open one.
+      if (openIdRef.current === leadId) {
+        setDraft(saved ?? '');
+        setNotesSaved(true);
+      }
     } catch (err) {
       setActionError(`Notes save failed: ${err instanceof Error ? err.message : 'request failed'}`);
     } finally {
@@ -578,6 +600,28 @@ export default function LeadsPage() {
       }
     });
 
+  // ─── Close the open row when filters / search hide it ────────────────────────
+  // Same discard prompt as everywhere else; if the user cancels, the row stays
+  // open (hidden) and we do not ask again until it is visible again.
+  const openVisible = openId !== null && filtered.some((l) => l.id === openId);
+  useEffect(() => {
+    if (openId === null || openVisible) {
+      keptHiddenRef.current = null;
+      return;
+    }
+    if (loading || keptHiddenRef.current === openId) return;
+    if (draftDirty && !confirm(DISCARD_NOTES_PROMPT)) {
+      keptHiddenRef.current = openId;
+      return;
+    }
+    /* eslint-disable react-hooks/set-state-in-effect -- closing a row that
+       a filter change just hid; depends on derived visibility, not an event. */
+    setOpenId(null);
+    setDraft('');
+    setNotesSaved(false);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [openId, openVisible, draftDirty, loading]);
+
   const activeFilterParts: string[] = [];
   if (sourceFilter !== 'all') activeFilterParts.push(`Source: ${leadSourceLabel(sourceFilter)}`);
   if (statusFilter !== 'all') activeFilterParts.push(`Status: ${leadStatusLabel(statusFilter)}`);
@@ -585,12 +629,21 @@ export default function LeadsPage() {
 
   // ─── Grid template from visible columns + widths ─────────────────────────────
   // Hidden columns are not rendered at all, so they must not get a grid track.
+  // Flexible columns (Message, Notes) use their width as a minimum and share
+  // the spare space; resizing one raises its minimum. If none of the flexible
+  // columns is shown, the last fixed column absorbs the spare width so the
+  // header and rows still span the card.
   const shownCols = COLUMNS.filter((c) => visibleCols[c.key]);
+  const anyFlexShown = shownCols.some((c) => FLEX_COLS[c.key]);
   const gridCols = [
     `${CHEVRON_WIDTH}px`,
-    ...shownCols.map((c) => (c.key === 'message' ? `minmax(${colWidths.message}px, 1fr)` : `${colWidths[c.key]}px`)),
+    ...shownCols.map((c, i) => {
+      const fr = FLEX_COLS[c.key] ?? (!anyFlexShown && i === shownCols.length - 1 ? 1 : 0);
+      return fr ? `minmax(${colWidths[c.key]}px, ${fr}fr)` : `${colWidths[c.key]}px`;
+    }),
     `${ACTIONS_WIDTH}px`,
   ].join(' ');
+  // Sum of every track's minimum: below this the table scrolls sideways.
   const tableMinWidth = CHEVRON_WIDTH + ACTIONS_WIDTH + shownCols.reduce((sum, c) => sum + colWidths[c.key], 0);
 
   // ─── Shared styles ────────────────────────────────────────────────────────────
@@ -673,8 +726,10 @@ export default function LeadsPage() {
         </div>
       </div>
 
-      {/* ── Table card ── */}
-      <div style={cardStyle}>
+      {/* ── Table card ── a size container, so the detail area and empty
+          states can be sized to the card's visible width (100cqw) even when
+          the table itself is wider and scrolls sideways. */}
+      <div className="lt-card" style={cardStyle}>
 
         {/* Source tabs */}
         <div
@@ -809,10 +864,12 @@ export default function LeadsPage() {
           </div>
         )}
 
-        {/* Table — CSS Grid. This box scrolls both ways so the header row can
-            stay pinned (sticky needs the scrolling box to be its container). */}
-        <div style={{ overflow: 'auto', maxHeight: 'calc(100vh - 140px)', borderRadius: '0 0 10px 10px' }}>
-          <div style={{ minWidth: tableMinWidth }}>
+        {/* Table — CSS Grid. No overflow on this box or any ancestor up to the
+            app's <main> (layout.tsx, overflow-auto): <main> is the only
+            scroller, so the sticky header pins to the top of it. On windows
+            narrower than tableMinWidth, <main> also scrolls sideways. */}
+        <div style={{ borderRadius: '0 0 10px 10px' }}>
+          <div style={{ minWidth: tableMinWidth, background: 'var(--bg-surface)', borderRadius: '0 0 10px 10px' }}>
 
             {/* Header row */}
             <div className="lt-head" style={{ display: 'grid', gridTemplateColumns: gridCols }}>
@@ -833,19 +890,19 @@ export default function LeadsPage() {
             </div>
 
             {loading && (
-              <div className="px-4 py-8 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+              <div className="lt-vis px-4 py-8 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
                 Loading leads…
               </div>
             )}
 
             {!loading && leads.length === 0 && (
-              <div className="px-4 py-12 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+              <div className="lt-vis px-4 py-12 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
                 No leads yet.
               </div>
             )}
 
             {!loading && leads.length > 0 && filtered.length === 0 && (
-              <div className="flex flex-col items-center text-center" style={{ padding: '48px 20px', gap: 12 }}>
+              <div className="lt-vis flex flex-col items-center text-center" style={{ padding: '48px 20px', gap: 12 }}>
                 <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
                   No leads match these filters
                 </p>
@@ -1010,12 +1067,14 @@ function LeadRow({ lead, gridCols, shownCols, isOpen, onToggle, onDelete, onStat
     <div
       className="lt-row"
       style={{ display: 'grid', gridTemplateColumns: gridCols, alignItems: 'start' }}
+      role="button"
       tabIndex={0}
       aria-expanded={isOpen}
       onClick={() => onToggle(lead)}
       onKeyDown={(e) => {
         // Only when the row itself has focus — not a link/select inside it.
-        if (e.key === 'Enter' && e.target === e.currentTarget) {
+        // preventDefault stops Space from scrolling the page.
+        if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
           e.preventDefault();
           onToggle(lead);
         }
@@ -1027,7 +1086,7 @@ function LeadRow({ lead, gridCols, shownCols, isOpen, onToggle, onDelete, onStat
 
       {shownCols.map((c) => cell(c.key))}
 
-      <div className="lt-cell" style={{ display: 'flex', justifyContent: 'center' }}>
+      <div className="lt-cell" style={{ display: 'flex', justifyContent: 'center', paddingLeft: 6, paddingRight: 6 }}>
         <button
           type="button"
           className="lt-trash"
@@ -1066,9 +1125,12 @@ function LeadDetail({ lead, draft, saving, saved, dirty, onDraftChange, onSave }
   const notesId = `lead-notes-${lead.id}`;
 
   return (
+    // lt-vis: sized to the card's visible width and pinned to its left edge,
+    // so the notes box is never off-screen when the table scrolls sideways.
     <div
+      className="lt-vis"
       style={{
-        padding: '4px 24px 24px 52px',
+        padding: '4px 24px 24px 48px',
         display: 'grid',
         gridTemplateColumns: 'minmax(0, 1.6fr) minmax(0, 1fr)',
         gap: 28,
