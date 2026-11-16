@@ -12,6 +12,11 @@ const PUBLIC_PATHS = new Set([
   // the healthcheck to /login, it never sees a 200, the deploy is marked failed
   // and ON_FAILURE burns all 10 restarts — leaving nothing serving at all (502).
   '/api/health',
+  // Public contact/pitch form POST endpoint (GET enforces auth inside the
+  // handler). EXACT match on purpose: it used to be a startsWith prefix, which
+  // also opened /api/contact/[id] (lead PATCH/DELETE) at the middleware layer.
+  // Those routes check the session themselves, but they must not be public here.
+  '/api/contact',
   '/login',
   '/forgot-password',
   '/reset-password',
@@ -106,7 +111,6 @@ const PUBLIC_PREFIXES = [
   '/press-releases/', // individual press release / article pages
   '/available/',      // buyer pitch deck pages — each has its own deck password gate
   '/api/available/',      // deck password verify endpoint — must be callable without a session
-  '/api/contact',         // POST is public (form submission); GET enforces auth inside the handler
   '/api/newsletter',      // POST is public (fan newsletter signup from show pages + /work-with-us)
   '/api/admin/db-restore', // protected by ADMIN_RESTORE_SECRET header, not session cookie
   '/api/admin/backfill-deck-drive', // protected by ADMIN_RESTORE_SECRET header, not session cookie

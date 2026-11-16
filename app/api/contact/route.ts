@@ -3,7 +3,9 @@
  * Called by: Leads dashboard page in admin UI (browser, authenticated)
  * Auth: spm_session cookie required — returns 401 if missing or expired
  * Response: { data: Lead[] } — all contact leads, newest-first, with show_title
- *   joined from deck_sites when available_title_id is set
+ *   joined from deck_sites when available_title_id is set, the follow-up fields
+ *   (status, notes, status_changed_at, status_changed_by) and a derived
+ *   source_key (see leadSourceKey in lib/lead-meta.ts)
  *
  * Returns PII (name, email, company). Auth check MUST be awaited — getSessionUser
  * is async and a non-awaited call returns a truthy Promise regardless of session
@@ -37,6 +39,16 @@
  * (including absent) are unaffected, which is what keeps /contact and the ten
  * /available/[slug] one-sheet request forms working unchanged.
  *
+ * SOURCE STAMPING (forward-only, since migration 047): the release gate always
+ * runs on the RAW `source` from the request, but the stored `source` is never
+ * left NULL for new rows. /pitch and /work-with-us send their own source.
+ * /contact still sends NO source (ContactForm is deliberately left unchanged —
+ * its analytics rely on `source ?? 'contact-pitch'`), and neither do the
+ * /available/[slug] one-sheets, so the server stamps them: a request carrying
+ * `available_title_id` or a one-sheet `slug` is stored as 'available-request',
+ * anything else as 'contact'. Existing rows are not rewritten — the Leads tab
+ * derives a key for NULLs at read time (leadSourceKey).
+ *
  * release_version and release_accepted_at are stamped from server-side values,
  * never from the request, so a caller cannot claim agreement to other wording
  * or backdate an acceptance.
@@ -53,29 +65,7 @@ import {
   normalizeMaterialLink,
   signatureMatchesName,
 } from '@/lib/submission-release';
-
-interface Lead {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  message: string | null;
-  company: string | null;
-  available_title_id: string | null;
-  show_title: string | null;
-  created_at: number;
-  // Submissions Release — populated only for gated sources (see isReleaseRequired).
-  source: string | null;
-  phone: string | null;
-  material_title: string | null;
-  material_nature: string | null;
-  material_pages: number | null;
-  material_link: string | null;
-  release_accepted: boolean;
-  release_signature: string | null;
-  release_version: string | null;
-  release_accepted_at: number | null;
-}
+import { DEFAULT_LEAD_STATUS, leadSourceKey, type Lead } from '@/lib/lead-meta';
 
 /**
  * Best-effort client IP for the release record.
@@ -272,16 +262,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const leads = await query<Lead>(
+  const rows = await query<Omit<Lead, 'source_key'>>(
     `SELECT cl.id, cl.first_name, cl.last_name, cl.email, cl.message, cl.company,
             cl.available_title_id, cl.created_at, at.title AS show_title,
             cl.source, cl.phone, cl.material_title, cl.material_nature, cl.material_pages,
             cl.material_link,
-            cl.release_accepted, cl.release_signature, cl.release_version, cl.release_accepted_at
+            cl.release_accepted, cl.release_signature, cl.release_version, cl.release_accepted_at,
+            cl.status, cl.notes, cl.status_changed_at, cl.status_changed_by
      FROM contact_leads cl
      LEFT JOIN deck_sites at ON cl.available_title_id = at.id
      ORDER BY cl.created_at DESC`
   );
+
+  const leads: Lead[] = rows.map((l) => ({ ...l, source_key: leadSourceKey(l) }));
 
   return NextResponse.json({ data: leads });
 }
@@ -365,6 +358,10 @@ export async function POST(request: NextRequest) {
   let message: string | undefined;
   let company: string | undefined;
   let available_title_id: string | undefined;
+  // One-sheet Request Access forms send a `slug` instead of available_title_id.
+  // Only its presence is used (to stamp source = 'available-request'); the slug
+  // itself is not stored.
+  let hasSlug: boolean;
 
   // Attribution fields — all optional, all nullable in the DB.
   // Sent by the ContactForm client component via readAttribution().
@@ -398,6 +395,7 @@ export async function POST(request: NextRequest) {
     message             = params.get('message')?.trim() || undefined;
     company             = params.get('company')?.trim() || undefined;
     available_title_id  = params.get('available_title_id')?.trim() || undefined;
+    hasSlug             = !!params.get('slug')?.trim();
     // Attribution (form submissions via no-JS browser path)
     utm_source          = params.get('utm_source')?.trim() || undefined;
     utm_medium          = params.get('utm_medium')?.trim() || undefined;
@@ -428,6 +426,7 @@ export async function POST(request: NextRequest) {
       message?: string;
       company?: string;
       available_title_id?: string;
+      slug?: string | null;
       // Attribution fields
       utm_source?: string | null;
       utm_medium?: string | null;
@@ -454,6 +453,7 @@ export async function POST(request: NextRequest) {
     message             = body.message?.trim() || undefined;
     company             = body.company?.trim() || undefined;
     available_title_id  = body.available_title_id?.trim() || undefined;
+    hasSlug             = typeof body.slug === 'string' && !!body.slug.trim();
     // Attribution — null is treated the same as absent (→ SQL NULL)
     utm_source          = body.utm_source?.trim() || undefined;
     utm_medium          = body.utm_medium?.trim() || undefined;
@@ -488,7 +488,8 @@ export async function POST(request: NextRequest) {
      in ContactForm would be decoration: anyone could POST around it.
 
      Only sources on the allow-list are gated (see lib/submission-release.ts).
-     /contact and the ten /available/[slug] one-sheets send no source and are
+     /contact and the ten /available/[slug] one-sheets send no source (the
+     server stamps a stored source further down, AFTER this gate) and are
      deliberately unaffected — the one-sheets are buyers requesting materials
      FROM MY Entertainment, which a submissions release should never block.
 
@@ -498,6 +499,7 @@ export async function POST(request: NextRequest) {
      arriving through the gated channels carries a signed release, and that
      everything else is recorded with release_accepted = false and its source,
      so an ungated submission is visible as such rather than silently mixed in. */
+  // Gate on the RAW source — never on the stamped value below.
   const releaseRequired = isReleaseRequired(source);
   let material_pages: number | undefined;
   let material_link: string | undefined;
@@ -556,6 +558,10 @@ export async function POST(request: NextRequest) {
     referrer:   referrer ?? null,
   });
 
+  // Forward-only source stamping (see header): new rows never store NULL.
+  const storedSource =
+    source ?? (available_title_id || hasSlug ? 'available-request' : 'contact');
+
   const id = randomBytes(16).toString('hex');
   const created_at = Date.now(); // milliseconds — existing behavior for contact_leads
 
@@ -592,7 +598,7 @@ export async function POST(request: NextRequest) {
       landing_page  ?? null,
       referrer      ?? null,
       channel,
-      source            ?? null,
+      storedSource,
       phone             ?? null,
       material_title    ?? null,
       material_nature   ?? null,
@@ -616,7 +622,7 @@ export async function POST(request: NextRequest) {
     available_title_id: available_title_id ?? null,
     show_title: null, // not needed in POST response; only populated by GET's JOIN
     created_at,
-    source: source ?? null,
+    source: storedSource,
     phone: phone ?? null,
     material_title: material_title ?? null,
     material_nature: material_nature ?? null,
@@ -626,6 +632,11 @@ export async function POST(request: NextRequest) {
     release_signature: release_signature ?? null,
     release_version,
     release_accepted_at,
+    status: DEFAULT_LEAD_STATUS,
+    notes: null,
+    status_changed_at: null,
+    status_changed_by: null,
+    source_key: leadSourceKey({ source: storedSource, available_title_id: available_title_id ?? null }),
   };
 
   const settingRow = await queryOne<{ value: string }>('SELECT value FROM site_settings WHERE key = ?', ['leads_email']);
