@@ -1,0 +1,113 @@
+/* MYE Admin shared styles. Imported once by app/admin/layout.tsx, so every
+   /admin page can use these classes. Built on the app's design tokens in
+   app/globals.css (--bg-surface, --border-subtle, --text-*, --accent ...).
+   Dense, invoice-like tables for accounting users. */
+
+.fin-shell { min-height: 100vh; background: var(--bg-app); color: var(--text-primary); }
+
+/* Top bar + nav */
+.fin-topbar { display: flex; align-items: center; gap: 24px; padding: 0 24px; height: 52px;
+  background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); }
+.fin-brand { font-weight: 700; font-size: 0.9375rem; letter-spacing: 0.01em; white-space: nowrap; }
+.fin-brand span { color: var(--accent); }
+.fin-nav { display: flex; align-items: stretch; gap: 4px; height: 100%; flex: 1; min-width: 0; overflow-x: auto; }
+.fin-nav a { display: inline-flex; align-items: center; padding: 0 12px; font-size: 0.875rem; font-weight: 500;
+  color: var(--text-secondary); text-decoration: none; border-bottom: 2px solid transparent; white-space: nowrap; }
+.fin-nav a:hover { color: var(--text-primary); }
+.fin-nav a.fin-nav-on { color: var(--text-primary); font-weight: 600; border-bottom-color: var(--accent); }
+.fin-userbox { display: flex; align-items: center; gap: 12px; font-size: 0.8125rem; color: var(--text-secondary); white-space: nowrap; min-width: 0; }
+.fin-userbox > span { overflow: hidden; text-overflow: ellipsis; }
+
+/* Phones: brand + user on the first row, the nav on its own full-width row below
+   (scrolls sideways if the links ever outgrow the screen). */
+@media (max-width: 640px) {
+  .fin-topbar { flex-wrap: wrap; height: auto; padding: 0 16px; column-gap: 12px; row-gap: 0; }
+  .fin-brand { flex: 1 0 auto; padding: 12px 0; }
+  .fin-userbox { padding: 8px 0; gap: 8px; font-size: 0.75rem; }
+  .fin-userbox .fin-userrole { display: none; }
+  .fin-nav { order: 3; flex: 1 0 100%; height: 42px; border-top: 1px solid var(--border-subtle); gap: 0; }
+  .fin-nav a { padding: 0 9px; font-size: 0.8125rem; }
+  .fin-nav a:first-child { padding-left: 0; }
+  .fin-main { padding: 16px; }
+}
+
+/* Page body */
+.fin-main { max-width: 1280px; margin: 0 auto; padding: 24px; }
+.fin-page-title { font-size: 1.25rem; font-weight: 700; margin: 0 0 4px; }
+.fin-page-sub { font-size: 0.875rem; color: var(--text-secondary); margin: 0 0 20px; }
+.fin-section-title { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-muted); margin: 24px 0 8px; }
+
+/* Cards */
+.fin-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px; }
+.fin-card-pad { padding: 16px; }
+
+/* Tables */
+.fin-table-wrap { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px; overflow-x: auto; }
+.fin-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.fin-table th { background: var(--bg-surface-alt); border-bottom: 1px solid var(--border-subtle); padding: 8px 10px;
+  text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-secondary); white-space: nowrap; }
+.fin-table td { padding: 7px 10px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+.fin-table tbody tr:last-child td { border-bottom: none; }
+.fin-table tbody tr:hover { background: var(--bg-surface-alt); }
+.fin-table .fin-num, .fin-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fin-muted { color: var(--text-muted); }
+.fin-credit { color: var(--status-greenlit); }
+.fin-empty { padding: 24px; text-align: center; color: var(--text-muted); font-size: 0.875rem; }
+
+/* .fin-stack tables: on phones each row becomes a card — one "Label  value" line per
+   cell (label from the cell's data-label), so nothing needs sideways scrolling.
+   Cells without a data-label (e.g. the row's title or action buttons) span the line. */
+@media (max-width: 640px) {
+  .fin-stack thead { display: none; }
+  .fin-stack, .fin-stack tbody, .fin-stack tr, .fin-stack td { display: block; width: 100%; }
+  .fin-stack tbody tr { padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); }
+  .fin-stack tbody tr:last-child { border-bottom: none; }
+  .fin-stack.fin-table td { padding: 2px 0; border-bottom: none; text-align: left; white-space: normal !important;
+    max-width: none !important; overflow-wrap: anywhere; }
+  .fin-stack td[data-label] { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .fin-stack td[data-label]::before { content: attr(data-label); flex: 0 0 auto; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); }
+  .fin-stack td[data-label] > * { min-width: 0; text-align: right; }
+  .fin-stack td.fin-stack-title { font-size: 0.875rem; padding-bottom: 4px; }
+  .fin-stack td.fin-stack-actions { padding-top: 8px; text-align: left !important; }
+  .fin-stack td.fin-empty { padding: 16px 0; text-align: center; }
+}
+
+/* Forms */
+.fin-label { display: block; font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; }
+.fin-input, .fin-select { width: 100%; padding: 6px 10px; font-size: 0.8125rem; border-radius: 6px; font-family: inherit;
+  background: var(--bg-surface); border: 1px solid var(--border-strong); color: var(--text-primary); }
+.fin-input:focus, .fin-select:focus { outline: none; border-color: var(--text-secondary); }
+
+/* Inline form row: fields share the row and wrap on narrow screens; buttons stay compact. */
+.fin-formrow { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.fin-formrow > div { flex: 1 1 180px; min-width: 0; }
+.fin-formrow > button { flex: 0 0 auto; }
+
+/* Buttons */
+.fin-btn { appearance: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 0.8125rem;
+  font-weight: 600; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--bg-surface);
+  color: var(--text-primary); cursor: pointer; font-family: inherit; white-space: nowrap; }
+.fin-btn:hover { background: var(--bg-surface-alt); }
+.fin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.fin-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.fin-btn-primary:hover { background: var(--accent-hover); }
+.fin-btn-danger { color: var(--status-pass); }
+.fin-btn-sm { padding: 3px 8px; font-size: 0.75rem; }
+.fin-linkbtn { appearance: none; background: none; border: none; padding: 0; color: var(--text-secondary);
+  font: inherit; cursor: pointer; text-decoration: underline; }
+
+/* Status pills */
+.fin-pill { display: inline-block; font-size: 11px; font-weight: 600; border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+  background: var(--bg-surface-alt); color: var(--text-secondary); }
+.fin-pill-new { background: color-mix(in srgb, var(--status-inreview) 18%, var(--bg-surface)); color: color-mix(in srgb, var(--status-inreview) 55%, var(--text-primary)); }
+.fin-pill-tagged { background: color-mix(in srgb, #2563EB 15%, var(--bg-surface)); color: color-mix(in srgb, #2563EB 60%, var(--text-primary)); }
+.fin-pill-synced { background: color-mix(in srgb, var(--status-greenlit) 18%, var(--bg-surface)); color: color-mix(in srgb, var(--status-greenlit) 55%, var(--text-primary)); }
+.fin-pill-error { background: color-mix(in srgb, var(--status-pass) 15%, var(--bg-surface)); color: color-mix(in srgb, var(--status-pass) 60%, var(--text-primary)); }
+
+/* Messages */
+.fin-error { font-size: 0.8125rem; color: var(--status-pass); }
+.fin-ok { font-size: 0.8125rem; color: var(--status-greenlit); }
+.fin-notice { padding: 10px 14px; border-radius: 6px; font-size: 0.8125rem; background: var(--bg-surface-alt); border: 1px solid var(--border-subtle); }

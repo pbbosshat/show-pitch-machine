@@ -1,0 +1,158 @@
+/* Amex statements / charges screens. Extends app/admin/admin.css (fin-* classes). */
+
+/* Summary tiles */
+.amx-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.amx-tile { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 14px; }
+.amx-tile-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.amx-tile-value { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.amx-tile-value small { font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); margin-left: 4px; }
+.amx-tile-warn { border-color: color-mix(in srgb, var(--status-inreview) 55%, var(--border-subtle)); }
+.amx-tile a { color: inherit; }
+
+/* Toolbar above tables */
+.amx-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 10px; }
+.amx-toolbar > div { flex: 0 1 200px; min-width: 140px; }
+.amx-toolbar .amx-spacer { flex: 1 1 auto; min-width: 0; }
+
+/* Charge table: fixed widths so the editors line up and nothing jumps */
+.amx-charges { table-layout: fixed; min-width: 1120px; }
+.amx-charges td { vertical-align: top; padding-top: 6px; padding-bottom: 6px; }
+.amx-charges th { padding-left: 8px; padding-right: 8px; }
+.amx-charges td { padding-left: 8px; padding-right: 8px; }
+.amx-charges .fin-input, .amx-charges .fin-select { padding: 4px 7px; font-size: 0.78rem; height: 28px; }
+.amx-col-date { width: 74px; }
+.amx-col-member { width: 100px; }
+.amx-col-amount { width: 104px; }
+.amx-col-account { width: 190px; }
+.amx-col-class { width: 118px; }
+.amx-col-memo { width: 170px; }
+.amx-col-receipt { width: 64px; }
+.amx-col-status { width: 112px; }
+.amx-col-save { width: 58px; }
+.amx-cell-text { line-height: 28px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.amx-desc { line-height: 1.3; padding-top: 6px; word-break: break-word; }
+.amx-desc-sub { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.amx-dupe-row td { background: color-mix(in srgb, var(--status-inreview) 7%, var(--bg-surface)); }
+.amx-deleted-row td { opacity: 0.5; }
+.amx-deleted-row .amx-amt { text-decoration: line-through; }
+.amx-group-row td { background: var(--bg-surface-alt); font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--text-secondary); padding-top: 5px; padding-bottom: 5px; }
+.amx-row-error td { padding-top: 0; border-top: none; }
+.amx-tagged-by { display: block; font-size: 10.5px; color: var(--text-muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.amx-actions { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.amx-receipt { line-height: 28px; white-space: nowrap; font-size: 0.78rem; }
+.amx-receipt a { color: var(--text-primary); }
+.amx-attach { cursor: pointer; text-decoration: underline; color: var(--text-secondary); }
+.amx-attach input { display: none; }
+.amx-x { appearance: none; border: none; background: none; color: var(--text-muted); cursor: pointer; padding: 0 2px; font-size: 0.9rem; }
+.amx-x:hover { color: var(--status-pass); }
+.amx-statuscell { padding-top: 6px; }
+.amx-statuscell .fin-pill { line-height: 16px; }
+
+/* Account picker */
+.amx-picker-pop { position: fixed; z-index: 50; background: var(--bg-surface); border: 1px solid var(--border-strong);
+  border-radius: 6px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16); max-height: 280px; overflow-y: auto; font-size: 0.8rem; }
+.amx-picker-opt { padding: 5px 10px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.amx-picker-opt b { font-weight: 600; font-variant-numeric: tabular-nums; margin-right: 6px; }
+.amx-picker-opt.amx-on { background: var(--bg-elevated); }
+.amx-picker-empty { padding: 8px 10px; color: var(--text-muted); }
+
+/* Statement header panels */
+.amx-panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-bottom: 16px; }
+@media (max-width: 900px) { .amx-panels { grid-template-columns: 1fr; } }
+.amx-panel-title { font-size: 0.8125rem; font-weight: 700; margin: 0 0 8px; }
+.amx-recon { width: 100%; font-size: 0.8125rem; border-collapse: collapse; margin-bottom: 10px; }
+.amx-recon td { padding: 3px 0; }
+.amx-recon td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.amx-recon tr.amx-recon-diff td { border-top: 1px solid var(--border-subtle); font-weight: 700; padding-top: 6px; }
+.amx-unmatched { display: flex; flex-direction: column; gap: 8px; }
+.amx-unmatched-row { display: grid; grid-template-columns: minmax(0, 1fr) 180px auto; gap: 8px; align-items: center; font-size: 0.8125rem; }
+.amx-warn-banner { padding: 10px 14px; border-radius: 6px; font-size: 0.8125rem; margin-bottom: 12px;
+  background: color-mix(in srgb, var(--status-inreview) 12%, var(--bg-surface));
+  border: 1px solid color-mix(in srgb, var(--status-inreview) 40%, var(--border-subtle)); }
+.amx-breadcrumb { font-size: 0.8125rem; margin-bottom: 6px; }
+.amx-breadcrumb a { color: var(--text-secondary); }
+.amx-sync-results { margin-top: 8px; font-size: 0.8125rem; }
+.amx-sync-results li { margin: 2px 0; }
+.amx-locked { line-height: 1.3; padding-top: 6px; word-break: break-word; }
+.amx-actions .fin-btn-sm { padding: 2px 6px; font-size: 11px; }
+
+/* Unsaved edits */
+.amx-save { margin-top: 3px; }
+.amx-saved { font-size: 11px; display: block; margin-top: 3px; }
+.amx-unsaved { display: block; margin-top: 3px; font-size: 10.5px; font-weight: 600; color: color-mix(in srgb, var(--status-inreview) 70%, var(--text-primary)); white-space: nowrap; }
+.amx-closed-note { display: block; font-size: 10.5px; color: var(--text-muted); white-space: nowrap; line-height: 28px; }
+.amx-dirty-row > td:first-child { box-shadow: inset 3px 0 0 var(--status-inreview); }
+.amx-unsaved-banner { padding: 8px 12px; border-radius: 6px; font-size: 0.8125rem; margin-bottom: 10px;
+  background: color-mix(in srgb, var(--status-inreview) 10%, var(--bg-surface));
+  border: 1px solid color-mix(in srgb, var(--status-inreview) 35%, var(--border-subtle)); }
+.amx-pill-gap { margin-top: 3px; }
+.amx-mobile-only { display: none; }
+
+/* Phones: each charge becomes a stacked card. Top: date · amount, description,
+   Card Member · status; then Account, Class, Memo (full width), then receipt + Save. */
+@media (max-width: 760px) {
+  .amx-charges-wrap { overflow-x: visible; }
+  .amx-charges { min-width: 0; table-layout: auto; display: block; }
+  .amx-charges colgroup, .amx-charges thead { display: none; }
+  .amx-charges tbody { display: block; }
+  .amx-charges tbody tr:hover { background: transparent; }
+  .amx-charges tr.amx-row {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; row-gap: 6px;
+    grid-template-areas:
+      "date amount"
+      "desc desc"
+      "member member"
+      "status status"
+      "account account"
+      "class class"
+      "memo memo"
+      "receipt save";
+    padding: 12px 14px; border-bottom: 1px solid var(--border-subtle);
+  }
+  .amx-charges.amx-no-member tr.amx-row { grid-template-areas: "date amount" "desc desc" "status status" "account account" "class class" "memo memo" "receipt save"; }
+  .amx-charges tr.amx-row > td { display: block; padding: 0; border: none; min-width: 0; }
+  .amx-charges tr.amx-dupe-row { background: color-mix(in srgb, var(--status-inreview) 7%, var(--bg-surface)); }
+  .amx-charges tr.amx-dupe-row > td { background: transparent; }
+  .amx-charges tr.amx-dirty-row { box-shadow: inset 3px 0 0 var(--status-inreview); }
+  .amx-charges tr.amx-dirty-row > td:first-child { box-shadow: none; }
+  .amx-td-date { grid-area: date; }
+  .amx-td-date .amx-cell-text { line-height: 1.4; font-size: 0.75rem; color: var(--text-secondary); }
+  .amx-td-amount { grid-area: amount; }
+  .amx-td-amount .amx-cell-text { line-height: 1.4; font-size: 0.9375rem; font-weight: 700; }
+  .amx-td-desc { grid-area: desc; }
+  .amx-td-desc .amx-desc { padding-top: 0; font-weight: 600; font-size: 0.875rem; }
+  .amx-td-member { grid-area: member; align-self: center; }
+  .amx-td-member .amx-cell-text { line-height: 1.4; }
+  .amx-td-status { grid-area: status; display: flex !important; flex-wrap: wrap; gap: 4px; justify-content: flex-start; align-items: center; padding-top: 0 !important; }
+  .amx-td-status .amx-pill-gap { margin-top: 0; }
+  .amx-td-status .amx-tagged-by { margin-top: 0; }
+  .amx-td-status .amx-actions { margin-top: 0; }
+  .amx-td-account { grid-area: account; }
+  .amx-td-class { grid-area: class; }
+  .amx-td-memo { grid-area: memo; }
+  .amx-td-account::before, .amx-td-class::before, .amx-td-memo::before {
+    content: attr(data-label); display: block; font-size: 11px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+  .amx-charges .fin-input, .amx-charges .fin-select { height: 38px; font-size: 16px; } /* 16px stops iOS zooming in */
+  .amx-locked { padding-top: 0; }
+  .amx-td-receipt { grid-area: receipt; align-self: center; }
+  .amx-receipt { font-size: 0.875rem; }
+  .amx-td-save { grid-area: save; display: flex !important; align-items: center; gap: 8px; justify-content: flex-end; }
+  .amx-td-save .amx-save { margin-top: 0; padding: 7px 18px; font-size: 0.875rem; }
+  .amx-td-save .amx-unsaved, .amx-td-save .amx-saved { margin-top: 0; order: -1; }
+  .amx-mobile-only { display: inline; }
+  .amx-charges tr.amx-group-row, .amx-charges tr.amx-row-error, .amx-charges tr.amx-empty-row { display: block; }
+  .amx-charges tr.amx-group-row > td, .amx-charges tr.amx-row-error > td, .amx-charges tr.amx-empty-row > td { display: block; }
+  .amx-charges tr.amx-row-error > td { padding: 0 14px 10px; border-bottom: 1px solid var(--border-subtle); }
+  .amx-toolbar > div { flex: 1 1 140px; }
+  .amx-unmatched-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .amx-unmatched-row > div:first-child { grid-column: 1 / -1; }
+  .amx-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.amx-file-name { display: block; margin-top: 2px; font-size: 0.75rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Charges page count summary: stays on one line on desktop, wraps on phones. */
+.amx-toolbar > .amx-summary { flex: 0 1 auto; min-width: 0; font-size: 0.8125rem; padding-bottom: 6px; }
+@media (max-width: 760px) { .amx-toolbar > .amx-summary { flex: 1 1 100%; padding-bottom: 0; } }

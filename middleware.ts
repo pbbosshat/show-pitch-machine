@@ -125,6 +125,22 @@ const PUBLIC_PREFIXES = [
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // MYE Admin finance area — walled off with its OWN login (mye_admin_session),
+  // never the staff /login. A staff spm_session cookie is deliberately ignored
+  // here: it must grant nothing in /admin or /api/fin. This is a presence check
+  // only; every /admin page and /api/fin route validates the session itself
+  // (lib/fin/auth.ts). /api/fin/* is passed through so routes answer with 401
+  // JSON (and /api/fin/auth/login + /api/fin/qbo/callback do their own checks).
+  // Unrelated to the /api/admin/* maintenance routes below.
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    if (pathname === '/admin/login') return NextResponse.next();
+    if (!request.cookies.get('mye_admin_session')?.value) {
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+    return NextResponse.next();
+  }
+  if (pathname === '/api/fin' || pathname.startsWith('/api/fin/')) return NextResponse.next();
+
   if (PUBLIC_PATHS.has(pathname)) return NextResponse.next();
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) return NextResponse.next();
 
