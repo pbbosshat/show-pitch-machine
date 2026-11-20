@@ -11,6 +11,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+# onnxruntime-node (pulled in by fastembed) tries to download optional CUDA/GPU
+# binaries from GitHub during install. That release asset now 404s, which fails
+# `npm ci` whenever the install layer isn't cached. We never use the GPU build.
+ENV ONNXRUNTIME_NODE_INSTALL_CUDA=skip
 
 COPY package*.json ./
 RUN npm ci
